@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planificateur — Repas & Entraînement</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#f7f6f3; --surface:#fff; --surface2:#f0efe9;
+  --border:rgba(0,0,0,.09); --border2:rgba(0,0,0,.18);
+  --text:#1a1917; --text2:#6b6a65; --text3:#a09e98;
+  --gym:#0C447C; --gym-bg:#E6F1FB;
+  --swim:#085041; --swim-bg:#E1F5EE;
+  --parc:#27500A; --parc-bg:#EAF3DE;
+  --meal:#633806; --meal-bg:#FAEEDA;
+  --apero:#72243E; --apero-bg:#FBEAF0;
+  --rest:#888780; --rest-bg:#F1EFE8;
+  --green:#1d9e75; --r:12px; --rs:8px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#131211; --surface:#1e1d1b; --surface2:#282724;
+  --border:rgba(255,255,255,.09); --border2:rgba(255,255,255,.18);
+  --text:#f0ede8; --text2:#9a9892; --text3:#635f5a;
+  --gym:#60a5fa; --gym-bg:#0f1f3d;
+  --swim:#9fe1cb; --swim-bg:#012a1f;
+  --parc:#9fe1a8; --parc-bg:#012a08;
+  --meal:#f5c97a; --meal-bg:#2a1a00;
+  --apero:#ed93b1; --apero-bg:#2a0a18;
+}}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.app-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.app-bar h1{font-size:15px;font-weight:600}
+.app-bar p{font-size:10px;color:var(--text2);margin-top:1px}
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:53px;z-index:99;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:10px 16px;font-size:13px;font-weight:500;cursor:pointer;color:var(--text2);border-bottom:2px solid transparent;white-space:nowrap;transition:all .15s}
+.tab.active{color:var(--text);border-bottom-color:var(--text)}
+.container{max-width:900px;margin:0 auto;padding:16px}
+.view{display:none}.view.active{display:block}
+
+/* Grid */
+.week-grid{display:grid;grid-template-columns:60px repeat(7,1fr);gap:0;border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.grid-header{background:var(--surface2);padding:8px 4px;text-align:center;font-size:11px;font-weight:600;border-bottom:1px solid var(--border);border-right:1px solid var(--border)}
+.grid-header:last-child{border-right:none}
+.time-cell{background:var(--surface2);padding:6px 4px;text-align:center;font-size:10px;color:var(--text3);border-bottom:1px solid var(--border);border-right:1px solid var(--border);font-weight:500}
+.grid-cell{border-bottom:1px solid var(--border);border-right:1px solid var(--border);min-height:44px;position:relative;cursor:default}
+.grid-cell:last-child{border-right:none}
+.block{width:100%;height:100%;padding:4px 5px;display:flex;flex-direction:column;justify-content:center;cursor:pointer;transition:opacity .15s;min-height:44px}
+.block:hover{opacity:.85}
+.block:active{opacity:.7}
+.block-name{font-size:10px;font-weight:600;line-height:1.2}
+.block-sub{font-size:9px;opacity:.8;margin-top:1px}
+.b-gym{background:var(--gym-bg);color:var(--gym)}
+.b-swim{background:var(--swim-bg);color:var(--swim)}
+.b-parc{background:var(--parc-bg);color:var(--parc)}
+.b-meal{background:var(--meal-bg);color:var(--meal)}
+.b-apero{background:var(--apero-bg);color:var(--apero)}
+.b-rest{background:var(--rest-bg);color:var(--rest)}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:flex-end;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-width:600px;max-height:85vh;overflow-y:auto;padding:0 0 40px}
+.modal-handle{width:40px;height:4px;background:var(--border2);border-radius:2px;margin:12px auto 16px}
+.modal-header{padding:0 20px 12px;border-bottom:1px solid var(--border)}
+.modal-title{font-size:18px;font-weight:600}
+.modal-sub{font-size:12px;color:var(--text2);margin-top:4px}
+.modal-body{padding:16px 20px}
+.section-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin:16px 0 8px}
+.section-lbl:first-child{margin-top:0}
+.kcal-bar{background:var(--surface2);border-radius:var(--rs);padding:10px 14px;display:flex;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+.kcal-item{text-align:center}
+.kcal-val{font-size:18px;font-weight:600}
+.kcal-lbl{font-size:10px;color:var(--text2)}
+.ingredient-list{display:flex;flex-direction:column;gap:6px}
+.ingredient{display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:var(--rs);padding:8px 12px}
+.ing-name{font-size:13px;font-weight:500}
+.ing-qty{font-size:13px;color:var(--text2);font-weight:600;white-space:nowrap}
+.steps{display:flex;flex-direction:column;gap:10px}
+.step{display:flex;gap:10px;align-items:flex-start}
+.step-num{width:24px;height:24px;border-radius:50%;background:var(--text);color:var(--bg);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.step-text{font-size:13px;line-height:1.5;color:var(--text2)}
+.tip{background:var(--gym-bg);color:var(--gym);border-radius:var(--rs);padding:10px 14px;font-size:12px;line-height:1.5;margin-top:12px}
+.close-btn{width:100%;padding:14px;background:var(--text);color:var(--bg);border:none;border-radius:var(--r);font-size:15px;font-weight:600;cursor:pointer;margin-top:20px;font-family:'DM Sans',sans-serif}
+
+/* Grocery */
+.store-section{margin-bottom:24px}
+.store-header{background:var(--text);color:var(--bg);border-radius:var(--r) var(--r) 0 0;padding:12px 16px}
+.store-name{font-size:15px;font-weight:600}
+.store-sub{font-size:11px;opacity:.7;margin-top:2px}
+.grocery-list{background:var(--surface);border:1px solid var(--border);border-top:none;border-radius:0 0 var(--r) var(--r);overflow:hidden}
+.grocery-item{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border);cursor:pointer}
+.grocery-item:last-child{border-bottom:none}
+.grocery-item.checked .g-name{text-decoration:line-through;color:var(--text3)}
+.g-check{width:20px;height:20px;border-radius:50%;border:2px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.grocery-item.checked .g-check{background:var(--green);border-color:var(--green);color:white}
+.g-name{font-size:13px;font-weight:500;flex:1}
+.g-qty{font-size:12px;color:var(--text2)}
+.g-cat{font-size:10px;color:var(--text3);background:var(--surface2);padding:2px 6px;border-radius:20px}
+
+/* Legend */
+.legend{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)}
+.legend-dot{width:10px;height:10px;border-radius:3px}
+</style>
+</head>
+<body>
+<div class="app-bar">
+  <div><h1>🍽️ Planificateur Semaine</h1><p>Repas · Entraînement · Épicerie</p></div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('grille')">📅 Grille horaire</div>
+  <div class="tab" onclick="switchTab('epicerie')">🛒 Épicerie</div>
+</div>
+
+<div class="container">
+
+<!-- GRILLE -->
+<div class="view active" id="view-grille">
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#E6F1FB;border:1px solid #93C5FD"></div>Gym</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#E1F5EE;border:1px solid #5DCAA5"></div>Natation</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#EAF3DE;border:1px solid #97C459"></div>Parc</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#FAEEDA;border:1px solid #F5C97A"></div>Repas</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#FBEAF0;border:1px solid #ED93B1"></div>Apéro</div>
+  </div>
+  <div class="week-grid" id="weekGrid"></div>
+</div>
+
+<!-- ÉPICERIE -->
+<div class="view" id="view-epicerie">
+  <div id="groceryContent"></div>
+</div>
+
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal" onclick="closeModal(event)">
+  <div class="modal" id="modalContent">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle"></div>
+      <div class="modal-sub" id="modalSub"></div>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+// ── DATA ─────────────────────────────────────────────────────────────────────
+const DAYS = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+const HOURS = ['7h','9h','11h','12h','14h','17h','19h30','21h'];
+
+const MEALS = {
+  dejeuner_protein: {
+    name:'Déjeuner protéiné', icon:'🥚', type:'meal',
+    kcal:420, protein:35, carbs:30, fat:12,
+    ingredients:[
+      {n:'Œufs', q:'3'},
+      {n:'Gruau', q:'80g'},
+      {n:'Framboises gelées', q:'100g'},
+      {n:'Lait 2%', q:'200ml'},
+      {n:'Crème à cuisson', q:'2 c.s.'},
+    ],
+    steps:[
+      'Faire cuire le gruau dans le lait 2% à feu moyen, 5 minutes.',
+      'Pendant ce temps, faire des œufs brouillés dans une poêle avec un peu de margarine.',
+      'Décongeler les framboises 1 min au micro-ondes et ajouter sur le gruau.',
+      'Servir les œufs avec sel, poivre et sauce Worcestershire.',
+    ],
+    tip:'Prépare le gruau la veille (overnight oats) pour gagner du temps le matin.'
+  },
+  dejeuner_leger: {
+    name:'Déjeuner léger', icon:'🥣', type:'meal',
+    kcal:320, protein:22, carbs:38, fat:8,
+    ingredients:[
+      {n:'Yogourt grec vanille', q:'200g'},
+      {n:'Framboises gelées', q:'80g'},
+      {n:'Gruau', q:'50g'},
+      {n:'Miel', q:'1 c.s. (21g)'},
+      {n:'Graine de chia', q:'15g'},
+    ],
+    steps:[
+      'Mélanger le yogourt grec avec le miel et les graines de chia.',
+      'Décongeler les framboises au micro-ondes 1 min.',
+      'Ajouter le gruau sec par-dessus et les framboises.',
+      'Laisser reposer 5 min pour que le gruau absorbe.',
+    ],
+    tip:'Rapide, pas de cuisson. Parfait avant le gym du matin.'
+  },
+  soupe_lentilles: {
+    name:'Soupe lentilles rouges', icon:'🍲', type:'meal',
+    kcal:380, protein:22, carbs:55, fat:8,
+    ingredients:[
+      {n:'Lentille rouge', q:'150g'},
+      {n:'Bouillon de poulet en poudre', q:'1 c.s.'},
+      {n:'Carottes', q:'100g'},
+      {n:'Macédoine', q:'200g'},
+      {n:'Sauce soya', q:'2 c.s.'},
+      {n:'Ail', q:'2 gousses'},
+      {n:'Cumin, paprika', q:'1 c.t. chacun'},
+      {n:'Huile d\'arachide', q:'1 c.s.'},
+    ],
+    steps:[
+      'Faire revenir l\'ail haché dans l\'huile d\'arachide 1 min.',
+      'Ajouter les carottes et la macédoine, faire revenir 3 min.',
+      'Ajouter les lentilles rouges rincées + 800ml d\'eau + bouillon en poudre.',
+      'Ajouter sauce soya, cumin et paprika.',
+      'Faire mijoter 20 min jusqu\'à ce que les lentilles soient fondantes.',
+      'Rectifier l\'assaisonnement. Servir avec du pain si désiré.',
+    ],
+    tip:'Se prépare en grande quantité — excellent pour 3-4 repas de la semaine.'
+  },
+  poulet_riz: {
+    name:'Poulet & riz sauté', icon:'🍗', type:'meal',
+    kcal:520, protein:45, carbs:52, fat:12,
+    ingredients:[
+      {n:'Riz blanc', q:'100g (sec)'},
+      {n:'Beurre d\'arachide', q:'2 c.s.'},
+      {n:'Sauce soya', q:'3 c.s.'},
+      {n:'Sauce sriracha', q:'1 c.t.'},
+      {n:'Sauce worcestershire', q:'1 c.s.'},
+      {n:'Champignons', q:'100g'},
+      {n:'Kale', q:'1 poignée'},
+      {n:'Huile de sésame', q:'1 c.t.'},
+      {n:'Ail', q:'2 gousses'},
+    ],
+    steps:[
+      'Cuire le riz blanc selon les instructions (environ 15 min).',
+      'Dans un bol mélanger beurre d\'arachide, sauce soya, sriracha, worcestershire et 2 c.s. d\'eau chaude.',
+      'Faire sauter les champignons et l\'ail dans l\'huile de sésame 4 min.',
+      'Ajouter le kale et faire tomber 2 min.',
+      'Ajouter le riz cuit et la sauce, bien mélanger à feu vif 2 min.',
+    ],
+    tip:'Ajouter des pois chiches en canne pour encore plus de protéines sans effort.'
+  },
+  pasta_proteines: {
+    name:'Pappardelle aux lentilles', icon:'🍝', type:'meal',
+    kcal:580, protein:32, carbs:72, fat:14,
+    ingredients:[
+      {n:'Pappardelle', q:'100g (sec)'},
+      {n:'Lentille brune', q:'100g'},
+      {n:'Pâte de tomate', q:'3 c.s.'},
+      {n:'Bouillon de bœuf en poudre', q:'1 c.t.'},
+      {n:'Sauce soya', q:'1 c.s.'},
+      {n:'Ail', q:'3 gousses'},
+      {n:'Huile d\'arachide', q:'1 c.s.'},
+      {n:'Moutarde de Dijon', q:'1 c.t.'},
+    ],
+    steps:[
+      'Cuire les lentilles brunes 20 min dans l\'eau salée, égoutter.',
+      'Cuire les pappardelle al dente, garder 100ml d\'eau de cuisson.',
+      'Faire revenir l\'ail dans l\'huile, ajouter pâte de tomate, cuire 2 min.',
+      'Ajouter les lentilles, bouillon en poudre, sauce soya et moutarde.',
+      'Incorporer les pâtes avec un peu d\'eau de cuisson. Mélanger.',
+    ],
+    tip:'Plat complet et économique — cuire les lentilles en grande quantité à l\'avance.'
+  },
+  tofu_soy: {
+    name:'Tofu sauté soya-sésame', icon:'🥢', type:'meal',
+    kcal:440, protein:28, carbs:38, fat:18,
+    ingredients:[
+      {n:'Tofu', q:'200g'},
+      {n:'Sauce soya', q:'3 c.s.'},
+      {n:'Huile de sésame', q:'1 c.s.'},
+      {n:'Miel', q:'1 c.s.'},
+      {n:'Ail', q:'2 gousses'},
+      {n:'Riz blanc', q:'80g (sec)'},
+      {n:'Petites tomates cerises', q:'100g'},
+      {n:'Kale', q:'1 poignée'},
+    ],
+    steps:[
+      'Presser le tofu avec un essuie-tout pour enlever l\'excès d\'eau, couper en cubes.',
+      'Mélanger sauce soya, huile de sésame, miel et ail haché.',
+      'Faire mariner le tofu 15 min dans la sauce.',
+      'Cuire le riz. Faire sauter le tofu à feu vif 4-5 min de chaque côté.',
+      'Ajouter le kale et les tomates cerises, cuire 2 min. Servir sur le riz.',
+    ],
+    tip:'Pour plus de croustillant, passer le tofu au four à 200°C 25 min avant de sauter.'
+  },
+  haricots_soisson: {
+    name:'Haricots blancs maison', icon:'🫘', type:'meal',
+    kcal:350, protein:20, carbs:50, fat:7,
+    ingredients:[
+      {n:'Haricot de soisson', q:'200g (cuit ou canne)'},
+      {n:'Ketchup', q:'3 c.s.'},
+      {n:'Moutarde de Dijon', q:'1 c.s.'},
+      {n:'Sirop d\'érable québécois', q:'1 c.s.'},
+      {n:'Sauce worcestershire', q:'1 c.s.'},
+      {n:'Bouillon de poulet', q:'200ml'},
+      {n:'Ail', q:'2 gousses'},
+      {n:'Margarine', q:'1 c.s.'},
+    ],
+    steps:[
+      'Faire revenir l\'ail dans la margarine 1 min.',
+      'Ajouter tous les autres ingrédients sauf les haricots.',
+      'Mélanger et porter à ébullition, puis baisser le feu.',
+      'Ajouter les haricots et laisser mijoter 15-20 min à feu doux.',
+      'Ajuster l\'assaisonnement. Servir tel quel ou avec des œufs.',
+    ],
+    tip:'Plat typique du dimanche matin style "beans on toast" — excellent récup post-entraînement.'
+  },
+  apero_light: {
+    name:'Apéro léger', icon:'🍷', type:'apero',
+    kcal:180, protein:8, carbs:18, fat:8,
+    ingredients:[
+      {n:'Pois chiche en canne', q:'100g (rôtis)'},
+      {n:'Moutarde de Dijon', q:'1 c.t.'},
+      {n:'Huile d\'arachide', q:'1 c.t.'},
+      {n:'Paprika fumé', q:'½ c.t.'},
+      {n:'Petites tomates cerises', q:'100g'},
+      {n:'Vinaigrette au vinaigre de riz', q:'1 c.s.'},
+    ],
+    steps:[
+      'Égoutter et rincer les pois chiches, bien sécher.',
+      'Mélanger avec huile, moutarde et paprika.',
+      'Faire rôtir au four 200°C pendant 20 min ou à la poêle 8 min.',
+      'Servir avec les tomates cerises et un filet de vinaigre de riz.',
+    ],
+    tip:'Style tapas — se mange en grignotant. Parfait pour patienter avant le souper tardif.'
+  },
+  collation_post_gym: {
+    name:'Collation post-gym', icon:'💪', type:'meal',
+    kcal:280, protein:25, carbs:32, fat:6,
+    ingredients:[
+      {n:'Yogourt grec vanille', q:'150g'},
+      {n:'Miel', q:'1 c.t.'},
+      {n:'Framboises gelées', q:'80g'},
+      {n:'Céréales muslix', q:'30g'},
+    ],
+    steps:[
+      'Décongeler les framboises 1 min au micro-ondes.',
+      'Mélanger le yogourt avec le miel.',
+      'Ajouter les framboises et les céréales par-dessus.',
+    ],
+    tip:'À consommer dans les 30-45 min après l\'entraînement pour la récupération musculaire.'
+  },
+  sardine_toast: {
+    name:'Sardines sur toast', icon:'🐟', type:'meal',
+    kcal:310, protein:28, carbs:22, fat:12,
+    ingredients:[
+      {n:'Sardine drainée', q:'1 canne (125g)'},
+      {n:'Moutarde de Dijon', q:'1 c.s.'},
+      {n:'Vinaigre de vin rouge', q:'1 c.t.'},
+      {n:'Petites tomates cerises', q:'80g'},
+      {n:'Pain (ramen comme base)', q:'2 tranches'},
+      {n:'Sauce tabasco', q:'quelques gouttes'},
+    ],
+    steps:[
+      'Égoutter les sardines et les écraser grossièrement à la fourchette.',
+      'Mélanger avec moutarde, vinaigre et tabasco.',
+      'Couper les tomates cerises en deux.',
+      'Griller le pain, étendre le mélange et garnir des tomates.',
+    ],
+    tip:'Collation riche en oméga-3 — excellent pour la récupération musculaire et la santé des articulations (bras de fer).'
+  },
+};
+
+const WORKOUTS = {
+  gym: { name:'Gym — Traction', icon:'🏋️', type:'gym', sub:'Yvon Deschamps · ~70 min' },
+  gym_push: { name:'Gym — Poussée', icon:'🏋️', type:'gym', sub:'Yvon Deschamps · ~60 min' },
+  gym_lourd: { name:'Gym — Lourd', icon:'🏋️', type:'gym', sub:'Yvon Deschamps · ~70 min' },
+  natation: { name:'Natation', icon:'🏊', type:'swim', sub:'Yvon Deschamps · ~45 min' },
+  parc: { name:'Parc + Bands', icon:'🌳', type:'parc', sub:'Parc Lafontaine · ~50 min' },
+  repos: { name:'Repos', icon:'🛌', type:'rest', sub:'Récupération complète' },
+};
+
+// Schedule: [hour_idx, day_idx, content_key, span]
+// hour_idx: 0=7h, 1=9h, 2=11h, 3=12h, 4=14h, 5=17h, 6=19h30, 7=21h
+const SCHEDULE = [
+  // LUNDI - Gym traction
+  [0,0,'dejeuner_protein',1],[1,0,'gym',1],[3,0,'collation_post_gym',1],[5,0,'apero_light',1],[6,0,'soupe_lentilles',1],
+  // MARDI - Natation
+  [0,1,'dejeuner_leger',1],[2,1,'natation',1],[3,1,'sardine_toast',1],[5,1,'apero_light',1],[6,1,'poulet_riz',1],
+  // MERCREDI - Gym push
+  [0,2,'dejeuner_protein',1],[1,2,'gym_push',1],[3,2,'collation_post_gym',1],[5,2,'apero_light',1],[6,2,'pasta_proteines',1],
+  // JEUDI - Parc
+  [0,3,'dejeuner_leger',1],[4,3,'parc',1],[5,3,'apero_light',1],[6,3,'tofu_soy',1],
+  // VENDREDI - Gym lourd
+  [0,4,'dejeuner_protein',1],[1,4,'gym_lourd',1],[3,4,'collation_post_gym',1],[5,4,'apero_light',1],[6,4,'soupe_lentilles',1],
+  // SAMEDI - Natation
+  [0,5,'dejeuner_leger',1],[2,5,'natation',1],[3,5,'sardine_toast',1],[5,5,'apero_light',1],[6,5,'haricots_soisson',1],
+  // DIMANCHE - Repos
+  [0,6,'dejeuner_protein',1],[3,6,'soupe_lentilles',1],[5,6,'apero_light',1],[6,6,'tofu_soy',1],[7,6,'repos',1],
+];
+
+const ALL_CONTENT = {...MEALS, ...WORKOUTS};
+
+// Build grid
+function buildGrid() {
+  const grid = document.getElementById('weekGrid');
+  // Headers
+  const corner = document.createElement('div');
+  corner.className = 'grid-header'; corner.textContent = '';
+  grid.appendChild(corner);
+  DAYS.forEach(d => {
+    const h = document.createElement('div');
+    h.className = 'grid-header'; h.textContent = d;
+    grid.appendChild(h);
+  });
+
+  // Build lookup
+  const lookup = {};
+  SCHEDULE.forEach(([hi, di, key]) => { lookup[`${hi}_${di}`] = key; });
+
+  HOURS.forEach((hour, hi) => {
+    const tc = document.createElement('div');
+    tc.className = 'time-cell'; tc.textContent = hour;
+    grid.appendChild(tc);
+
+    DAYS.forEach((_, di) => {
+      const cell = document.createElement('div');
+      cell.className = 'grid-cell';
+      const key = lookup[`${hi}_${di}`];
+      if (key) {
+        const content = ALL_CONTENT[key];
+        if (content) {
+          const typeMap = {meal:'b-meal',apero:'b-apero',gym:'b-gym',swim:'b-swim',parc:'b-parc',rest:'b-rest'};
+          const block = document.createElement('div');
+          block.className = `block ${typeMap[content.type]||'b-meal'}`;
+          block.innerHTML = `<div class="block-name">${content.icon} ${content.name}</div><div class="block-sub">${content.sub||''}</div>`;
+          block.onclick = () => openModal(key);
+          cell.appendChild(block);
+        }
+      }
+      grid.appendChild(cell);
+    });
+  });
+}
+
+function openModal(key) {
+  const content = ALL_CONTENT[key];
+  if (!content) return;
+  document.getElementById('modalTitle').textContent = `${content.icon} ${content.name}`;
+  document.getElementById('modalSub').textContent = content.sub || '';
+
+  let body = '';
+
+  if (content.kcal) {
+    body += `<div class="kcal-bar">
+      <div class="kcal-item"><div class="kcal-val">${content.kcal}</div><div class="kcal-lbl">kcal</div></div>
+      <div class="kcal-item"><div class="kcal-val">${content.protein}g</div><div class="kcal-lbl">protéines</div></div>
+      <div class="kcal-item"><div class="kcal-val">${content.carbs}g</div><div class="kcal-lbl">glucides</div></div>
+      <div class="kcal-item"><div class="kcal-val">${content.fat}g</div><div class="kcal-lbl">lipides</div></div>
+    </div>`;
+  }
+
+  if (content.ingredients) {
+    body += `<div class="section-lbl">Ingrédients (1 portion)</div>
+    <div class="ingredient-list">
+      ${content.ingredients.map(i => `<div class="ingredient"><span class="ing-name">${i.n}</span><span class="ing-qty">${i.q}</span></div>`).join('')}
+    </div>`;
+  }
+
+  if (content.steps) {
+    body += `<div class="section-lbl">Préparation</div>
+    <div class="steps">
+      ${content.steps.map((s,i) => `<div class="step"><div class="step-num">${i+1}</div><div class="step-text">${s}</div></div>`).join('')}
+    </div>`;
+  }
+
+  if (content.tip) {
+    body += `<div class="tip">💡 ${content.tip}</div>`;
+  }
+
+  if (content.type !== 'meal' && content.type !== 'apero') {
+    body += `<div class="section-lbl">Entraînement du jour</div>
+    <div class="step-text" style="font-size:13px;line-height:1.6">Consulte ton tracker d\'entraînement pour les exercices détaillés et les charges de la session.</div>
+    <div class="tip">🥊 Pense à ta collation post-gym dans les 45 min qui suivent.</div>`;
+  }
+
+  body += `<button class="close-btn" onclick="closeModal()">Fermer</button>`;
+  document.getElementById('modalBody').innerHTML = body;
+  document.getElementById('modal').classList.add('show');
+}
+
+function closeModal(e) {
+  if (!e || e.target === document.getElementById('modal')) {
+    document.getElementById('modal').classList.remove('show');
+  }
+}
+
+// ── GROCERY ──────────────────────────────────────────────────────────────────
+const GROCERY = {
+  'IGA / Maxi — Épicerie principale': [
+    {n:'Œufs', q:'12', cat:'Protéines'},
+    {n:'Yogourt grec vanille', q:'900g', cat:'Protéines'},
+    {n:'Lait 2%', q:'2L', cat:'Laitier'},
+    {n:'Tofu ferme', q:'400g', cat:'Protéines'},
+    {n:'Sardines en canne', q:'3 cannes', cat:'Protéines'},
+    {n:'Ketchup', q:'si manque', cat:'Condiments'},
+    {n:'Framboises gelées', q:'500g', cat:'Fruits'},
+    {n:'Petites tomates cerises', q:'300g', cat:'Légumes'},
+    {n:'Kale', q:'1 bouquet', cat:'Légumes'},
+    {n:'Champignons', q:'200g', cat:'Légumes'},
+    {n:'Carottes', q:'si manque', cat:'Légumes'},
+    {n:'Ail frais', q:'1 tête', cat:'Légumes'},
+    {n:'Céréales muslix', q:'si manque', cat:'Céréales'},
+    {n:'Pappardelle', q:'500g', cat:'Pâtes/Riz'},
+  ],
+  'Marché Adonis ou PA — Légumineuses & vrac': [
+    {n:'Lentilles rouges', q:'si manque (tu en as)', cat:'Légumineuses'},
+    {n:'Lentilles brunes', q:'si manque', cat:'Légumineuses'},
+    {n:'Haricots de soisson', q:'si manque', cat:'Légumineuses'},
+    {n:'Pois chiches en canne', q:'2 cannes', cat:'Légumineuses'},
+    {n:'Maïs en crème', q:'si manque', cat:'Conserves'},
+    {n:'Macédoine', q:'si manque', cat:'Conserves'},
+  ],
+  'Déjà dans ta cuisine — vérifier les niveaux': [
+    {n:'Riz blanc', q:'vérifier — 973g en stock', cat:'Céréales'},
+    {n:'Gruau', q:'vérifier — 387g en stock', cat:'Céréales'},
+    {n:'Miel', q:'600g en stock ✓', cat:'Sucrants'},
+    {n:'Sauce soya', q:'400g en stock ✓', cat:'Condiments'},
+    {n:'Huile d\'arachide', q:'1089g en stock ✓', cat:'Huiles'},
+    {n:'Huile de sésame', q:'327g en stock ✓', cat:'Huiles'},
+    {n:'Moutarde de Dijon', q:'300g en stock ✓', cat:'Condiments'},
+    {n:'Beurre d\'arachide', q:'200g en stock ✓', cat:'Protéines'},
+    {n:'Sirop d\'érable', q:'200g en stock ✓', cat:'Sucrants'},
+    {n:'Sauce worcestershire', q:'30g — à vérifier', cat:'Condiments'},
+    {n:'Sriracha', q:'150g en stock ✓', cat:'Condiments'},
+    {n:'Tabasco', q:'45g en stock ✓', cat:'Condiments'},
+    {n:'Vinaigrette riz', q:'400g en stock ✓', cat:'Condiments'},
+    {n:'Pâte de tomate', q:'60g — à vérifier', cat:'Conserves'},
+    {n:'Bouillon poulet poudre', q:'100g en stock ✓', cat:'Bouillons'},
+    {n:'Bouillon bœuf poudre', q:'100g en stock ✓', cat:'Bouillons'},
+  ],
+};
+
+function buildGrocery() {
+  const el = document.getElementById('groceryContent');
+  let html = '';
+  Object.entries(GROCERY).forEach(([store, items]) => {
+    html += `<div class="store-section">
+      <div class="store-header">
+        <div class="store-name">🛒 ${store}</div>
+        <div class="store-sub">${items.length} articles</div>
+      </div>
+      <div class="grocery-list">
+        ${items.map((item, i) => `
+          <div class="grocery-item" id="gi_${store.slice(0,3)}_${i}" onclick="toggleGrocery('gi_${store.slice(0,3)}_${i}')">
+            <div class="g-check">✓</div>
+            <span class="g-name">${item.n}</span>
+            <span class="g-qty">${item.q}</span>
+            <span class="g-cat">${item.cat}</span>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  });
+  el.innerHTML = html;
+}
+
+function toggleGrocery(id) {
+  document.getElementById(id).classList.toggle('checked');
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    t.classList.toggle('active', ['grille','epicerie'][i] === name);
+  });
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById(`view-${name}`).classList.add('active');
+}
+
+buildGrid();
+buildGrocery();
+</script>
+</body>
+</html>
