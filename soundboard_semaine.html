@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Soundboard — 8–14 juin 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:      #090b10;
+  --surf:    #0f1118;
+  --surf2:   #161924;
+  --border:  #22263a;
+  --border2: #2c3048;
+  --text:    #dde1f0;
+  --dim:     #6b7296;
+  --muted:   #3a3f58;
+  --mono: 'JetBrains Mono', monospace;
+  --sans: 'DM Sans', system-ui, sans-serif;
+  --label-w: 76px;
+  --ruler-h: 30px;
+  --track-h: 64px;
+  --PX: 1.5;       /* px per minute */
+  --TRACK: 1350px; /* 900 min × 1.5 */
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ── Header bar ── */
+.hdr {
+  flex-shrink: 0;
+  background: var(--surf);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.hdr-left h1 { font-size: 14px; font-weight: 600; letter-spacing: -0.2px; }
+.hdr-left p  { font-size: 10px; color: var(--dim); margin-top: 2px; font-family: var(--mono); }
+.hdr-badges  { display: flex; gap: 5px; flex-wrap: wrap; }
+.hb { font-size: 9px; padding: 3px 7px; border-radius: 3px; font-family: var(--mono); border: 1px solid var(--border2); color: var(--dim); white-space: nowrap; }
+.hb-gcal { color: #60a5fa; border-color: #60a5fa44; }
+.hb-tz   { color: #f472b6; border-color: #f472b644; }
+.hb-pod  { color: #a3e635; border-color: #a3e63544; }
+
+/* ── Scrollable soundboard ── */
+.sb {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+  scroll-behavior: smooth;
+}
+.sb-inner {
+  width: max-content;
+  min-width: calc(var(--label-w) + var(--TRACK));
+}
+
+/* Ruler */
+.ruler-row {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  height: var(--ruler-h);
+  background: var(--surf);
+  border-bottom: 1px solid var(--border2);
+}
+.ruler-corner {
+  width: var(--label-w);
+  flex-shrink: 0;
+  position: sticky;
+  left: 0;
+  z-index: 35;
+  background: var(--surf);
+  border-right: 1px solid var(--border2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 8px;
+  color: var(--muted);
+  letter-spacing: 0.5px;
+}
+.ruler-ticks {
+  position: relative;
+  width: var(--TRACK);
+}
+.rtick {
+  position: absolute;
+  top: 0; bottom: 0;
+  display: flex;
+  align-items: center;
+  padding-left: 4px;
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--muted);
+  border-left: 1px solid var(--border);
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+}
+.rtick.major { color: var(--dim); border-left-color: var(--border2); font-weight: 500; }
+
+/* Day rows */
+.day-row {
+  display: flex;
+  height: var(--track-h);
+  border-bottom: 1px solid var(--border);
+}
+.day-row:nth-child(even) .track { background: #0b0e16; }
+.day-row:nth-child(odd)  .track { background: #0d1019; }
+
+.day-label {
+  width: var(--label-w);
+  flex-shrink: 0;
+  position: sticky;
+  left: 0;
+  z-index: 15;
+  background: var(--surf);
+  border-right: 1px solid var(--border2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  cursor: default;
+  user-select: none;
+}
+.dl-nm { font-size: 11px; font-weight: 600; font-family: var(--mono); letter-spacing: 0.5px; }
+.dl-dt { font-size: 8.5px; color: var(--dim); font-family: var(--mono); }
+.dl-wx { font-size: 9px; }
+
+.track {
+  position: relative;
+  width: var(--TRACK);
+  height: 100%;
+  overflow: visible;
+}
+
+/* Hour gridlines via repeating gradient – 90px per hour (1.5×60) */
+.track::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0, transparent calc(90px - 1px),
+    rgba(255,255,255,0.025) calc(90px - 1px), rgba(255,255,255,0.025) 90px
+  );
+  pointer-events: none;
+}
+
+/* Activity blocks */
+.blk {
+  position: absolute;
+  top: 4px;
+  height: calc(100% - 8px);
+  border-radius: 4px;
+  cursor: pointer;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 2px 5px;
+  border-left: 2px solid rgba(255,255,255,0.2);
+  transition: filter 0.1s, box-shadow 0.15s, z-index 0s;
+  will-change: filter;
+  user-select: none;
+}
+.blk:hover { filter: brightness(1.2); box-shadow: 0 0 0 1px rgba(255,255,255,0.2), 0 2px 12px rgba(0,0,0,0.5); z-index: 8; }
+.blk.sel   { filter: brightness(1.25); box-shadow: 0 0 0 2px rgba(255,255,255,0.5), 0 0 20px rgba(255,255,255,0.1); z-index: 9; }
+
+.b-lbl { font-size: 8.5px; font-weight: 600; color: rgba(0,0,0,0.82); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.25; }
+.b-sub { font-size: 7.5px; color: rgba(0,0,0,0.55); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; line-height: 1.2; }
+
+.b-gcal-dot {
+  position: absolute;
+  top: 3px; right: 4px;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.7);
+  box-shadow: 0 0 4px rgba(255,255,255,0.5);
+}
+.b-pod-dot {
+  position: absolute;
+  bottom: 3px; right: 4px;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.25);
+}
+
+/* ── Detail panel ── */
+.detail {
+  flex-shrink: 0;
+  height: 58px;
+  background: var(--surf2);
+  border-top: 1px solid var(--border2);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 18px;
+  overflow: hidden;
+  font-family: var(--mono);
+}
+.d-empty { font-size: 10px; color: var(--muted); }
+.d-badge { font-size: 8px; font-weight: 600; padding: 4px 8px; border-radius: 3px; white-space: nowrap; flex-shrink: 0; text-transform: uppercase; letter-spacing: 0.4px; }
+.d-time  { font-size: 11px; color: var(--dim); white-space: nowrap; flex-shrink: 0; }
+.d-title { font-size: 14px; font-weight: 600; color: var(--text); white-space: nowrap; flex-shrink: 0; }
+.d-sep   { color: var(--muted); flex-shrink: 0; }
+.d-sub   { font-size: 10px; color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.d-dur   { font-size: 10px; color: var(--muted); white-space: nowrap; flex-shrink: 0; margin-left: auto; }
+.d-pod   { font-size: 9px; color: #a3e635; flex-shrink: 0; }
+.d-gcal  { font-size: 9px; color: #60a5fa; flex-shrink: 0; }
+
+/* ── Legend ── */
+.legend {
+  flex-shrink: 0;
+  background: var(--surf);
+  border-top: 1px solid var(--border);
+  padding: 7px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  overflow: hidden;
+}
+.leg-it { display: flex; align-items: center; gap: 4px; font-size: 9px; color: var(--dim); white-space: nowrap; }
+.leg-sw  { width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-left">
+    <h1>📅 Soundboard — Semaine 8 au 14 juin 2026</h1>
+    <p>Plateau-Hochelaga · réveil 7h · 15 min/bloc · gym Mer/Jeu/Sam · natation Mar/Ven · lundi libre (admin) · click sur un bloc pour les détails</p>
+  </div>
+  <div class="hdr-badges">
+    <span class="hb hb-gcal">⬤ Google Cal</span>
+    <span class="hb hb-tz">📞 12h30 MTL = 18h30 Rome (apéro)</span>
+    <span class="hb hb-pod">● podcast ok</span>
+  </div>
+</div>
+
+<div class="sb" id="sb">
+  <div class="sb-inner" id="inner">
+    <div class="ruler-row" id="ruler">
+      <div class="ruler-corner">7h→22h</div>
+      <div class="ruler-ticks" id="ticks"></div>
+    </div>
+    <div id="rows"></div>
+  </div>
+</div>
+
+<div class="detail" id="detail">
+  <span class="d-empty">Cliquez sur un bloc pour voir les détails de l'activité</span>
+</div>
+
+<div class="legend" id="legend"></div>
+
+<script>
+const PX  = 1.5;   // px per minute
+const S   = 420;   // start: 7h00 = 420 min
+const E   = 1320;  // end:   22h00 = 1320 min
+const TW  = (E - S) * PX; // 1350px
+
+// ── Categories ──────────────────────────────────────────────
+const C = {
+  morning:       { c: '#fbbf24', lbl: 'Matin / Hygiène' },
+  meal:          { c: '#34d399', lbl: 'Repas' },
+  sport:         { c: '#f87171', lbl: 'Sport' },
+  music:         { c: '#a78bfa', lbl: 'Musique' },
+  writing:       { c: '#60a5fa', lbl: 'Roman' },
+  detox:         { c: '#fb923c', lbl: 'Désintox notes' },
+  outdoor:       { c: '#4ade80', lbl: 'Extérieur' },
+  zoom:          { c: '#f472b6', lbl: 'Copine 🇮🇹' },
+  shopping:      { c: '#fcd34d', lbl: 'Épicerie' },
+  screen:        { c: '#38bdf8', lbl: 'Ordinateur' },
+  rest:          { c: '#94a3b8', lbl: 'Repos' },
+  meditation:    { c: '#c084fc', lbl: 'Méditation' },
+  cooking:       { c: '#fdba74', lbl: 'Batch cooking' },
+  transit:       { c: '#475569', lbl: 'Transit' },
+  routine:       { c: '#475569', lbl: 'Routine' },
+  project_music: { c: '#e879f9', lbl: 'Projet musical' },
+  series:        { c: '#2dd4bf', lbl: 'Série / film' },
+  income:        { c: '#a3e635', lbl: 'Stratégie revenus' },
+  admin:         { c: '#fb7185', lbl: 'Admin / Médical' },
+};
+
+// ── Day metadata ─────────────────────────────────────────────
+const DM = [
+  { nm:'LUN', dt:'8 juin',  wx:'☀️', fc:'26°C', note:'Admin lourd · désintox 1/3 · sans gym' },
+  { nm:'MAR', dt:'9 juin',  wx:'☀️', fc:'29°C', note:'Natation · Kadampa · Vision projet 2h' },
+  { nm:'MER', dt:'10 juin', wx:'⛅', fc:'25°C', note:'Zheng · Gym décalé · Désintox ✅ · Série' },
+  { nm:'JEU', dt:'11 juin', wx:'🌦️', fc:'30°C', note:'Gym · Production musicale · Guitare' },
+  { nm:'VEN', dt:'12 juin', wx:'🌤️', fc:'28°C', note:'Natation · Roman ×2 · Démo voix off' },
+  { nm:'SAM', dt:'13 juin', wx:'☀️', fc:'29°C', note:'Gym · Lyrics EP · Sortie · Série' },
+  { nm:'DIM', dt:'14 juin', wx:'☀️', fc:'29°C', note:'Lessive · Roman · Épicerie 14h · Batch cooking' },
+];
+
+// ── Schedule ──────────────────────────────────────────────────
+// [HH:MM, dur_min, label, sub, cat, podcast, gcal]
+const SCH = [
+// ── LUNDI 8 — admin lourd, pas de gym ─────────────────────────
+[
+ ['07:00',30,'Réveil + Prière + Hygiène','Prière · brossage · rasage · tenue','morning',0,0],
+ ['07:30',15,'Nouvelles du monde','','morning',0,0],
+ ['07:45',30,'Déjeuner','','meal',0,0],
+ ['08:15',45,'Piano + prépa documents','Documents TAL avant 9h','music',0,0],
+ ['09:00',120,'📁 Dossier TAL','Mise en demeure · photos · historique réparations · correspondances','admin',0,1],
+ ['11:00',60,'📞 Appel syndicat CUSM','Planifier prochaines étapes congé / retour au travail','admin',0,1],
+ ['12:00',30,'📞 Copine 🇮🇹','18h à Rome — apéro · coup de fil','zoom',0,0],
+ ['12:30',30,'Dîner','','meal',0,0],
+ ['13:00',90,'Notes désintox 1/3','Dollard-Cormier','detox',0,0],
+ ['14:30',45,'Transit → Dentiste','','transit',0,0],
+ ['15:15',60,'🦷 Dentiste Robert','Soins dentaires','admin',0,1],
+ ['16:15',75,'Parc Lafontaine','26°C ☀️ · décompression post-dentiste','outdoor',1,0],
+ ['17:30',30,'Retour + Prépa souper','','meal',1,0],
+ ['18:00',30,'Souper','','meal',0,0],
+ ['18:30',30,'Vaisselle + transition','','routine',1,0],
+ ['19:00',60,'Session musicale','Brainstorm EP · thèmes · styles','project_music',0,0],
+ ['20:00',30,'Stratégie revenus','Résultat appel assureur · Casting Call Club profile','income',0,0],
+ ['20:30',60,'Roman','Paris 1536','writing',0,0],
+ ['21:30',30,'Préparation coucher','','routine',0,0],
+],
+// ── MARDI 9 — natation + kadampa + vision projet ─────────────
+[
+ ['07:00',30,'Réveil + Prière + Hygiène','','morning',0,0],
+ ['07:30',15,'Nouvelles du monde','','morning',0,0],
+ ['07:45',30,'Déjeuner','','meal',0,0],
+ ['08:15',75,'Roman — bloc matin','Paris 1536','writing',0,0],
+ ['09:30',15,'Transit → Yvon Deschamps','','transit',1,0],
+ ['09:45',75,'🏊 Natation','','sport',0,0],
+ ['11:00',30,'Douche + Retour','','routine',0,0],
+ ['11:30',15,'Piano bref','','music',0,0],
+ ['11:45',30,'Transit + Arrivée Kadampa','','transit',0,0],
+ ['12:15',60,'🧘 Méditation Kadampa','5$ · guidée','meditation',0,0],
+ ['13:15',15,'Retour','','transit',1,0],
+ ['13:30',30,'Dîner','','meal',1,0],
+ ['14:00',30,'📞 Copine 🇮🇹','20h à Rome — post-dîner · appel','zoom',0,0],
+ ['14:30',90,'Notes désintox 2/3','Dollard-Cormier','detox',0,0],
+ ['16:00',60,'Sortie — 29°C','Plein air ☀️','outdoor',1,0],
+ ['17:00',30,'Préparation souper','','meal',1,0],
+ ['17:30',45,'Souper','','meal',0,0],
+ ['18:15',15,'Vaisselle','','routine',1,0],
+ ['18:30',90,'Repos','','rest',0,0],
+ ['20:00',120,'Vision projet musical','Structure EP · langues · outils · distribution · plan','project_music',0,0],
+],
+// ── MERCREDI 10 — Zheng + gym décalé + désintox ✅ ──────────
+[
+ ['07:00',30,'Réveil + Prière + Hygiène','','morning',0,0],
+ ['07:30',15,'Nouvelles du monde','','morning',0,0],
+ ['07:45',30,'Déjeuner + smoothie','','meal',0,0],
+ ['08:15',45,'Piano','','music',0,0],
+ ['09:00',60,'Emploi — annonces CEGEP','Dawson · Rosemont · Maisonneuve · suivi candidatures Schulich','income',0,0],
+ ['10:00',60,'Zheng','Rencontre','admin',0,1],
+ ['11:00',15,'Transit → Gym','','transit',1,0],
+ ['11:15',135,'🏋️ Gym Yvon Deschamps','Bras de fer + Musculation','sport',0,0],
+ ['13:30',15,'Smoothie post-gym','','meal',0,0],
+ ['13:45',30,'Douche','','routine',0,0],
+ ['14:15',30,'Dîner','','meal',0,0],
+ ['14:45',30,'📞 Copine 🇮🇹','20h45 Rome — dîner · appel','zoom',0,0],
+ ['15:15',105,'Notes désintox 3/3 ✅','Dollard-Cormier — COMPLÉTÉ','detox',0,0],
+ ['17:00',60,'Session musicale','Composition · arrangements · piano orienté EP','project_music',0,0],
+ ['18:00',30,'Préparation souper','','meal',1,0],
+ ['18:30',30,'Souper','','meal',0,0],
+ ['19:00',30,'Vaisselle + transition','','routine',1,0],
+ ['19:30',120,'📺 Série','⛅ Soirée intérieure · 25°C','series',0,0],
+ ['21:30',30,'Préparation coucher','','routine',0,0],
+],
+// ── JEUDI 11 — gym + production musicale ─────────────────────
+[
+ ['07:00',30,'Réveil + Prière + Hygiène','','morning',0,0],
+ ['07:30',15,'Nouvelles du monde','','morning',0,0],
+ ['07:45',30,'Déjeuner + smoothie','','meal',0,0],
+ ['08:15',30,'Piano','','music',0,0],
+ ['08:45',15,'Transit → Gym','','transit',1,0],
+ ['09:00',150,'🏋️ Gym Yvon Deschamps','Bras de fer + Musculation','sport',0,0],
+ ['11:30',15,'Smoothie post-gym','','meal',0,0],
+ ['11:45',30,'Douche','','routine',0,0],
+ ['12:15',30,'📞 Copine 🇮🇹','18h15 Rome — apéro · appel','zoom',0,0],
+ ['12:45',30,'Dîner','','meal',0,0],
+ ['13:15',60,'Roman','Paris 1536','writing',0,0],
+ ['14:15',60,'Revenus — setup','DistroKid (35$/an) · Bandcamp page · finances_perso.jsx','income',0,0],
+ ['15:15',90,'Production musicale','Blackbox Reloaded + Keystation 61 · arrangements · maquettes','project_music',0,0],
+ ['16:45',45,'Sortie — si pas pluie','🌦️ 30°C · conditionnel','outdoor',1,0],
+ ['17:30',30,'Tâches ménagères','','routine',1,0],
+ ['18:00',30,'Prépa + Souper','','meal',1,0],
+ ['18:30',30,'Souper','','meal',0,0],
+ ['19:00',15,'Vaisselle','','routine',1,0],
+ ['19:15',60,'Guitare — orientée projet','Country · Rock · Francophone','project_music',0,0],
+ ['20:15',15,'Bilan journée','','routine',0,0],
+ ['20:30',60,'Roman / lecture','','writing',0,0],
+ ['21:30',30,'Préparation coucher','','routine',0,0],
+],
+// ── VENDREDI 12 — natation + roman ×2 + démo voix ───────────
+[
+ ['07:00',30,'Réveil + Prière + Hygiène','','morning',0,0],
+ ['07:30',15,'Nouvelles du monde','','morning',0,0],
+ ['07:45',30,'Déjeuner','','meal',0,0],
+ ['08:15',75,'Roman — bloc créatif','Paris 1536 · focus total','writing',0,0],
+ ['09:30',30,'Transit → Yvon Deschamps','','transit',1,0],
+ ['10:00',60,'🏊 Natation','','sport',0,0],
+ ['11:00',30,'Douche + Retour','','routine',0,0],
+ ['11:30',30,'Emploi / Consulting AV','LinkedIn CTS + Dante · annonces intégrateurs AV Mtl','income',0,0],
+ ['12:00',30,'📞 Copine 🇮🇹','18h Rome — apéro · appel','zoom',0,0],
+ ['12:30',30,'Dîner','','meal',0,0],
+ ['13:00',30,'Piano / guitare','','music',0,0],
+ ['13:30',60,'Roman — suite','Paris 1536','writing',0,0],
+ ['14:30',60,'Session musicale + Démo voix','SM-58 → Scarlett 2i2 · 60 sec baritone → démo reel voix off','project_music',0,0],
+ ['15:30',90,'Sortie sociale','🌤️ 28°C','outdoor',1,0],
+ ['17:00',30,'Retour + Prépa souper','','meal',1,0],
+ ['17:30',30,'Souper','','meal',0,0],
+ ['18:00',15,'Vaisselle','','routine',1,0],
+ ['18:15',105,'Guitare + détente musicale','','music',0,0],
+ ['20:00',30,'Bilan semaine','','routine',0,0],
+ ['20:30',90,'Roman / lecture','','writing',0,0],
+],
+// ── SAMEDI 13 — gym + lyrics + sortie + série ────────────────
+[
+ ['07:00',30,'Réveil + Prière + Hygiène','','morning',0,0],
+ ['07:30',15,'Nouvelles du monde','','morning',0,0],
+ ['07:45',30,'Déjeuner + smoothie','','meal',0,0],
+ ['08:15',30,'Piano','','music',0,0],
+ ['08:45',15,'Transit → Gym','','transit',1,0],
+ ['09:00',150,'🏋️ Gym Yvon Deschamps','Bras de fer + Musculation','sport',0,0],
+ ['11:30',30,'Douche + smoothie','','routine',0,0],
+ ['12:00',30,'Dîner','','meal',0,0],
+ ['12:30',30,'📞 Copine 🇮🇹','18h30 Rome — apéro · appel','zoom',0,0],
+ ['13:00',90,'Session musicale — lyrics','Composition · lyrics · structure chansons EP','project_music',0,0],
+ ['14:30',30,'Présence en ligne','YouTube setup · Backstage.com profil · plan contenu sem. 1','income',0,0],
+ ['15:00',120,'Sortie — 29°C ☀️','Plein air · social','outdoor',1,0],
+ ['17:00',30,'Repos','','rest',0,0],
+ ['17:30',45,'Prépa + Souper','','meal',1,0],
+ ['18:15',30,'Souper','','meal',0,0],
+ ['18:45',15,'Vaisselle','','routine',1,0],
+ ['19:00',90,'Détente + piano','','music',0,0],
+ ['20:30',90,'📺 Série','☀️ Soirée détente','series',0,0],
+],
+// ── DIMANCHE 14 — lessive + roman + épicerie 14h + batch ─────
+[
+ ['07:00',30,'Réveil + Prière + Hygiène','','morning',0,0],
+ ['07:30',15,'Nouvelles du monde','','morning',0,0],
+ ['07:45',45,'Déjeuner tranquille','','meal',0,0],
+ ['08:30',30,'Piano','','music',0,0],
+ ['09:00',15,'Lessive — lancer machine','','routine',0,0],
+ ['09:15',45,'Stratégie revenus — bilan sem. 1','État démarches · priorités · plan offensif sem. 2','income',0,0],
+ ['10:00',60,'Session musicale — lyrics','Moodboard sonore · références artistiques','project_music',0,0],
+ ['11:00',60,'Roman','Paris 1536','writing',0,0],
+ ['12:00',30,'Dîner','','meal',0,0],
+ ['12:30',30,'📞 Copine 🇮🇹','18h30 Rome — apéro · appel','zoom',0,0],
+ ['13:00',60,'Roman — suite','Paris 1536','writing',0,0],
+ ['14:00',90,'🛒 Épicerie — Semaine 2','~48$ · protéines · légumes · yaourt · conserves','shopping',1,1],
+ ['15:30',15,'Plier + ranger lessive','','routine',1,0],
+ ['15:45',120,'Batch cooking','Cuisine semaine','cooking',1,0],
+ ['17:45',15,'Rangement cuisine','','routine',1,0],
+ ['18:00',30,'Souper','','meal',0,0],
+ ['18:30',15,'Vaisselle','','routine',1,0],
+ ['18:45',45,'Décompression + tâches','','routine',0,0],
+ ['19:30',30,'Bilan + plan semaine','','routine',0,0],
+ ['20:00',120,'📺 Série','☀️ Soirée dominicale','series',0,0],
+],
+];
+
+// ── Helpers ───────────────────────────────────────────────────
+function toPx(hm) {
+  const [h, m] = hm.split(':').map(Number);
+  return (h * 60 + m - S) * PX;
+}
+function addMin(hm, d) {
+  const [h, m] = hm.split(':').map(Number);
+  const t = h * 60 + m + d;
+  return `${Math.floor(t/60)}h${String(t%60).padStart(2,'0')}`;
+}
+function durFmt(d) {
+  const h = Math.floor(d/60), m = d%60;
+  return h && m ? `${h}h${String(m).padStart(2,'0')}` : h ? `${h}h` : `${m}min`;
+}
+
+// ── Build ruler ───────────────────────────────────────────────
+const ticksEl = document.getElementById('ticks');
+for (let min = 0; min <= (E - S); min += 15) {
+  const h = Math.floor((S + min) / 60);
+  const m = (S + min) % 60;
+  const isMajor = m === 0;
+  const tick = document.createElement('div');
+  tick.className = 'rtick' + (isMajor ? ' major' : '');
+  tick.style.left = (min * PX) + 'px';
+  if (isMajor) {
+    tick.textContent = `${h}h`;
+  } else if (m === 30) {
+    tick.textContent = `${h}:30`;
+  }
+  ticksEl.appendChild(tick);
+}
+
+// ── Build rows ────────────────────────────────────────────────
+const rowsEl = document.getElementById('rows');
+let blockRegistry = []; // For click handling
+
+SCH.forEach((acts, di) => {
+  const d = DM[di];
+  const row = document.createElement('div');
+  row.className = 'day-row';
+
+  // Label
+  const lbl = document.createElement('div');
+  lbl.className = 'day-label';
+  lbl.title = d.note;
+  lbl.innerHTML = `<span class="dl-nm">${d.nm}</span><span class="dl-dt">${d.dt}</span><span class="dl-wx">${d.wx} ${d.fc}</span>`;
+  row.appendChild(lbl);
+
+  // Track
+  const track = document.createElement('div');
+  track.className = 'track';
+
+  acts.forEach(([start, dur, label, sub, cat, pod, gcal], ai) => {
+    const regIdx = blockRegistry.length;
+    blockRegistry.push({ start, dur, label, sub, cat, pod, gcal, di, ai });
+
+    const c = C[cat];
+    const x = toPx(start);
+    const w = Math.max(dur * PX - 2, 3);
+    const blk = document.createElement('div');
+    blk.className = 'blk';
+    blk.dataset.idx = regIdx;
+    blk.style.cssText = `left:${x}px;width:${w}px;background:${c.c};`;
+    blk.title = `${start} → ${addMin(start, dur)} · ${label}${sub ? ' · ' + sub : ''}`;
+
+    // Text content based on width
+    if (w >= 25) {
+      const lblEl = document.createElement('span');
+      lblEl.className = 'b-lbl';
+      lblEl.textContent = label;
+      blk.appendChild(lblEl);
+    }
+    if (w >= 90 && sub) {
+      const subEl = document.createElement('span');
+      subEl.className = 'b-sub';
+      subEl.textContent = sub;
+      blk.appendChild(subEl);
+    }
+    if (gcal) {
+      const dot = document.createElement('div');
+      dot.className = 'b-gcal-dot';
+      dot.title = 'Google Calendar';
+      blk.appendChild(dot);
+    }
+    if (pod) {
+      const pd = document.createElement('div');
+      pd.className = 'b-pod-dot';
+      pd.title = 'Podcast ok';
+      blk.appendChild(pd);
+    }
+
+    track.appendChild(blk);
+  });
+
+  row.appendChild(track);
+  rowsEl.appendChild(row);
+});
+
+// ── Detail panel ──────────────────────────────────────────────
+const detailEl = document.getElementById('detail');
+
+function showDetail(idx) {
+  const a = blockRegistry[idx];
+  if (!a) return;
+  const c = C[a.cat];
+  const endT = addMin(a.start, a.dur);
+
+  // Deselect previous
+  document.querySelectorAll('.blk.sel').forEach(b => b.classList.remove('sel'));
+  // Select current
+  const blkEl = document.querySelector(`.blk[data-idx="${idx}"]`);
+  if (blkEl) blkEl.classList.add('sel');
+
+  detailEl.innerHTML = `
+    <span class="d-badge" style="background:${c.c};color:rgba(0,0,0,0.82)">${c.lbl}</span>
+    <span class="d-time">${a.start.replace(':','h')} → ${endT}</span>
+    <span class="d-title">${a.label}</span>
+    ${a.sub ? `<span class="d-sep">—</span><span class="d-sub">${a.sub}</span>` : ''}
+    <span class="d-dur">${durFmt(a.dur)}</span>
+    ${a.pod ? `<span class="d-pod">🎧 podcast ok</span>` : ''}
+    ${a.gcal ? `<span class="d-gcal">⬤ Google Cal</span>` : ''}
+  `;
+}
+
+document.getElementById('sb').addEventListener('click', e => {
+  const blk = e.target.closest('.blk');
+  if (blk) showDetail(parseInt(blk.dataset.idx));
+});
+
+// ── Legend ─────────────────────────────────────────────────────
+const legEl = document.getElementById('legend');
+legEl.innerHTML = Object.entries(C).map(([, {c, lbl}]) =>
+  `<span class="leg-it"><span class="leg-sw" style="background:${c}"></span>${lbl}</span>`
+).join('');
+</script>
+</body>
+</html>
