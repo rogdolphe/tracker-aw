@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Tracker — Bras de fer</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#f7f6f3; --surface:#fff; --surface2:#f0efe9;
+  --border:rgba(0,0,0,.10); --border2:rgba(0,0,0,.20);
+  --text:#1a1917; --text2:#6b6a65; --text3:#a09e98;
+  --accent:#1a1917;
+  --mob:#27500A; --mob-bg:#EAF3DE;
+  --lift:#0C447C; --lift-bg:#E6F1FB;
+  --cardio:#085041; --cardio-bg:#E1F5EE;
+  --green:#1d9e75; --amber:#ef9f27; --red:#e24b4a;
+  --r:14px; --rs:10px; --pill:99px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#131211; --surface:#1e1d1b; --surface2:#282724;
+  --border:rgba(255,255,255,.09); --border2:rgba(255,255,255,.18);
+  --text:#f0ede8; --text2:#9a9892; --text3:#635f5a; --accent:#f0ede8;
+  --mob:#9fe1a8; --mob-bg:#012a08;
+  --lift:#60a5fa; --lift-bg:#0f1f3d;
+  --cardio:#9fe1cb; --cardio-bg:#012a1f;
+  --green:#34d399; --amber:#fbbf24; --red:#f87171;
+}}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{font-size:16px}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:40px}
+
+/* App bar */
+.app-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.app-bar h1{font-size:15px;font-weight:600}
+.app-bar p{font-size:10px;color:var(--text2);margin-top:1px}
+.history-btn{font-size:12px;font-weight:500;padding:7px 14px;border:1px solid var(--border);border-radius:var(--pill);background:var(--surface2);color:var(--text);cursor:pointer}
+
+/* Toast */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--accent);color:var(--bg);padding:10px 20px;border-radius:var(--pill);font-size:13px;font-weight:500;opacity:0;transition:opacity .3s;z-index:999;pointer-events:none;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,.2)}
+#toast.show{opacity:1}
+
+.container{max-width:600px;margin:0 auto;padding:16px}
+
+/* Day tabs */
+.day-tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:16px;scrollbar-width:none}
+.day-tabs::-webkit-scrollbar{display:none}
+.dtab{flex-shrink:0;padding:8px 16px;border-radius:var(--rs);font-size:13px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text2);transition:all .15s}
+.dtab.active{background:var(--accent);color:var(--bg);border-color:transparent}
+.dtab.rest{border-style:dashed}
+
+/* Day panel */
+.day-panel{display:none}.day-panel.active{display:block}
+.day-title{font-size:17px;font-weight:600;margin-bottom:4px}
+.day-meta{font-size:12px;color:var(--text2);margin-bottom:16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.loc-tag{background:var(--surface2);border:1px solid var(--border);border-radius:var(--pill);padding:2px 10px;font-size:11px}
+
+/* Phase */
+.phase-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:5px 12px;border-radius:var(--rs);display:inline-block;margin:14px 0 8px}
+.ph-mob{background:var(--mob-bg);color:var(--mob)}
+.ph-lift{background:var(--lift-bg);color:var(--lift)}
+.ph-cardio{background:var(--cardio-bg);color:var(--cardio)}
+
+/* Exercise input card */
+.ex-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);margin-bottom:8px;overflow:hidden}
+.ex-card.ss{border-left:3px solid #2563eb}
+.ss-tag{background:#EFF6FF;color:#2563eb;font-size:9px;font-weight:700;padding:3px 10px;letter-spacing:.06em;border-bottom:1px solid #BFDBFE}
+@media(prefers-color-scheme:dark){.ss-tag{background:#0f1f3d;color:#60a5fa;border-color:#1e3a6e}}
+.ex-info{padding:10px 14px 6px}
+.ex-name{font-size:14px;font-weight:600}
+.ex-ref{font-size:11px;color:var(--text2);margin-top:2px}
+.ex-target{font-size:10px;color:var(--green);font-weight:600;margin-top:2px}
+.ex-badge{display:inline-block;font-size:9px;font-weight:600;padding:2px 7px;border-radius:var(--pill);margin-top:4px;background:var(--lift-bg);color:var(--lift);border:1px solid #93C5FD}
+.ex-badge.aw{background:#FAEEDA;color:#633806;border-color:#F5C97A}
+
+/* Input row */
+.input-row{padding:8px 14px 12px;display:flex;gap:8px;align-items:center}
+.input-wrap{flex:1}
+.input-wrap label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);display:block;margin-bottom:4px}
+.input-wrap input{width:100%;font-size:18px;font-weight:600;padding:8px 10px;border:1.5px solid var(--border2);border-radius:var(--rs);background:var(--surface2);color:var(--text);font-family:'DM Mono',monospace;text-align:center;-moz-appearance:textfield}
+.input-wrap input::-webkit-outer-spin-button,
+.input-wrap input::-webkit-inner-spin-button{-webkit-appearance:none}
+.input-wrap input:focus{outline:none;border-color:var(--accent);background:var(--surface)}
+
+/* Session header card */
+.session-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:16px;display:flex;gap:12px;align-items:center}
+.session-card .input-wrap input{font-size:22px}
+.session-date{flex:1.5}
+
+/* Submit button */
+.submit-wrap{margin-top:20px}
+.submit-btn{width:100%;padding:16px;background:var(--accent);color:var(--bg);border:none;border-radius:var(--r);font-size:16px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:opacity .15s;display:flex;align-items:center;justify-content:center;gap:8px}
+.submit-btn:active{opacity:.7}
+.submit-btn.loading{opacity:.6;pointer-events:none}
+
+/* History panel */
+#historyPanel{display:none;margin-top:16px}
+#historyPanel.show{display:block}
+.hist-title{font-size:15px;font-weight:600;margin-bottom:12px}
+.hist-entry{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;margin-bottom:8px}
+.hist-date{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px;display:flex;justify-content:space-between}
+.hist-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:6px}
+.hist-item{background:var(--surface2);border-radius:8px;padding:6px 8px}
+.hist-item-name{font-size:9px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.hist-item-val{font-size:14px;font-weight:600;font-family:'DM Mono',monospace;margin-top:2px}
+.hist-dur{font-size:11px;color:var(--text2)}
+.no-hist{color:var(--text3);font-size:13px;text-align:center;padding:24px}
+
+/* Config banner */
+#configBanner{background:#FFF8E6;border:1px solid #F5C97A;border-radius:var(--r);padding:12px 14px;margin-bottom:16px}
+#configBanner p{font-size:12px;color:#633806;margin-bottom:8px}
+#configBanner input{width:100%;font-size:12px;padding:8px 10px;border:1px solid #F5C97A;border-radius:8px;background:#FFFEF0;color:#1a1917;font-family:'DM Mono',monospace;margin-bottom:8px}
+#configBanner button{background:#1a1917;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;width:100%}
+#configBanner.hidden{display:none}
+
+.rest-card{background:var(--surface);border:1px dashed var(--border2);border-radius:var(--r);padding:40px;text-align:center}
+.rest-card p{color:var(--text2);font-size:14px;line-height:1.6}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+
+<div class="app-bar">
+  <div>
+    <h1>🥊 Tracker — Bras de fer</h1>
+    <p>Relance 2026 · Perte de poids</p>
+  </div>
+  <button class="history-btn" onclick="toggleHistory()">Historique</button>
+</div>
+
+<div class="container">
+
+  <div id="configBanner">
+    <p>⚙️ <strong>URL du Apps Script</strong> — colle l'URL de ton déploiement (une seule fois)</p>
+    <input type="url" id="scriptUrlInput" placeholder="https://script.google.com/macros/s/.../exec">
+    <button onclick="saveScriptUrl()">Enregistrer et tester</button>
+  </div>
+
+  <div class="day-tabs" id="dayTabs"></div>
+  <div id="panels"></div>
+  <div id="historyPanel">
+    <div class="hist-title">📅 Historique des sessions</div>
+    <div id="historyContent"></div>
+  </div>
+
+</div>
+
+<script>
+// ── Config ──────────────────────────────────────────────────────────────────
+const SCRIPT_URL_KEY = 'aw_script_url_v3';
+let scriptUrl = localStorage.getItem(SCRIPT_URL_KEY) || '';
+if (scriptUrl) document.getElementById('configBanner').classList.add('hidden');
+
+function saveScriptUrl() {
+  const url = document.getElementById('scriptUrlInput').value.trim();
+  if (!url) return;
+  scriptUrl = url;
+  localStorage.setItem(SCRIPT_URL_KEY, url);
+  testUrl(url);
+}
+
+async function testUrl(url) {
+  try {
+    const r = await fetch(url);
+    const d = await r.json();
+    if (d.ok) {
+      document.getElementById('configBanner').classList.add('hidden');
+      toast('✓ Connexion réussie !');
+    } else throw new Error();
+  } catch { toast('❌ URL invalide — vérifie le déploiement'); }
+}
+
+// ── Data ────────────────────────────────────────────────────────────────────
+const DAYS = [
+  { key:'lun', label:'Lun', title:'Traction & Dos · Biceps', loc:'🏋️ Yvon D.',
+    phases:[
+      { cls:'lift', label:'2 — Lifts', ex:[
+        { n:'Underhand Pulldown',  ref:'3×10', relance:'70', target:'→ 100 lbs', unit:'lbs', aw:true },
+        { n:'Chest-Supported Row', ref:'3×10', relance:'165', target:'→ 250 lbs', unit:'lbs', aw:true, ss:true },
+        { n:'Assisted Chinups',    ref:'3×10', relance:'70 assist', target:'→ 50 lbs', unit:'lbs', aw:true },
+        { n:'EZ Bar Curl',         ref:'3×10', relance:'55', target:'→ 80 lbs', unit:'lbs' },
+        { n:'Short Curl Bicep',    ref:'3×8',  relance:'55', target:'→ 85 lbs', unit:'lbs', aw:true, ss:true },
+        { n:'DB Wrist Curl',       ref:'3×10', relance:'15', target:'→ 20 lbs', unit:'lbs', aw:true, ss:true },
+        { n:'Back Extension',      ref:'3×10', relance:'0', target:'→ ajouter charge', unit:'lbs' },
+      ]},
+      { cls:'cardio', label:'3 — Cardio finisher', ex:[
+        { n:'Mountain Climber', ref:'10 min', relance:'10', target:'→ 15 min', unit:'min' },
+      ]},
+    ]
+  },
+  { key:'mar', label:'Mar', title:'Natation · Core léger', loc:'🏊 Yvon D.',
+    phases:[
+      { cls:'cardio', label:'2 — Cardio', ex:[
+        { n:'Natation', ref:'~25 min', relance:'20', target:'→ 30 min', unit:'min' },
+      ]},
+    ]
+  },
+  { key:'mer', label:'Mer', title:'Poussée · Pec · AW', loc:'🏋️ Yvon D.',
+    phases:[
+      { cls:'lift', label:'2 — Lifts', ex:[
+        { n:'Incline DB Press',    ref:'3×10', relance:'110', target:'→ 160 lbs', unit:'lbs', aw:true },
+        { n:'Assisted Dips',       ref:'3×10', relance:'50 assist', target:'→ 30 lbs', unit:'lbs', ss:true },
+        { n:'Facepull',            ref:'3×10', relance:'40', target:'→ 60 lbs', unit:'lbs', aw:true },
+        { n:'Band Wrist Pronation',ref:'3×1min', relance:'30-60', target:'→ 60-100 lbs', unit:'lbs', aw:true },
+        { n:'Back Extension',      ref:'3×10', relance:'0', target:'→ ajouter charge', unit:'lbs' },
+      ]},
+      { cls:'cardio', label:'3 — Cardio finisher', ex:[
+        { n:'Mountain Climber', ref:'10 min', relance:'10', target:'→ 15 min', unit:'min' },
+      ]},
+    ]
+  },
+  { key:'jeu', label:'Jeu', title:'Bands · Parc Lafontaine', loc:'🌳 Parc LF',
+    phases:[
+      { cls:'lift', label:'2 — Lifts (bands)', ex:[
+        { n:'Band Bicep Curl',      ref:'3×10', relance:'30', target:'→ 60 lbs', unit:'lbs', aw:true },
+        { n:'Band Wrist Pronation', ref:'3×1min', relance:'30', target:'→ 60-100 lbs', unit:'lbs', aw:true, ss:true },
+        { n:'Band Tricep Pushdown', ref:'3×10', relance:'30', target:'→ 60 lbs', unit:'lbs', ss:true },
+        { n:'Squat',                ref:'3×10', relance:'BW', target:'→ ajouter charge', unit:'lbs' },
+      ]},
+      { cls:'cardio', label:'3 — Cardio finisher', ex:[
+        { n:'Marche rapide', ref:'20 min', relance:'20', target:'→ jogging', unit:'min' },
+      ]},
+    ]
+  },
+  { key:'ven', label:'Ven', title:'Lourd · Grip · Force', loc:'🏋️ Yvon D.',
+    phases:[
+      { cls:'lift', label:'2 — Lifts', ex:[
+        { n:'Squat',             ref:'3×10', relance:'65', target:'→ 100 lbs', unit:'lbs' },
+        { n:'Dumbbell Row',      ref:'3×8',  relance:'55', target:'→ 80 lbs', unit:'lbs', aw:true, ss:true },
+        { n:"Farmer's Carry",   ref:'3×30s', relance:'35', target:'→ 50 lbs', unit:'lbs', aw:true, ss:true },
+        { n:'Hanging Knee Raise',ref:'3×10', relance:'—', target:'—', unit:'min' },
+        { n:'Back Extension',    ref:'3×10', relance:'0', target:'→ ajouter charge', unit:'lbs' },
+      ]},
+      { cls:'cardio', label:'3 — Cardio finisher', ex:[
+        { n:'Mountain Climber', ref:'10 min', relance:'10', target:'→ 15 min', unit:'min' },
+      ]},
+    ]
+  },
+  { key:'sam', label:'Sam', title:'Natation · Récup', loc:'🏊 Yvon D.',
+    phases:[
+      { cls:'cardio', label:'2 — Cardio', ex:[
+        { n:'Natation', ref:'~25 min', relance:'20', target:'→ 30 min', unit:'min' },
+      ]},
+    ]
+  },
+  { key:'dim', label:'Dim', rest:true }
+];
+
+// ── State ────────────────────────────────────────────────────────────────────
+let sessions = [];
+try { sessions = JSON.parse(localStorage.getItem('aw_sessions') || '[]'); } catch(e) {}
+let activeDay = DAYS[0].key;
+
+// ── Utils ────────────────────────────────────────────────────────────────────
+function toast(msg, dur=2800) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), dur);
+}
+
+function today() {
+  return new Date().toLocaleDateString('fr-CA', {day:'numeric', month:'short', year:'numeric'});
+}
+
+function getExId(dayKey, phaseIdx, exIdx) {
+  return `${dayKey}_${phaseIdx}_${exIdx}`;
+}
+
+// ── Render ───────────────────────────────────────────────────────────────────
+function renderTabs() {
+  document.getElementById('dayTabs').innerHTML = DAYS.map(d =>
+    `<div class="dtab${d.rest?' rest':''}${d.key===activeDay?' active':''}" onclick="switchDay('${d.key}')">${d.label}</div>`
+  ).join('');
+}
+
+function renderPanels() {
+  document.getElementById('panels').innerHTML = DAYS.map(d => {
+    if (d.rest) return `<div class="day-panel${d.key===activeDay?' active':''}" id="panel_${d.key}">
+      <div class="rest-card"><p style="font-size:36px;margin-bottom:12px">🛌</p>
+      <p>Repos complet<br>Récupération musculaire et avant-bras</p></div></div>`;
+
+    const sessionBlock = `
+      <div class="session-card">
+        <div class="input-wrap session-date">
+          <label>Date</label>
+          <input type="text" id="date_${d.key}" value="${today()}" placeholder="6 juin 2026">
+        </div>
+        <div class="input-wrap">
+          <label>Durée session (min)</label>
+          <input type="number" id="dur_${d.key}" inputmode="numeric" placeholder="60">
+        </div>
+      </div>`;
+
+    const phasesHTML = d.phases.map((phase, pi) => {
+      const exHTML = phase.ex.map((ex, ei) => {
+        const id = getExId(d.key, pi, ei);
+        const ssTag = ex.ss ? `<div class="ss-tag">SUPERSET ↑</div>` : '';
+        const awBadge = ex.aw ? `<span class="ex-badge aw">🥊 AW</span>` : '';
+        return `${ssTag}<div class="ex-card${ex.ss?' ss':''}">
+          <div class="ex-info">
+            <div class="ex-name">${ex.n}</div>
+            <div class="ex-ref">${ex.ref} · relance: ${ex.relance} ${ex.unit}</div>
+            <div class="ex-target">↑ ${ex.target}</div>
+            ${awBadge}
+          </div>
+          <div class="input-row">
+            <div class="input-wrap">
+              <label>${ex.unit === 'min' ? 'Minutes' : 'Poids (lbs)'}</label>
+              <input type="number" id="inp_${id}" inputmode="decimal"
+                placeholder="${ex.relance}" step="${ex.unit==='min'?'1':'2.5'}">
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+      return `<div class="phase-lbl ph-${phase.cls}">${phase.label}</div>${exHTML}`;
+    }).join('');
+
+    return `<div class="day-panel${d.key===activeDay?' active':''}" id="panel_${d.key}">
+      <div class="day-title">${d.title}</div>
+      <div class="day-meta"><span class="loc-tag">${d.loc}</span></div>
+      ${sessionBlock}
+      ${phasesHTML}
+      <div class="submit-wrap">
+        <button class="submit-btn" id="submitBtn_${d.key}" onclick="submitSession('${d.key}')">
+          ↗ Envoyer la session
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function switchDay(key) {
+  activeDay = key;
+  renderTabs();
+  document.querySelectorAll('.day-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(`panel_${key}`)?.classList.add('active');
+}
+
+// ── Submit ───────────────────────────────────────────────────────────────────
+async function submitSession(dayKey) {
+  const day = DAYS.find(d => d.key === dayKey);
+  const date = document.getElementById(`date_${dayKey}`)?.value.trim() || today();
+  const dur  = document.getElementById(`dur_${dayKey}`)?.value.trim() || '';
+
+  // Collect entries
+  const entries = [];
+  day.phases.forEach((phase, pi) => {
+    phase.ex.forEach((ex, ei) => {
+      const id  = getExId(dayKey, pi, ei);
+      const val = document.getElementById(`inp_${id}`)?.value.trim();
+      if (val) {
+        entries.push({
+          id:       `${dayKey}_${pi}_${ei}_${Date.now()}`,
+          date,
+          semaine:  getSemaine(),
+          jour:     day.title,
+          phase:    phase.label,
+          exercice: ex.n,
+          valeur:   val,
+          unite:    ex.unit,
+          poids:    ex.unit === 'lbs' ? val : '',
+          reps:     ex.unit === 'min' ? val + ' min' : '',
+          aw:       ex.aw ? '✓' : '',
+        });
+      }
+    });
+  });
+
+  if (entries.length === 0) {
+    toast('⚠️ Entre au moins une valeur avant d\'envoyer');
+    return;
+  }
+
+  // Save locally
+  const session = { date, dur, jour: day.title, dayKey, entries, ts: Date.now() };
+  sessions.unshift(session);
+  localStorage.setItem('aw_sessions', JSON.stringify(sessions.slice(0, 200)));
+
+  // Send to Sheet
+  const btn = document.getElementById(`submitBtn_${dayKey}`);
+  btn.classList.add('loading');
+  btn.textContent = 'Envoi en cours…';
+
+  if (scriptUrl) {
+    try {
+      await fetch(scriptUrl, {
+        method: 'POST',
+        headers: {'Content-Type': 'text/plain'},
+        body: JSON.stringify({ action: 'sync', entries })
+      });
+      toast(`✓ ${entries.length} exercice(s) envoyé(s) au Sheet !`);
+    } catch(e) {
+      toast('Sauvegardé localement — Sheet hors ligne');
+    }
+  } else {
+    toast(`✓ ${entries.length} exercice(s) sauvegardé(s) localement`);
+  }
+
+  // Clear inputs
+  day.phases.forEach((phase, pi) => {
+    phase.ex.forEach((ex, ei) => {
+      const el = document.getElementById(`inp_${getExId(dayKey, pi, ei)}`);
+      if (el) el.value = '';
+    });
+  });
+
+  btn.classList.remove('loading');
+  btn.textContent = '↗ Envoyer la session';
+}
+
+function getSemaine() {
+  const now = new Date();
+  const d = now.getDay() || 7;
+  const mon = new Date(now); mon.setDate(now.getDate() - d + 1);
+  const j4 = new Date(mon.getFullYear(), 0, 4);
+  const wn = Math.ceil(((mon - j4) / 86400000 + j4.getDay() + 1) / 7);
+  return `${mon.getFullYear()}-S${String(wn).padStart(2,'0')}`;
+}
+
+// ── History ──────────────────────────────────────────────────────────────────
+function toggleHistory() {
+  const panel = document.getElementById('historyPanel');
+  panel.classList.toggle('show');
+  if (panel.classList.contains('show')) renderHistory();
+}
+
+function renderHistory() {
+  const el = document.getElementById('historyContent');
+  if (sessions.length === 0) {
+    el.innerHTML = '<div class="no-hist">Aucune session encore — enregistre ta première séance !</div>';
+    return;
+  }
+  el.innerHTML = sessions.slice(0, 30).map(s => `
+    <div class="hist-entry">
+      <div class="hist-date">
+        <span>${s.date} — ${s.jour}</span>
+        <span class="hist-dur">${s.dur ? s.dur+' min' : ''}</span>
+      </div>
+      <div class="hist-grid">
+        ${s.entries.map(e => `
+          <div class="hist-item">
+            <div class="hist-item-name">${e.exercice.split(' ').slice(0,2).join(' ')}</div>
+            <div class="hist-item-val">${e.valeur} <span style="font-size:10px;font-weight:400">${e.unite}</span></div>
+          </div>`).join('')}
+      </div>
+    </div>`).join('');
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+// Auto-select today's day
+const todayIdx = new Date().getDay(); // 0=Sun,1=Mon...
+const dayMap = {1:'lun',2:'mar',3:'mer',4:'jeu',5:'ven',6:'sam',0:'dim'};
+activeDay = dayMap[todayIdx] || 'lun';
+
+renderTabs();
+renderPanels();
+
+// Show script URL if saved
+if (scriptUrl) {
+  document.getElementById('scriptUrlInput').value = scriptUrl;
+}
+</script>
+</body>
+</html>
