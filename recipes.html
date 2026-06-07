@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Recettes — Budget & Performance</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f7f6f3;--surface:#fff;--surface2:#f0efe9;
+  --border:rgba(0,0,0,.09);--border2:rgba(0,0,0,.18);
+  --text:#1a1917;--text2:#6b6a65;--text3:#a09e98;
+  --green:#1d9e75;--r:14px;--rs:10px;--pill:99px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#131211;--surface:#1e1d1b;--surface2:#282724;
+  --border:rgba(255,255,255,.09);--border2:rgba(255,255,255,.18);
+  --text:#f0ede8;--text2:#9a9892;--text3:#635f5a;
+}}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:40px}
+.app-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 16px;position:sticky;top:0;z-index:100}
+.app-bar h1{font-size:15px;font-weight:600}
+.app-bar p{font-size:10px;color:var(--text2);margin-top:1px}
+.container{max-width:680px;margin:0 auto;padding:16px}
+.macro-target{background:var(--surface2);border-radius:var(--r);padding:11px 14px;margin-bottom:1rem;display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.mt-val{font-size:17px;font-weight:600;color:var(--text);text-align:center}
+.mt-lbl{font-size:10px;color:var(--text2);text-align:center;margin-top:1px}
+.mt-sub{font-size:9px;color:var(--text3);text-align:center}
+.filter-row{display:flex;gap:6px;flex-wrap:wrap;padding:.5rem 0 .75rem;overflow-x:auto;scrollbar-width:none}
+.filter-row::-webkit-scrollbar{display:none}
+.filter-btn{flex-shrink:0;padding:6px 12px;border-radius:var(--pill);border:1px solid var(--border2);background:var(--surface);color:var(--text2);font-size:11px;font-weight:500;cursor:pointer;transition:all .15s;white-space:nowrap}
+.filter-btn.active{background:var(--text);color:var(--bg);border-color:transparent}
+.section-lbl{font-size:10px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin:1.2rem 0 .6rem;padding-bottom:5px;border-bottom:1px solid var(--border)}
+.rb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:.5rem}
+.rb-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:11px;cursor:pointer;transition:all .15s;display:flex;flex-direction:column;gap:4px;position:relative}
+.rb-card:hover{background:var(--surface2);border-color:var(--border2)}
+.rb-card:active{transform:scale(.97)}
+.rb-card.hidden{display:none}
+.rb-card.highlight{border:2px solid var(--green)}
+.rb-icon{font-size:22px;line-height:1}
+.rb-name{font-size:11px;font-weight:500;color:var(--text);line-height:1.3}
+.rb-prot{font-size:10px;color:#27500A;font-weight:600;background:#EAF3DE;padding:1px 5px;border-radius:4px;display:inline-block;margin-top:1px}
+.rb-tag{font-size:9px;font-weight:500;padding:1px 5px;border-radius:var(--pill);display:inline-block;margin-top:2px}
+.rb-afbadge{position:absolute;top:7px;right:7px;font-size:9px;background:#FAEEDA;color:#633806;border-radius:4px;padding:1px 4px;font-weight:600}
+.tag-rapide{background:#FAEEDA;color:#633806}
+.tag-batch{background:#EEEDFE;color:#3C3489}
+.tag-fr{background:#E6F1FB;color:#0C447C}
+.tag-es{background:#FAEEDA;color:#633806}
+.tag-it{background:#FBEAF0;color:#72243E}
+.tag-qc{background:#EAF3DE;color:#27500A}
+.tag-af{background:#FAEEDA;color:#633806}
+.grocery-btn{width:100%;padding:13px;background:var(--text);color:var(--bg);border:none;border-radius:var(--r);font-size:13px;font-weight:600;cursor:pointer;margin-top:1rem;display:flex;align-items:center;justify-content:center;gap:8px}
+.grocery-btn:active{opacity:.8}
+.grocery-panel{display:none;margin-top:.75rem}
+.grocery-panel.show{display:block}
+.store-block{background:var(--surface2);border-radius:var(--r);padding:12px;margin-bottom:10px}
+.store-name{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px}
+.g-item{display:flex;align-items:center;padding:7px 10px;background:var(--surface);border-radius:var(--rs);margin-bottom:4px;cursor:pointer;gap:8px}
+.g-item.done{opacity:.4}
+.g-item.done .g-name{text-decoration:line-through}
+.g-name{font-size:12px;color:var(--text);flex:1}
+.g-qty{font-size:11px;font-weight:500;color:var(--text2);white-space:nowrap}
+.g-price{font-size:11px;color:var(--text3);white-space:nowrap}
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:flex-end;justify-content:center}
+.modal-backdrop.show{display:flex}
+.modal-box{background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-width:600px;max-height:85vh;overflow-y:auto;padding:0 0 32px}
+.modal-pill{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:12px auto 14px}
+.modal-head{padding:0 20px 12px;border-bottom:1px solid var(--border)}
+.modal-title{font-size:17px;font-weight:600;color:var(--text)}
+.modal-sub{font-size:12px;color:var(--text2);margin-top:3px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.modal-badge{font-size:10px;font-weight:500;padding:2px 7px;border-radius:var(--pill);background:var(--surface2);color:var(--text2)}
+.modal-body{padding:14px 20px}
+.m-sect{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin:14px 0 7px}
+.m-sect:first-child{margin-top:0}
+.macro-row{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:4px}
+.macro-card{background:var(--surface2);border-radius:var(--rs);padding:8px;text-align:center}
+.macro-val{font-size:15px;font-weight:600;color:var(--text)}
+.macro-lbl{font-size:10px;color:var(--text2);margin-top:1px}
+.prot-bar{height:5px;border-radius:3px;background:var(--border2);margin-top:8px;overflow:hidden}
+.prot-fill{height:100%;background:var(--green);border-radius:3px}
+.prot-label{font-size:10px;color:#27500A;margin-top:3px;font-weight:500}
+.ing-row{display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:var(--surface2);border-radius:var(--rs);margin-bottom:4px}
+.ing-name{font-size:13px;color:var(--text)}
+.ing-qty{font-size:12px;font-weight:500;color:var(--text2)}
+.step-row{display:flex;gap:10px;margin-bottom:9px;align-items:flex-start}
+.step-num{width:24px;height:24px;border-radius:50%;background:var(--text);color:var(--bg);font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.step-text{font-size:13px;color:var(--text2);line-height:1.55;flex:1}
+.tip-box{background:#EAF3DE;border-radius:var(--rs);padding:10px 14px;font-size:12px;color:#27500A;line-height:1.5;margin-top:10px}
+.batch-box{background:#EEEDFE;border-radius:var(--rs);padding:10px 14px;font-size:12px;color:#3C3489;line-height:1.5;margin-top:8px}
+.price-box{background:#FAEEDA;border-radius:var(--rs);padding:10px 14px;font-size:12px;color:#633806;line-height:1.5;margin-top:8px}
+.close-btn{width:100%;padding:13px;background:var(--text);color:var(--bg);border:none;border-radius:var(--r);font-size:14px;font-weight:600;cursor:pointer;margin-top:18px;font-family:'DM Sans',sans-serif}
+</style>
+</head>
+<body>
+<div class="app-bar">
+  <h1>🍽️ Recettes — Budget & Performance</h1>
+  <p>175g protéines/jour · 2300 kcal · Budget ~50$/sem · Air Fryer</p>
+</div>
+<div class="container">
+  <div class="macro-target">
+    <div><div class="mt-val">2300</div><div class="mt-lbl">kcal/jour</div><div class="mt-sub">déficit ~400</div></div>
+    <div><div class="mt-val">175g</div><div class="mt-lbl">protéines</div><div class="mt-sub">1g/lb masse maigre</div></div>
+    <div><div class="mt-val">235g</div><div class="mt-lbl">glucides</div><div class="mt-sub">énergie gym</div></div>
+    <div><div class="mt-val">65g</div><div class="mt-lbl">lipides</div><div class="mt-sub">hormones 44 ans</div></div>
+  </div>
+  <div class="filter-row" id="filters"></div>
+  <div id="recipeContainer"></div>
+  <button class="grocery-btn" onclick="toggleGrocery()">🛒 Épicerie 3 semaines · ~50$/sem</button>
+  <div class="grocery-panel" id="groceryPanel"></div>
+</div>
+<div class="modal-backdrop" id="modal" onclick="closeModal(event)">
+  <div class="modal-box">
+    <div class="modal-pill"></div>
+    <div class="modal-head">
+      <div class="modal-title" id="mTitle"></div>
+      <div class="modal-sub" id="mSub"></div>
+    </div>
+    <div class="modal-body" id="mBody"></div>
+  </div>
+</div>
+<script>
+const RECIPES=[
+  {id:'crepes',group:'Déjeuners',icon:'🥞',name:'Crêpes + œufs brouillés',tag:'fr',flag:'🇫🇷',tagLabel:'Français',highlight:true,kcal:520,prot:32,carb:50,fat:18,badges:['Dimanche 7 juin ✓'],ing:[['Farine tout usage','150g'],['Œufs','2 pâte + 3 brouillés'],['Lait 2%','300ml'],['Margarine','15g fondu'],['Sucre','1 c.s.'],['Worcestershire','1 c.t. (œufs)'],['Sirop d\'érable','au goût']],steps:['Mélanger farine + sel. Faire un puits, ajouter 2 œufs + moitié du lait, fouetter.','Ajouter reste lait + margarine fondue. Reposer 30 min au frigo si possible.','Cuire dans poêle chaude légèrement huilée, 1 min par côté.','En parallèle, brouiller 3 œufs avec worcestershire à feu doux.','Servir crêpes + œufs ensemble.'],tip:'Seules, les crêpes donnent 14g de protéines — toujours les accompagner d\'une source protéinée.',batch:'Congeler les crêpes cuites séparées par papier parchemin. 30 sec micro-ondes.'},
+  {id:'gruau',group:'Déjeuners',icon:'🥣',name:'Gruau overnight double protéines',tag:'batch',tagLabel:'Batch',kcal:420,prot:30,carb:42,fat:10,ing:[['Gruau','80g'],['Yogourt grec','200g'],['Framboises gelées','100g'],['Graines de chia','20g'],['Miel','1 c.s.'],['Céréales muslix','25g']],steps:['Mélanger gruau + yogourt + chia + miel dans un pot Mason.','Ajouter framboises congelées. Frigo toute la nuit.','Matin : ajouter céréales pour le croquant.'],tip:'Préparer 5 pots le dimanche = 5 déjeuners sans effort.',batch:'Se conserve 5 jours au frigo hermétique.'},
+  {id:'oeufs_poulet',group:'Déjeuners',icon:'🥚',name:'Œufs brouillés + poulet effiloché',tag:'rapide',tagLabel:'Rapide',kcal:490,prot:48,carb:5,fat:22,ing:[['Œufs','3'],['Poulet effiloché (reste)','80g'],['Worcestershire','1 c.s.'],['Sriracha','½ c.t.'],['Margarine','½ c.t.'],['Tomates cerises','80g']],steps:['Battre œufs avec worcestershire et sriracha.','Faire fondre margarine. Ajouter œufs + poulet effiloché.','Brasser lentement jusqu\'à crémeux.','Servir avec tomates cerises.'],tip:'48g de protéines au déjeuner — meilleur usage des restes de poulet rôti.'},
+  {id:'poulet_moutarde',group:'Poulet — style européen',icon:'🍗',name:'Poulet à la moutarde bistro',tag:'fr',flag:'🇫🇷',tagLabel:'Français',kcal:520,prot:48,carb:12,fat:22,ing:[['Poitrine de poulet','200g'],['Moutarde de Dijon','2 c.s.'],['Crème à cuisson','3 c.s.'],['Ail','3 gousses'],['Bouillon poulet poudre','1 c.t.'],['Worcestershire','1 c.t.'],['Huile d\'arachide','1 c.s.'],['Thym séché','½ c.t.']],steps:['Couper poitrine en 2 dans l\'épaisseur. Saler, poivrer.','Dorer dans huile à feu vif, 3-4 min chaque côté. Retirer.','Dans même poêle, faire revenir ail 1 min.','Ajouter moutarde, crème, bouillon, worcestershire, thym. Mijoter 3 min.','Remettre poulet dans sauce, cuire 5 min à feu doux. Napper.'],tip:'La sauce se fait dans la même poêle — tout le fond caramélisé du poulet passe dans la sauce.',price:'Coût ~3-4$/portion si poitrine achetée en spécial.'},
+  {id:'poulet_paprika',group:'Poulet — style européen',icon:'🍗',name:'Poulet paprika espagnol AF',tag:'es',flag:'🇪🇸',tagLabel:'Espagnol',airfryer:true,kcal:500,prot:46,carb:18,fat:20,ing:[['Poitrine de poulet','200g'],['Paprika fumé','2 c.t.'],['Ail','4 gousses'],['Huile d\'arachide','2 c.s.'],['Vinaigre de riz','1 c.s.'],['Miel','1 c.t.'],['Sauce soya','1 c.s.'],['Pois chiches','½ canne'],['Tomates cerises','100g']],steps:['Mélanger paprika, ail râpé, huile, vinaigre, miel, sauce soya — marinade.','Mariner poulet 30 min min (ou toute la nuit).','Air fryer 190°C pendant 18-20 min, retourner à mi-cuisson.','Rôtir pois chiches + tomates dans la marinade au four 200°C 15 min.','Servir poulet tranché avec pois chiches et tomates.'],tip:'Mariner la veille dans un sac zip — prêt à cuire le matin.',price:'Plat espagnol complet ~3$/portion.'},
+  {id:'poulet_provencal',group:'Poulet — style européen',icon:'🍗',name:'Poulet provençal ail & herbes',tag:'fr',flag:'🇫🇷',tagLabel:'Français',airfryer:true,kcal:480,prot:46,carb:8,fat:22,ing:[['Poitrine de poulet','200g'],['Ail','4 gousses entières'],['Huile d\'arachide','2 c.s.'],['Vinaigre de vin rouge','1 c.s.'],['Moutarde de Dijon','1 c.s.'],['Thym, romarin séchés','½ c.t. chacun'],['Paprika','½ c.t.'],['Tomates cerises','100g']],steps:['Mélanger huile, vinaigre, moutarde, thym, romarin, paprika.','Badigeonner le poulet. Laisser 30 min.','Air fryer 190°C, 18 min en retournant à mi-cuisson.','Ajouter tomates cerises + ail dans le panier les 5 dernières minutes.','Servir avec ail confit écrasé sur le poulet.'],tip:'L\'ail confit dans l\'air fryer devient doux et crémeux — le presser sur le poulet est extraordinaire.',batch:'Cuire 3-4 poitrines, effilocher et garder pour la semaine.'},
+  {id:'poulet_af',group:'Poulet — style européen',icon:'🍗',name:'Poulet AF soya-miel',tag:'af',tagLabel:'Air Fryer',airfryer:true,kcal:440,prot:48,carb:14,fat:14,ing:[['Poitrine de poulet','200g'],['Sauce soya','2 c.s.'],['Miel','1 c.s.'],['Ail','2 gousses râpées'],['Huile de sésame','1 c.t.'],['Sriracha','½ c.t.'],['Riz blanc','80g sec']],steps:['Mélanger sauce soya, miel, ail, huile sésame, sriracha.','Mariner le poulet 15-30 min.','Air fryer 190°C pendant 18 min, retourner à mi-cuisson.','Cuire le riz en parallèle.','Trancher le poulet, verser le jus de cuisson sur le riz.'],tip:'Le jus de cuisson caramélisé dans le panier = sauce gratuite.',batch:'Cuire 2-3 poitrines — les restes se réutilisent toute la semaine.'},
+  {id:'bolognaise',group:'Bœuf — style européen',icon:'🍝',name:'Bolognaise légère maison',tag:'it',flag:'🇮🇹',tagLabel:'Italien',kcal:580,prot:42,carb:58,fat:18,ing:[['Bœuf haché extra-maigre','150g'],['Pappardelle','100g sec'],['Pâte de tomate','3 c.s.'],['Ail','3 gousses'],['Bouillon bœuf poudre','1 c.t.'],['Sauce soya','1 c.s.'],['Moutarde de Dijon','1 c.t.'],['Thym séché','½ c.t.'],['Huile d\'arachide','1 c.s.']],steps:['Cuire pappardelle, garder 150ml eau de cuisson.','Faire revenir ail 1 min. Ajouter bœuf, cuire jusqu\'à doré.','Ajouter pâte de tomate, cuire 2 min — caraméliser.','Ajouter bouillon, sauce soya, moutarde, thym et 200ml eau. Mijoter 10 min.','Incorporer pâtes + eau de cuisson.'],tip:'Sans sauce en bocal : pâte de tomate + eau + bouillon = bien meilleure sauce, sans sucre ajouté.',batch:'Cuire 400g de bœuf haché, portionner et congeler.',price:'~4-5$/portion.'},
+  {id:'hachis',group:'Bœuf — style européen',icon:'🥘',name:'Hachis parmentier québécois',tag:'fr',flag:'🇫🇷',tagLabel:'Français',kcal:540,prot:38,carb:50,fat:18,ing:[['Bœuf haché','150g'],['Pommes de terre','300g'],['Lait 2%','3 c.s.'],['Margarine','1 c.s.'],['Ail','3 gousses'],['Bouillon bœuf poudre','1 c.t.'],['Worcestershire','1 c.s.'],['Moutarde de Dijon','1 c.t.'],['Ketchup','1 c.s.']],steps:['Cuire pommes de terre 15 min. Écraser avec lait + margarine.','Faire revenir ail. Ajouter bœuf, cuire jusqu\'à doré.','Ajouter worcestershire, moutarde, ketchup, bouillon + 100ml eau. Mijoter 5 min.','Dans un plat : viande d\'abord, purée par-dessus.','Air fryer 180°C 10 min pour gratiner.'],tip:'La moutarde dans la viande est le secret de ce classique franco-québécois.',batch:'Se prépare en grand format et se congèle parfaitement.'},
+  {id:'boulettes',group:'Bœuf — style européen',icon:'🍖',name:'Boulettes sauce worcestershire AF',tag:'fr',flag:'🇫🇷',tagLabel:'Français',airfryer:true,kcal:500,prot:40,carb:22,fat:22,ing:[['Bœuf haché','180g'],['Œuf','1'],['Worcestershire','2 c.s.'],['Moutarde de Dijon','1 c.s.'],['Ail en poudre','½ c.t.'],['Farine','2 c.s.'],['Bouillon bœuf poudre','1 c.t.'],['Crème à cuisson','2 c.s.'],['Riz blanc','80g sec']],steps:['Mélanger bœuf, œuf, 1 c.s. worcestershire, moutarde, ail, farine. Former 8 boulettes.','Air fryer 180°C 12 min, secouer à mi-cuisson.','Sauce : bouillon + 200ml eau + 1 c.s. worcestershire + crème. Mijoter 5 min.','Servir boulettes sur riz avec la sauce.'],tip:'Style Swedish meatballs version française. Parfaites et uniformes à l\'air fryer.',batch:'Former les boulettes crues et congeler — cuire directement congelées +5 min.',price:'~3-4$/portion.'},
+  {id:'beuf_paprika',group:'Bœuf — style européen',icon:'🍲',name:'Bœuf haché paprika à l\'espagnole',tag:'es',flag:'🇪🇸',tagLabel:'Espagnol',kcal:460,prot:36,carb:42,fat:16,ing:[['Bœuf haché extra-maigre','150g'],['Pois chiches','1 canne égouttée'],['Pâte de tomate','2 c.s.'],['Paprika fumé','1½ c.t.'],['Cumin','½ c.t.'],['Ail','4 gousses'],['Bouillon bœuf poudre','1 c.t.'],['Sauce soya','1 c.s.'],['Riz blanc','80g sec']],steps:['Faire revenir ail 1 min. Ajouter bœuf, cuire jusqu\'à doré.','Ajouter paprika, cumin, pâte de tomate — cuire 2 min.','Ajouter pois chiches, bouillon, sauce soya et 250ml eau.','Mijoter 15 min. Servir sur riz.'],tip:'Style cazuela espagnole — simple, économique, très savoureux.'},
+  {id:'crevettes_af',group:'Poissons & mer',icon:'🦐',name:'Crevettes AF ail-miel-soya',tag:'af',tagLabel:'Air Fryer',airfryer:true,kcal:420,prot:40,carb:44,fat:10,ing:[['Crevettes surgelées dégelées','200g'],['Sauce soya','2 c.s.'],['Miel','1 c.s.'],['Ail','3 gousses râpées'],['Huile de sésame','1 c.t.'],['Sriracha','½ c.t.'],['Riz blanc','100g sec'],['Kale','1 poignée']],steps:['Mélanger sauce soya, miel, ail, huile sésame, sriracha. Mariner crevettes 15 min.','Cuire riz. Faire sauter kale 2 min.','Air fryer crevettes 200°C 6-8 min en secouant à mi-cuisson.','Servir sur riz avec kale.'],tip:'Crevettes surgelées = protéines les moins chères après le thon. ~8$ pour 400g.',price:'~4$/portion.'},
+  {id:'saumon_galettes',group:'Poissons & mer',icon:'🐠',name:'Galettes saumon AF moutarde',tag:'af',tagLabel:'Air Fryer',airfryer:true,kcal:400,prot:36,carb:16,fat:20,ing:[['Saumon en canne égoutté','1 canne'],['Œuf','1'],['Farine','3 c.s.'],['Moutarde de Dijon','1 c.s.'],['Worcestershire','1 c.t.'],['Ail en poudre','½ c.t.']],steps:['Égoutter et émietter le saumon.','Mélanger tous les ingrédients. Former 4 galettes compactes.','Air fryer 180°C 10 min, retourner à mi-cuisson.','Servir avec moutarde extra et tomates cerises.'],tip:'Croustillantes à l\'extérieur, fondantes à l\'intérieur.',batch:'Congeler cuites. Réchauffer 5 min à l\'air fryer.'},
+  {id:'thon_poke',group:'Poissons & mer',icon:'🐟',name:'Bol thon poke maison',tag:'rapide',tagLabel:'Rapide',kcal:480,prot:40,carb:50,fat:10,ing:[['Thon en canne','1 canne 170g'],['Riz blanc','100g sec'],['Sauce soya','2 c.s.'],['Huile de sésame','1 c.t.'],['Vinaigre de riz','1 c.s.'],['Miel','1 c.t.'],['Tomates cerises','100g'],['Graines de chia','10g'],['Kale blanchi','1 poignée']],steps:['Cuire riz. Blanchir kale 2 min.','Mélanger sauce soya + huile sésame + vinaigre + miel.','Assembler : riz, thon égoutté, kale, tomates cerises.','Sauce + graines de chia par-dessus.'],tip:'Style poke bowl maison à fraction du prix — 1 seule canne de thon suffit.'},
+  {id:'sardine_af',group:'Poissons & mer',icon:'🐟',name:'Sardines croustillantes AF',tag:'af',tagLabel:'Air Fryer',airfryer:true,kcal:340,prot:28,carb:38,fat:14,ing:[['Sardines en canne','1 canne égouttée'],['Sauce soya','1 c.s.'],['Vinaigre de riz','1 c.t.'],['Sriracha','½ c.t.'],['Ail en poudre','½ c.t.'],['Riz blanc','80g sec'],['Tomates cerises','80g']],steps:['Égoutter les sardines. Mélanger sauce soya, vinaigre, sriracha, ail.','Mariner 10 min.','Air fryer 200°C 6-8 min.','Servir sur riz avec tomates cerises.'],tip:'L\'air fryer transforme les sardines — croustillantes et sans odeur forte.'},
+  {id:'tofu_af',group:'Végé & légumineuses',icon:'🫘',name:'Tofu croustillant AF + œuf poché',tag:'af',tagLabel:'Air Fryer',airfryer:true,kcal:440,prot:34,carb:28,fat:20,ing:[['Tofu ferme','200g'],['Fécule de maïs','1 c.s.'],['Sauce soya','2 c.s.'],['Miel','1 c.t.'],['Ail en poudre','½ c.t.'],['Œuf','1 poché'],['Riz blanc','80g sec']],steps:['Presser tofu 20 min. Cuber. Enrober sauce soya + miel + ail.','Saupoudrer fécule de maïs — mélanger délicatement.','Air fryer 200°C 18 min en secouant à mi-cuisson.','Pocher l\'œuf 3 min. Servir tofu + riz + œuf poché.'],tip:'La fécule de maïs = secret du tofu ultra-croustillant.',batch:'Tofu se congèle cuit. Réchauffer 5 min à l\'air fryer.'},
+  {id:'lentilles',group:'Végé & légumineuses',icon:'🍲',name:'Soupe lentilles batch week',tag:'batch',tagLabel:'Batch',kcal:380,prot:22,carb:50,fat:7,ing:[['Lentilles brunes','150g'],['Macédoine','200g'],['Carottes','80g'],['Bouillon poulet poudre','1 c.s.'],['Sauce soya','2 c.s.'],['Ail','3 gousses'],['Cumin','1 c.t.'],['Huile d\'arachide','1 c.s.']],steps:['Faire revenir ail dans l\'huile 1 min.','Ajouter carottes + macédoine 3 min.','Ajouter lentilles rincées + 900ml eau + bouillon + cumin. Mijoter 25 min.','Ajouter sauce soya, ajuster assaisonnement.'],tip:'Compléter avec poulet effiloché ou sardines pour atteindre 175g de protéines.',batch:'4-5 portions. Se congèle parfaitement.'},
+  {id:'haricots_oeufs',group:'Végé & légumineuses',icon:'🫙',name:'Haricots érable + 2 œufs pochés',tag:'qc',flag:'🍁',tagLabel:'Québécois',kcal:500,prot:34,carb:52,fat:16,ing:[['Haricots de soisson','200g cuits'],['Œufs','2'],['Ketchup','3 c.s.'],['Sirop d\'érable','1 c.s.'],['Moutarde de Dijon','1 c.s.'],['Worcestershire','1 c.s.'],['Bouillon bœuf poudre','1 c.t.'],['Ail','2 gousses'],['Margarine','1 c.s.']],steps:['Faire revenir ail dans margarine 1 min.','Ajouter ketchup, sirop d\'érable, moutarde, worcestershire, bouillon + 150ml eau.','Ajouter haricots, mijoter 20 min.','Pocher 2 œufs dans eau frémissante vinaigrée 3 min.','Servir haricots + œufs pochés par-dessus.'],tip:'Recette québécoise classique — les 2 œufs pochés transforment ce plat batch en repas complet.',batch:'Haricots : 5 jours au frigo. Œufs : pocher à la commande.'},
+  {id:'minestrone',group:'Soupes & batch',icon:'🍵',name:'Minestrone au poulet',tag:'it',flag:'🇮🇹',tagLabel:'Italien',kcal:440,prot:38,carb:44,fat:10,ing:[['Poitrine de poulet','150g en dés'],['Haricots de soisson','150g'],['Macédoine','200g'],['Pappardelle cassées','40g'],['Pâte de tomate','2 c.s.'],['Bouillon poulet poudre','1 c.s.'],['Ail','3 gousses'],['Sauce soya','1 c.s.'],['Thym séché','½ c.t.']],steps:['Faire revenir ail 1 min. Ajouter poulet en dés, dorer 3 min.','Ajouter macédoine + pâte de tomate, cuire 2 min.','Ajouter bouillon, sauce soya, thym et 900ml eau.','Ajouter haricots, mijoter 15 min.','Ajouter pappardelle cassées, cuire encore 8 min.'],batch:'Cuire sans pâtes pour congeler — ajouter au réchauffage.',price:'~3-4$/portion.'},
+  {id:'bouillon_poulet',group:'Soupes & batch',icon:'🍜',name:'Bouillon poulet-riz maison',tag:'batch',tagLabel:'Batch',kcal:380,prot:36,carb:38,fat:8,ing:[['Poitrine de poulet','150g'],['Riz blanc','80g sec'],['Bouillon poulet poudre','2 c.s.'],['Ail','3 gousses'],['Sauce soya','1 c.s.'],['Worcestershire','½ c.t.'],['Kale','1 poignée'],['Carottes','80g']],steps:['Porter 800ml eau à ébullition avec bouillon, ail, sauce soya, worcestershire.','Ajouter poulet entier, cuire 18 min. Retirer et effilocher.','Ajouter riz + carottes, cuire 15 min.','Remettre poulet effiloché + kale 2 min avant de servir.'],tip:'Le bouillon s\'améliore le lendemain.',batch:'Cuire en grand format — le poulet cuit dans le bouillon reste ultra-tendre.'},
+  {id:'collation_gym',group:'Apéros & collations',icon:'💪',name:'Collation post-gym',tag:'rapide',tagLabel:'Rapide',kcal:300,prot:32,carb:28,fat:6,ing:[['Yogourt grec','200g'],['Framboises gelées','80g'],['Miel','1 c.t.'],['Céréales muslix','20g']],steps:['Décongeler framboises 45 sec micro-ondes.','Mélanger yogourt + miel.','Ajouter framboises + céréales. Consommer dans les 45 min post-gym.'],tip:'32g de protéines — simple et efficace.'},
+  {id:'pois_apero',group:'Apéros & collations',icon:'🫛',name:'Pois chiches apéro AF paprika',tag:'af',tagLabel:'Air Fryer',airfryer:true,kcal:200,prot:10,carb:24,fat:7,ing:[['Pois chiches','1 canne égouttée'],['Huile d\'arachide','1 c.s.'],['Paprika fumé','1 c.t.'],['Cumin','½ c.t.'],['Moutarde de Dijon','½ c.t.']],steps:['Bien sécher les pois chiches — crucial pour le croustillant.','Mélanger avec huile et épices.','Air fryer 200°C 15-18 min en secouant à mi-cuisson.'],tip:'Style tapas espagnoles — parfait avec un verre pour l\'apéro de 17h.'},
+  {id:'thon_toast',group:'Apéros & collations',icon:'🐟',name:'Rillettes thon-moutarde sur ramen',tag:'rapide',flag:'🇫🇷',tagLabel:'Rapide',kcal:280,prot:28,carb:18,fat:10,ing:[['Thon en canne','1 canne'],['Moutarde de Dijon','1 c.s.'],['Vinaigre de vin rouge','1 c.t.'],['Tabasco','quelques gouttes'],['Ramen grillé','1 bloc'],['Tomates cerises','60g']],steps:['Égoutter et écraser le thon. Mélanger moutarde + vinaigre + tabasco.','Griller le ramen à sec 2 min chaque côté.','Étendre le mélange thon. Garnir tomates cerises.'],tip:'Style rillettes maison sur toast — 3 minutes, élégant pour l\'apéro.'},
+];
+
+const SECTIONS=['Déjeuners','Poulet — style européen','Bœuf — style européen','Poissons & mer','Végé & légumineuses','Soupes & batch','Apéros & collations'];
+const FILTERS=['Tout','🇫🇷 Français','🇪🇸 Espagnol','🇮🇹 Italien','🍁 Québécois','Air Fryer','Batch','Rapide'];
+let activeFilter='Tout';
+
+const GROCERY=[
+  {store:'🛒 IGA / Maxi — 7 juin',items:[
+    {n:'Poitrines de poulet',q:'1 kg',p:'~7-9$ (spécial 5$/kg)'},
+    {n:'Bœuf haché extra-maigre',q:'600g',p:'~5-7$'},
+    {n:'Crevettes surgelées',q:'600g',p:'~12$'},
+    {n:'Thon en canne',q:'4 cannes',p:'~8$'},
+    {n:'Saumon en canne',q:'3 cannes',p:'~9$'},
+    {n:'Œufs',q:'2 douzaines',p:'~16$'},
+    {n:'Yogourt grec 2%',q:'2 × 750g',p:'~20$'},
+    {n:'Tofu ferme',q:'1 × 350g',p:'~5$'},
+    {n:'Kale frais',q:'2 bouquets',p:'~6$'},
+    {n:'Tomates cerises',q:'600g',p:'~8$'},
+    {n:'Framboises gelées',q:'2 × 600g',p:'~16$'},
+    {n:'Ail',q:'2 têtes',p:'~3$'},
+    {n:'Champignons',q:'300g',p:'~4$'},
+    {n:'Pommes de terre',q:'2 kg',p:'~4$'},
+    {n:'Pois chiches en canne',q:'5 cannes',p:'~6$'},
+    {n:'Fécule de maïs',q:'1 boîte',p:'~2$'},
+    {n:'Sauce worcestershire',q:'1 bouteille',p:'~4$'},
+    {n:'Crème à cuisson',q:'1 petit',p:'~3$'},
+    {n:'Ramen',q:'8 blocs',p:'~4$'},
+    {n:'Pappardelle',q:'500g',p:'~4$'},
+  ]},
+  {store:'🛒 IGA / Maxi — 14 juin',items:[
+    {n:'Poitrines de poulet',q:'1 kg',p:'~7-9$'},
+    {n:'Bœuf haché',q:'400g',p:'~4-6$'},
+    {n:'Crevettes surgelées',q:'400g',p:'~8$'},
+    {n:'Thon en canne',q:'4 cannes',p:'~8$'},
+    {n:'Œufs',q:'2 douzaines',p:'~16$'},
+    {n:'Yogourt grec',q:'2 × 750g',p:'~20$'},
+    {n:'Kale',q:'1 bouquet',p:'~3$'},
+    {n:'Tomates cerises',q:'400g',p:'~6$'},
+    {n:'Maïs en crème',q:'2 cannes',p:'~3$'},
+    {n:'Pois chiches',q:'4 cannes',p:'~5$'},
+  ]},
+  {store:'🛒 IGA / Maxi — 21 juin',items:[
+    {n:'Poulet (selon spéciaux)',q:'1 kg',p:'~7-9$'},
+    {n:'Bœuf haché',q:'400g',p:'~4-6$'},
+    {n:'Sardines en canne',q:'4 cannes',p:'~8$'},
+    {n:'Crevettes',q:'400g',p:'~8$'},
+    {n:'Œufs',q:'1 douzaine',p:'~8$'},
+    {n:'Yogourt grec',q:'1 × 750g',p:'~10$'},
+    {n:'Tofu ferme',q:'2 × 350g',p:'~10$'},
+    {n:'Tomates cerises',q:'300g',p:'~4$'},
+    {n:'Framboises gelées',q:'1 × 600g',p:'~8$'},
+    {n:'Pois chiches',q:'3 cannes',p:'~4$'},
+  ]},
+  {store:'📦 Stock maison — vérifier avant chaque épicerie',items:[
+    {n:'Riz blanc (973g)',q:'~3 sem. ok',p:'✓'},
+    {n:'Lentilles brunes (563g)',q:'~3 sem. ok',p:'✓'},
+    {n:'Haricots de soisson (800g)',q:'~3 sem. ok',p:'✓'},
+    {n:'Miel (600g)',q:'surveiller',p:'✓'},
+    {n:'Moutarde de Dijon (300g)',q:'ok',p:'✓'},
+    {n:'Sauce soya (400g)',q:'ok',p:'✓'},
+    {n:'Beurre d\'arachide (200g)',q:'acheter 1 pot',p:'~6$'},
+    {n:'Pâte de tomate (60g)',q:'acheter 1 tube',p:'~2$'},
+    {n:'Gruau (387g)',q:'~2 sem.',p:'✓'},
+    {n:'Sirop d\'érable (200g)',q:'ok',p:'✓'},
+  ]},
+];
+
+function renderFilters(){
+  document.getElementById('filters').innerHTML=FILTERS.map(f=>
+    `<button class="filter-btn${f===activeFilter?' active':''}" onclick="setFilter('${f}')">${f}</button>`
+  ).join('');
+}
+
+function setFilter(f){
+  activeFilter=f;renderFilters();
+  document.querySelectorAll('.rb-card').forEach(card=>{
+    const tag=card.dataset.tag,af=card.dataset.af;
+    let show=true;
+    if(f==='🇫🇷 Français')show=tag==='fr';
+    else if(f==='🇪🇸 Espagnol')show=tag==='es';
+    else if(f==='🇮🇹 Italien')show=tag==='it';
+    else if(f==='🍁 Québécois')show=tag==='qc';
+    else if(f==='Air Fryer')show=af==='1';
+    else if(f==='Batch')show=tag==='batch';
+    else if(f==='Rapide')show=tag==='rapide';
+    card.classList.toggle('hidden',!show);
+  });
+  document.querySelectorAll('.section-lbl').forEach(lbl=>{
+    const grid=lbl.nextElementSibling;
+    const visible=grid&&[...grid.querySelectorAll('.rb-card')].some(c=>!c.classList.contains('hidden'));
+    lbl.style.display=visible?'':'none';
+  });
+}
+
+function renderRecipes(){
+  const container=document.getElementById('recipeContainer');
+  SECTIONS.forEach(section=>{
+    const recs=RECIPES.filter(r=>r.group===section);
+    if(!recs.length)return;
+    const lbl=document.createElement('div');
+    lbl.className='section-lbl';lbl.textContent=section;
+    container.appendChild(lbl);
+    const grid=document.createElement('div');grid.className='rb-grid';
+    recs.forEach(r=>{
+      const card=document.createElement('div');
+      card.className=`rb-card${r.highlight?' highlight':''}`;
+      card.dataset.tag=r.tag;card.dataset.af=r.airfryer?'1':'0';
+      card.innerHTML=`${r.airfryer?'<div class="rb-afbadge">AF</div>':''}
+        <div class="rb-icon">${r.icon}</div>
+        <div class="rb-name">${r.name}</div>
+        <div class="rb-prot">${r.prot}g prot</div>
+        <div style="display:flex;gap:4px;align-items:center;margin-top:2px">
+          ${r.flag?`<span style="font-size:12px">${r.flag}</span>`:''}
+          <span class="rb-tag tag-${r.tag}">${r.tagLabel}</span>
+        </div>`;
+      card.onclick=()=>openRecipe(r.id);
+      grid.appendChild(card);
+    });
+    container.appendChild(grid);
+  });
+}
+
+function openRecipe(id){
+  const r=RECIPES.find(x=>x.id===id);if(!r)return;
+  document.getElementById('mTitle').textContent=`${r.icon} ${r.name}`;
+  const pct=Math.min(Math.round((r.prot/175)*100),100);
+  const badges=(r.badges||[]).concat(r.airfryer?['Air Fryer']:[]).concat(r.tag==='batch'?['Batch cook']:[]);
+  document.getElementById('mSub').innerHTML=`<span>${r.kcal} kcal · ${r.prot}g protéines</span>${r.flag?`<span>${r.flag}</span>`:''}`+badges.map(b=>`<span class="modal-badge">${b}</span>`).join('');
+  let body=`<div class="macro-row">
+    <div class="macro-card"><div class="macro-val">${r.kcal}</div><div class="macro-lbl">kcal</div></div>
+    <div class="macro-card"><div class="macro-val">${r.prot}g</div><div class="macro-lbl">protéines</div></div>
+    <div class="macro-card"><div class="macro-val">${r.carb}g</div><div class="macro-lbl">glucides</div></div>
+    <div class="macro-card"><div class="macro-val">${r.fat}g</div><div class="macro-lbl">lipides</div></div>
+  </div>
+  <div class="prot-bar"><div class="prot-fill" style="width:${pct}%"></div></div>
+  <div class="prot-label">${pct}% de l'objectif journalier (175g)</div>
+  <div class="m-sect">Ingrédients — 1 portion</div>
+  ${r.ing.map(([n,q])=>`<div class="ing-row"><span class="ing-name">${n}</span><span class="ing-qty">${q}</span></div>`).join('')}
+  <div class="m-sect">Préparation</div>
+  ${r.steps.map((s,i)=>`<div class="step-row"><div class="step-num">${i+1}</div><div class="step-text">${s}</div></div>`).join('')}`;
+  if(r.tip)body+=`<div class="tip-box">💡 ${r.tip}</div>`;
+  if(r.batch)body+=`<div class="batch-box">🫙 Batch cook : ${r.batch}</div>`;
+  if(r.price)body+=`<div class="price-box">💰 ${r.price}</div>`;
+  body+=`<button class="close-btn" onclick="document.getElementById('modal').classList.remove('show')">Fermer</button>`;
+  document.getElementById('mBody').innerHTML=body;
+  document.getElementById('modal').classList.add('show');
+}
+
+function closeModal(e){
+  if(e.target===document.getElementById('modal'))
+    document.getElementById('modal').classList.remove('show');
+}
+
+function toggleGrocery(){
+  const p=document.getElementById('groceryPanel');
+  if(!p.classList.toggle('show'))return;
+  if(p.dataset.built)return;
+  p.dataset.built='1';
+  let html='';
+  GROCERY.forEach(({store,items})=>{
+    html+=`<div class="store-block"><div class="store-name">${store}</div>`;
+    items.forEach(item=>{
+      html+=`<div class="g-item" onclick="this.classList.toggle('done')">
+        <span class="g-name">${item.n}</span>
+        <span class="g-qty">${item.q}</span>
+        <span class="g-price">${item.p}</span>
+      </div>`;
+    });
+    html+='</div>';
+  });
+  p.innerHTML=html;
+}
+
+renderRecipes();
+renderFilters();
+</script>
+</body>
+</html>
