@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Finances Perso</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080b10;--bg1:#0e1520;--bg2:#111827;--bd:#1a2236;--bd2:#2d3748;
+  --tx:#cbd5e1;--tx2:#64748b;--tx3:#94a3b8;
+  --amb:#f59e0b;--grn:#22c55e;--red:#ef4444;--r2:#f87171;
+  --blu:#60a5fa;--pur:#a78bfa;
+}
+html,body{background:var(--bg);color:var(--tx);font-family:"DM Mono","Courier New",monospace;min-height:100vh}
+a{color:var(--blu)}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:var(--bg1)}
+::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:2px}
+input[type=range]{accent-color:var(--amb);cursor:pointer;width:100%}
+input,select{background:var(--bg);border:1px solid var(--bd2);border-radius:6px;color:var(--tx);font-family:inherit;font-size:12px;padding:7px 10px;outline:none;width:100%}
+input:focus,select:focus{border-color:var(--amb)}
+select option{background:var(--bg1)}
+button{background:var(--bg1);border:1px solid var(--bd2);border-radius:6px;color:var(--tx3);cursor:pointer;font-family:inherit;font-size:10px;letter-spacing:.12em;text-transform:uppercase;padding:7px 13px;transition:background .15s}
+button:hover{background:var(--bd)}
+button.pri{background:var(--amb);color:#080b10;border-color:var(--amb);font-weight:700}
+button.pri:hover{background:#e08e00}
+button.red{background:#1a0505;color:var(--red);border-color:#450a0a}
+button.red:hover{background:#2a0707}
+/* Layout */
+#header{border-bottom:1px solid var(--bd);padding:16px 20px 12px;display:flex;align-items:baseline;gap:14px;background:var(--bg1)}
+#header h1{font-size:20px;font-weight:700;color:#f8fafc;letter-spacing:-.02em}
+#header .sub{font-size:10px;color:var(--tx2);letter-spacing:.15em;text-transform:uppercase}
+#header .net{margin-left:auto;font-size:13px;font-weight:600}
+#tabs{display:flex;border-bottom:1px solid var(--bd);padding:0 14px;background:var(--bg1)}
+.tab{background:none;border:none;border-bottom:2px solid transparent;border-radius:0;color:var(--tx2);cursor:pointer;font-size:10px;font-family:inherit;letter-spacing:.13em;padding:10px 13px;text-transform:uppercase;transition:color .15s}
+.tab.on{color:var(--amb);border-bottom-color:var(--amb)}
+.tab:hover{background:none;color:var(--tx3)}
+#body{padding:18px 16px 60px;max-width:720px;margin:0 auto}
+/* Cards */
+.card{background:var(--bg1);border:1px solid var(--bd);border-radius:8px;padding:14px 16px;margin-bottom:12px}
+.card.danger{background:#120404;border-color:#450a0a}
+.card.success{background:#031a0e;border-color:#14532d}
+.ctitle{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--tx2);margin-bottom:8px;opacity:.8}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px}
+/* Tables */
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{padding:5px 8px;border-bottom:1px solid var(--bd);text-align:right;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--tx2);font-weight:400}
+th:first-child{text-align:left}
+td{padding:6px 8px;border-bottom:1px solid var(--bg2);text-align:right;color:var(--tx)}
+td:first-child{text-align:left;color:var(--tx3)}
+tr:last-child td{border-bottom:none}
+/* Tags */
+.tag{display:inline-block;font-size:8px;letter-spacing:.1em;text-transform:uppercase;padding:2px 6px;border-radius:3px;white-space:nowrap}
+/* Row item */
+.row{display:flex;align-items:center;padding:7px 0;border-bottom:1px solid var(--bg2);gap:8px}
+.row:last-child{border-bottom:none}
+/* Alert */
+.alert{background:#120404;border:1px solid #450a0a55;border-radius:8px;padding:12px 14px;font-size:11px;color:var(--r2);line-height:1.8;margin-bottom:12px}
+/* Responsive */
+@media(max-width:520px){.g3{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div id="header">
+  <h1>FINANCES.PERSO</h1>
+  <span class="sub">Rodolphe · Montréal</span>
+  <span class="net" id="hdr-net"></span>
+</div>
+
+<div id="tabs">
+  <button class="tab on" onclick="sT(0)">Tableau de bord</button>
+  <button class="tab" onclick="sT(1)">Abonnements</button>
+  <button class="tab" onclick="sT(2)">Dette C1</button>
+  <button class="tab" onclick="sT(3)">Projection</button>
+</div>
+
+<div id="body"></div>
+
+<script>
+// ── DATA ─────────────────────────────────────────────────────────────────────
+const DEFAULT = {
+  des: -5.00, c1: 4395.57, ws: 170.00,
+  paye: 1670.38, daily: 40, ccPmt: 450, apr: 19.99,
+  nextId: 12, history: [],
+  subs: [
+    {id:1, nom:"Loyer",               amt:769.00, type:"d", cat:"logement" },
+    {id:2, nom:"Turcot",              amt:300.00, type:"d", cat:"autre"    },
+    {id:3, nom:"Beneva (assurance)",  amt:27.67,  type:"d", cat:"assurance"},
+    {id:4, nom:"Gym",                 amt:28.74,  type:"c", cat:"santé"    },
+    {id:5, nom:"Colba (internet)",    amt:47.08,  type:"c", cat:"télécoms" },
+    {id:6, nom:"Frais C1 (intérêts)",amt:70.00,  type:"c", cat:"dette"    },
+    {id:7, nom:"Amazon Prime",        amt:11.49,  type:"c", cat:"loisirs"  },
+    {id:8, nom:"YouTube Premium",     amt:14.94,  type:"c", cat:"loisirs"  },
+    {id:9, nom:"Tim Dillon",          amt:7.99,   type:"c", cat:"loisirs"  },
+    {id:10,nom:"F1 TV",               amt:12.99,  type:"c", cat:"loisirs"  },
+    {id:11,nom:"Chatr",               amt:15.95,  type:"c", cat:"télécoms" },
+  ]
+};
+
+const CATS = ["logement","télécoms","assurance","santé","dette","loisirs","autre"];
+const CC = {logement:"#f59e0b",télécoms:"#3b82f6",assurance:"#a78bfa",santé:"#22c55e",dette:"#ef4444",loisirs:"#60a5fa",autre:"#fb923c"};
+const PC = {300:"#64748b",400:"#60a5fa",500:"#a78bfa",600:"#22c55e"};
+const LSKEY = "finances_perso_v1";
+
+// ── LOAD / SAVE ───────────────────────────────────────────────────────────────
+let D = { ...DEFAULT };
+try {
+  const s = localStorage.getItem(LSKEY);
+  if (s) D = { ...DEFAULT, ...JSON.parse(s) };
+} catch(e) {}
+
+function save() {
+  try { localStorage.setItem(LSKEY, JSON.stringify(D)); } catch(e) {}
+}
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let tab = 0, dSlider = D.ccPmt, subEdit = null, charts = {};
+const $ = id => document.getElementById(id);
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+const fv = (v, d=2) => (v<0?"-":"") + "$\u00a0" + Math.abs(v).toFixed(d).replace(/\B(?=(\d{3})+(?!\d))/g,"\u202f");
+const col = v => v >= 0 ? "#22c55e" : "#ef4444";
+const lbl = txt => `<label style="font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--tx2);display:block;margin-bottom:4px">${txt}</label>`;
+const tag = cat => `<span class="tag" style="background:${CC[cat]||"#94a3b8"}18;color:${CC[cat]||"#94a3b8"};border:1px solid ${CC[cat]||"#64748b"}33">${cat}</span>`;
+
+function monthly() {
+  const inc = D.paye * 26 / 12;
+  const fd = D.subs.filter(s=>s.type==="d").reduce((a,s)=>a+s.amt,0);
+  const fc = D.subs.filter(s=>s.type==="c").reduce((a,s)=>a+s.amt,0);
+  const day = D.daily * 30;
+  return { inc, fd, fc, day, sur: inc - fd - fc - day - D.ccPmt };
+}
+
+function payoff(bal, apr, pmt, max=60) {
+  const r = apr/100/12; let b = bal; const rows = [];
+  for (let m=1; m<=max; m++) {
+    const i = b * r; b = b + i - pmt;
+    rows.push({ b: Math.max(0,b), i });
+    if (b <= 0) break;
+  }
+  const pi = rows.findIndex(r=>r.b===0);
+  return { rows, mo: pi>=0?pi+1:null, ti: rows.reduce((s,r)=>s+r.i,0) };
+}
+
+function projection() {
+  const inc = D.paye*26/12, r = D.apr/100/12;
+  const fd = D.subs.filter(s=>s.type==="d"&&s.cat!=="dette").reduce((a,s)=>a+s.amt,0);
+  const fc = D.subs.filter(s=>s.type==="c"&&s.cat!=="dette").reduce((a,s)=>a+s.amt,0);
+  const day = D.daily * 30;
+  let des = D.des, cc = D.c1;
+  return ["Juin","Juil","Août","Sep","Oct","Nov"].map(l => {
+    des = des + inc - fd - day - D.ccPmt;
+    cc = Math.max(0, cc + cc*r + fc - D.ccPmt);
+    return { l, des: +des.toFixed(2), cc: +cc.toFixed(2), net: +(des + D.ws - cc).toFixed(2) };
+  });
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function render() {
+  Object.values(charts).forEach(c => c&&c.destroy&&c.destroy()); charts = {};
+  const m = monthly(), net = D.des + D.ws - D.c1;
+  const P4 = {}; [300,400,500,600].forEach(p => P4[p] = payoff(D.c1, D.apr, p));
+  const cust = payoff(D.c1, D.apr, dSlider);
+  const pr = projection();
+  const byCat = D.subs.reduce((a,s)=>{a[s.cat]=(a[s.cat]||0)+s.amt;return a},{});
+
+  // Header net worth
+  const hn = $("hdr-net");
+  if (hn) {
+    hn.textContent = (net>=0?"▲ ":"▼ ") + fv(net);
+    hn.style.color = col(net);
+  }
+
+  // Active tab button
+  document.querySelectorAll(".tab").forEach((b,i) => b.classList.toggle("on", i===tab));
+
+  const body = $("body");
+
+  // ── TAB 0 ─────────────────────────────────────────────────────────────────
+  if (tab === 0) {
+    body.innerHTML = `
+<!-- Soldes -->
+<div class="g3">
+  ${[["🏦 Desjardins",D.des],["💳 Capital One",-D.c1],["📈 Wealthsimple",D.ws]].map(([l,v])=>`
+  <div class="card">
+    <div class="ctitle">${l}</div>
+    <div style="font-size:24px;font-weight:500;color:${col(v)};letter-spacing:-.02em">${fv(v)}</div>
+  </div>`).join("")}
+</div>
+
+<!-- Valeur nette -->
+<div class="card ${net>=0?"success":"danger"}">
+  <div class="ctitle">⚖️ Valeur nette</div>
+  <div style="font-size:36px;font-weight:500;color:${col(net)};letter-spacing:-.02em">${fv(net)}</div>
+  <div style="font-size:10px;color:var(--tx2);margin-top:6px">
+    DES ${fv(D.des)} + WS ${fv(D.ws)} − C1 ${fv(D.c1)}
+  </div>
+</div>
+
+<!-- Résumé mensuel -->
+<div class="card">
+  <div class="ctitle">📊 Résumé mensuel</div>
+  ${[
+    ["Revenu net (bi-sem × 26/12)", +m.inc],
+    ["Charges débit fixes", -m.fd],
+    ["Charges crédit fixes", -m.fc],
+    [`Budget quotidien (${D.daily}$/j × 30)`, -m.day],
+    ["Paiement Capital One planifié", -D.ccPmt],
+  ].map(([l,v])=>`
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--bg2)">
+    <span style="font-size:11px;color:var(--tx3)">${l}</span>
+    <span style="font-size:13px;font-weight:500;color:${col(v)}">${fv(v)}</span>
+  </div>`).join("")}
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0 0">
+    <span style="font-size:12px;color:#f8fafc;font-weight:600">Surplus théorique</span>
+    <span style="font-size:18px;font-weight:600;color:${col(m.sur)}">${fv(m.sur)}</span>
+  </div>
+</div>
+
+<!-- Check-in -->
+<div class="card">
+  <div class="ctitle">✏️ Mise à jour des soldes</div>
+  <div class="g3">
+    <div>${lbl("Desjardins ($)")}<input id="ci-d" type="number" step=".01" placeholder="${D.des}"></div>
+    <div>${lbl("Capital One ($)")}<input id="ci-c" type="number" step=".01" placeholder="${D.c1}"></div>
+    <div>${lbl("Wealthsimple ($)")}<input id="ci-w" type="number" step=".01" placeholder="${D.ws}"></div>
+  </div>
+  <div style="margin-bottom:10px">${lbl("Note (optionnelle)")}<input id="ci-n" placeholder="après paye du 11 juin…"></div>
+  <button class="pri" onclick="doCI()">Enregistrer</button>
+</div>
+
+<!-- Historique -->
+${D.history.length ? `
+<div class="card">
+  <div class="ctitle">📋 Historique (${D.history.length})</div>
+  <div style="overflow-x:auto">
+    <table>
+      <thead><tr>${["Date","Desjardins","Capital One","WS","Note"].map(h=>`<th>${h}</th>`).join("")}</tr></thead>
+      <tbody>
+        ${D.history.slice(0,8).map(h=>`<tr>
+          <td style="text-align:left">${h.date}</td>
+          <td style="color:${col(h.des)}">${fv(h.des)}</td>
+          <td style="color:var(--red)">${fv(h.cc)}</td>
+          <td style="color:var(--blu)">${fv(h.sav)}</td>
+          <td style="font-size:9px;color:var(--tx2)">${h.note||"—"}</td>
+        </tr>`).join("")}
+      </tbody>
+    </table>
+  </div>
+</div>` : ""}`;
+  }
+
+  // ── TAB 1 ─────────────────────────────────────────────────────────────────
+  if (tab === 1) {
+    body.innerHTML = `
+<!-- Par catégorie -->
+<div class="card">
+  <div class="ctitle">🗂️ Par catégorie</div>
+  <div style="display:flex;flex-wrap:wrap;gap:8px">
+    ${Object.entries(byCat).sort((a,b)=>b[1]-a[1]).map(([c,t])=>`
+    <div class="card" style="margin-bottom:0;padding:8px 12px">
+      ${tag(c)}
+      <div style="font-size:17px;font-weight:500;color:${CC[c]||"#94a3b8"};margin-top:5px">${fv(t)}</div>
+    </div>`).join("")}
+  </div>
+  <div style="border-top:1px solid var(--bd);margin:12px 0"></div>
+  ${[["Débit fixes/mois",m.fd],["Crédit fixes/mois",m.fc],["Total charges fixes",m.fd+m.fc]].map(([l,v],i)=>`
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+    <span style="font-size:${i===2?12:11}px;color:var(--tx${i===2?"":"3"});${i===2?"font-weight:600":""}">
+      ${i===2?"💰 ":""}${l}
+    </span>
+    <span style="font-size:${i===2?17:13}px;font-weight:${i===2?600:400};color:var(--red)">${fv(v)}/mois</span>
+  </div>`).join("")}
+</div>
+
+<!-- Liste des charges -->
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+    <div class="ctitle">📑 Toutes les charges fixes</div>
+    <button onclick="oAdd()">+ Ajouter</button>
+  </div>
+  <div id="sf-wrap"></div>
+  ${["d","c"].map(type=>`
+  <div style="font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:${type==="d"?"var(--amb)":"var(--blu)"};margin:${type==="c"?"14px":0} 0 7px">
+    ▸ ${type==="d"?"Débit":"Crédit"}
+  </div>
+  ${D.subs.filter(s=>s.type===type).map(s=>`
+  <div class="row">
+    <div style="flex:1;font-size:12px;color:var(--tx)">${s.nom}</div>
+    ${tag(s.cat)}
+    <span style="font-size:13px;font-weight:500;color:var(--red);min-width:76px;text-align:right">${fv(s.amt)}</span>
+    <button onclick="oEdit(${s.id})" style="padding:3px 8px;font-size:10px">✏️</button>
+    <button onclick="dSub(${s.id})" class="red" style="padding:3px 8px;font-size:10px">✕</button>
+  </div>`).join("")}`).join("")}
+</div>`;
+    if (subEdit !== null) rSF();
+  }
+
+  // ── TAB 2 ─────────────────────────────────────────────────────────────────
+  if (tab === 2) {
+    body.innerHTML = `
+<div class="g2">
+  <div class="card danger">
+    <div class="ctitle">💳 Solde actuel</div>
+    <div style="font-size:30px;font-weight:500;color:var(--red);letter-spacing:-.02em">${fv(D.c1)}</div>
+    <div style="font-size:10px;color:var(--r2);opacity:.8;margin-top:6px">${fv(D.c1*D.apr/100/12)}/mois en intérêts</div>
+    <div style="font-size:10px;color:var(--r2);opacity:.5">${fv(D.c1*D.apr/100)}/an brûlés</div>
+  </div>
+  <div class="card">
+    <div class="ctitle">🎯 Plan actuel</div>
+    <div style="font-size:30px;font-weight:500;color:var(--amb);letter-spacing:-.02em">${fv(D.ccPmt)}/m</div>
+    <div style="font-size:10px;color:var(--tx2);margin-top:6px">${cust.mo?`Libéré en ${cust.mo} mois`:"Augmenter le paiement"}</div>
+    <div style="font-size:10px;color:var(--tx2)">Total intérêts: ${fv(cust.ti)}</div>
+  </div>
+</div>
+
+<!-- Scénarios -->
+<div class="card">
+  <div class="ctitle">🎯 Scénarios de remboursement</div>
+  <div class="g2">
+    ${[300,400,500,600].map(p=>{const pf=P4[p];return`
+    <div style="background:var(--bg2);border:1px solid ${PC[p]}44;border-radius:6px;padding:10px 12px">
+      <div style="font-size:18px;font-weight:500;color:${PC[p]};margin-bottom:5px">${fv(p,0)}/mois</div>
+      ${pf.mo?`
+      <div style="font-size:11px;color:var(--tx2);line-height:1.7">
+        <span style="color:var(--tx);font-weight:500">${pf.mo} mois</span> pour rembourser<br>
+        <span style="color:var(--r2)">${fv(pf.ti)}</span> en intérêts
+      </div>`:
+      `<div style="font-size:11px;color:var(--red)">Paiement insuffisant</div>`}
+    </div>`}).join("")}
+  </div>
+</div>
+
+<!-- Simulateur -->
+<div class="card">
+  <div class="ctitle">🎚️ Simulateur personnalisé</div>
+  <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
+    <input type="range" min="100" max="900" step="25" value="${dSlider}" id="ds" oninput="onSl(this.value)">
+    <span style="font-size:20px;font-weight:500;color:var(--amb);min-width:88px;font-family:monospace" id="sv">${fv(dSlider,0)}/m</span>
+  </div>
+  <div class="g3" id="ss">${slStats(cust)}</div>
+  <button class="pri" onclick="applyPmt()">Appliquer au plan</button>
+</div>
+
+<!-- Chart -->
+<div class="card">
+  <div class="ctitle">📉 Évolution de la dette — 4 scénarios</div>
+  <div style="position:relative;width:100%;height:210px">
+    <canvas id="dc" role="img" aria-label="Graphique évolution dette Capital One selon 4 scénarios de paiement">Projections de remboursement de la dette Capital One.</canvas>
+  </div>
+  <div style="display:flex;gap:16px;justify-content:center;margin-top:10px">
+    ${[300,400,500,600].map(p=>`
+    <span style="display:flex;align-items:center;gap:5px;font-size:9px;color:var(--tx2)">
+      <span style="width:14px;height:2px;background:${PC[p]};display:inline-block;border-radius:2px"></span>
+      ${fv(p,0)}/m ${P4[p].mo?`(${P4[p].mo}m)`:""}
+    </span>`).join("")}
+  </div>
+</div>`;
+
+    // Draw debt chart
+    requestAnimationFrame(() => {
+      const c = $("dc"); if (!c) return;
+      const mx = Math.min(Math.max(...[300,400,500,600].map(p=>P4[p].rows.length)), 36);
+      charts.d = new Chart(c, {
+        type:"line",
+        data:{
+          labels: Array.from({length:mx},(_,i)=>`M${i+1}`),
+          datasets: [300,400,500,600].map(p=>({
+            label:`${p}$/m`,
+            data: Array.from({length:mx},(_,i)=>+(P4[p].rows[i]?.b??0).toFixed(2)),
+            borderColor:PC[p], backgroundColor:"transparent",
+            tension:.3, pointRadius:0, borderWidth:1.5,
+          }))
+        },
+        options:{
+          responsive:true, maintainAspectRatio:false,
+          plugins:{ legend:{display:false}, tooltip:{ backgroundColor:"#1e293b", titleColor:"#94a3b8", bodyColor:"#e2e8f0", borderColor:"#334155", borderWidth:1, bodyFont:{family:"monospace",size:11}, callbacks:{label:i=>`${fv(i.parsed.y)} — ${i.dataset.label}`} } },
+          scales:{
+            x:{ ticks:{color:"#64748b",font:{size:9}}, grid:{color:"rgba(148,163,184,.08)"} },
+            y:{ ticks:{color:"#64748b",font:{size:9},callback:v=>`$${(v/1000).toFixed(1)}k`}, grid:{color:"rgba(148,163,184,.08)"}, min:0 }
+          }
+        }
+      });
+    });
+  }
+
+  // ── TAB 3 ─────────────────────────────────────────────────────────────────
+  if (tab === 3) {
+    body.innerHTML = `
+<!-- Paramètres -->
+<div class="card">
+  <div class="ctitle">⚙️ Paramètres de projection</div>
+  <div class="g3">
+    <div>${lbl("Budget quotidien ($)")}<input id="p-d" type="number" step="1" value="${D.daily}" onchange="uP('daily',this.value)"></div>
+    <div>${lbl("Paiement C1/mois ($)")}<input id="p-c" type="number" step="25" value="${D.ccPmt}" onchange="uP('ccPmt',this.value)"></div>
+    <div>${lbl("APR Capital One (%)")}<input id="p-a" type="number" step=".01" value="${D.apr}" onchange="uP('apr',this.value)"></div>
+  </div>
+</div>
+
+<!-- Tableau -->
+<div class="card">
+  <div class="ctitle">📅 Projection 6 mois — ${fv(D.daily,0)}/j · paiement C1 ${fv(D.ccPmt,0)}/m</div>
+  <div style="overflow-x:auto">
+    <table>
+      <thead><tr>${["Mois","Desjardins","Capital One","Valeur nette"].map(h=>`<th>${h}</th>`).join("")}</tr></thead>
+      <tbody>
+        ${pr.map(r=>`<tr>
+          <td style="text-align:left;color:var(--tx);font-weight:600">${r.l}</td>
+          <td style="color:${col(r.des)}">${fv(r.des)}</td>
+          <td style="color:var(--r2)">${fv(r.cc)}</td>
+          <td style="color:${col(r.net)};font-weight:600">${fv(r.net)}</td>
+        </tr>`).join("")}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Chart -->
+<div class="card">
+  <div class="ctitle">📊 Évolution projetée</div>
+  <div style="position:relative;width:100%;height:210px">
+    <canvas id="pc" role="img" aria-label="Graphique projection financière Desjardins Capital One valeur nette sur 6 mois">Projection financière sur 6 mois.</canvas>
+  </div>
+  <div style="display:flex;gap:20px;justify-content:center;margin-top:10px">
+    ${[["#22c55e","Desjardins"],["#ef4444","Capital One"],["#f59e0b","Valeur nette"]].map(([c,l])=>`
+    <span style="display:flex;align-items:center;gap:5px;font-size:9px;color:var(--tx2)">
+      <span style="width:14px;height:2px;background:${c};display:inline-block;border-radius:2px"></span>${l}
+    </span>`).join("")}
+  </div>
+</div>
+
+<div class="alert">
+  <strong>⚠️ Alerte réalité :</strong> Cette projection assume ${fv(D.daily,0)}/jour en <em>débit seulement</em>.
+  Si Capital One sert aussi aux dépenses quotidiennes, la dette ne baissera pas selon ce plan.<br>
+  <strong>Règle #1 :</strong> tout achat variable en débit.
+</div>`;
+
+    requestAnimationFrame(() => {
+      const c = $("pc"); if (!c) return;
+      charts.p = new Chart(c, {
+        type:"line",
+        data:{
+          labels: pr.map(r=>r.l),
+          datasets:[
+            { label:"Desjardins", data:pr.map(r=>r.des), borderColor:"#22c55e", backgroundColor:"transparent", tension:.3, pointRadius:4, borderWidth:2 },
+            { label:"Capital One", data:pr.map(r=>r.cc), borderColor:"#ef4444", backgroundColor:"transparent", tension:.3, pointRadius:4, borderWidth:2 },
+            { label:"Valeur nette", data:pr.map(r=>r.net), borderColor:"#f59e0b", backgroundColor:"transparent", tension:.3, pointRadius:4, borderWidth:2, borderDash:[5,3] },
+          ]
+        },
+        options:{
+          responsive:true, maintainAspectRatio:false,
+          plugins:{ legend:{display:false}, tooltip:{ backgroundColor:"#1e293b", titleColor:"#94a3b8", bodyColor:"#e2e8f0", borderColor:"#334155", borderWidth:1, bodyFont:{family:"monospace",size:11}, callbacks:{label:i=>`${i.dataset.label}: ${fv(i.parsed.y)}`} } },
+          scales:{
+            x:{ ticks:{color:"#64748b",font:{size:10}}, grid:{color:"rgba(148,163,184,.08)"} },
+            y:{ ticks:{color:"#64748b",font:{size:9},callback:v=>`$${(v/1000).toFixed(1)}k`}, grid:{color:"rgba(148,163,184,.08)"} }
+          }
+        }
+      });
+    });
+  }
+}
+
+// ── HELPERS UI ────────────────────────────────────────────────────────────────
+function slStats(pf) {
+  return [
+    ["Remboursé en",   pf.mo?`${pf.mo} mois`:"N/A"],
+    ["Intérêts payés", fv(pf.ti)],
+    ["Total déboursé", pf.mo?fv(dSlider*pf.mo):"—"],
+  ].map(([l,v])=>`
+  <div style="text-align:center;background:var(--bg2);border-radius:6px;padding:8px 4px">
+    <div style="font-size:9px;color:var(--tx2);text-transform:uppercase;letter-spacing:.12em;margin-bottom:4px">${l}</div>
+    <div style="font-size:14px;font-weight:500;color:var(--amb);font-family:monospace">${v}</div>
+  </div>`).join("");
+}
+
+function rSF() {
+  const w = $("sf-wrap"); if (!w) return;
+  const ex = subEdit!=="new" ? D.subs.find(s=>s.id===subEdit) : null;
+  w.innerHTML = `
+<div style="background:var(--bg2);border:1px solid var(--bd2);border-radius:7px;padding:12px;margin-bottom:14px">
+  <div class="g2">
+    <div>${lbl("Nom")}<input id="sf-n" value="${ex?.nom||""}" placeholder="Ex: Netflix"></div>
+    <div>${lbl("Montant ($)")}<input id="sf-a" type="number" step=".01" value="${ex?.amt||""}" placeholder="0.00"></div>
+    <div>${lbl("Compte")}<select id="sf-t">
+      <option value="d"${(ex?.type||"c")==="d"?" selected":""}>Débit</option>
+      <option value="c"${(ex?.type||"c")==="c"?" selected":""}>Crédit</option>
+    </select></div>
+    <div>${lbl("Catégorie")}<select id="sf-c">
+      ${CATS.map(c=>`<option value="${c}"${c===(ex?.cat||"loisirs")?" selected":""}>${c}</option>`).join("")}
+    </select></div>
+  </div>
+  <div style="display:flex;gap:8px">
+    <button class="pri" onclick="cSub()">Confirmer</button>
+    <button onclick="xSub()">Annuler</button>
+  </div>
+</div>`;
+}
+
+// ── ACTIONS ───────────────────────────────────────────────────────────────────
+function sT(i) { tab=i; subEdit=null; render(); }
+
+function doCI() {
+  const d=$("ci-d")?.value, c=$("ci-c")?.value, w=$("ci-w")?.value, n=$("ci-n")?.value;
+  if (!d&&!c&&!w) return;
+  const entry = {
+    date: new Date().toLocaleDateString("fr-CA"),
+    des:  d ? parseFloat(d) : D.des,
+    cc:   c ? parseFloat(c) : D.c1,
+    sav:  w ? parseFloat(w) : D.ws,
+    note: n || "",
+  };
+  D.des=entry.des; D.c1=entry.cc; D.ws=entry.sav;
+  D.history = [entry, ...D.history].slice(0, 30);
+  save(); render();
+}
+
+function onSl(v) {
+  dSlider = parseInt(v);
+  const sv = $("sv"); if (sv) sv.textContent = fv(dSlider,0)+"/m";
+  const ss = $("ss"); if (ss) ss.innerHTML = slStats(payoff(D.c1, D.apr, dSlider));
+}
+
+function applyPmt() { D.ccPmt=dSlider; save(); render(); }
+
+function uP(key, val) {
+  D[key] = parseFloat(val) || D[key];
+  save(); render();
+}
+
+function oAdd()    { subEdit="new"; rSF(); }
+function oEdit(id) { subEdit=id;    rSF(); }
+
+function dSub(id) {
+  D.subs = D.subs.filter(s=>s.id!==id);
+  save(); render();
+}
+
+function xSub() {
+  subEdit=null;
+  const w=$("sf-wrap"); if (w) w.innerHTML="";
+}
+
+function cSub() {
+  const nom  = $("sf-n")?.value;
+  const amt  = parseFloat($("sf-a")?.value||0);
+  const type = $("sf-t")?.value;
+  const cat  = $("sf-c")?.value;
+  if (!nom || amt<=0) return;
+  if (subEdit==="new") {
+    D.subs.push({ id:D.nextId++, nom, amt, type, cat });
+  } else {
+    D.subs = D.subs.map(s => s.id===subEdit ? {...s, nom, amt, type, cat} : s);
+  }
+  subEdit=null; save(); render();
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>
