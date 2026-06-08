@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Tracker — Bras de fer</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f7f6f3;--surface:#fff;--surface2:#f0efe9;
+  --border:rgba(0,0,0,.10);--border2:rgba(0,0,0,.20);
+  --text:#1a1917;--text2:#6b6a65;--text3:#a09e98;--accent:#1a1917;
+  --mob:#27500A;--mob-bg:#EAF3DE;
+  --lift:#0C447C;--lift-bg:#E6F1FB;
+  --cardio:#085041;--cardio-bg:#E1F5EE;
+  --green:#1d9e75;--amber:#ef9f27;--red:#e24b4a;
+  --r:14px;--rs:10px;--pill:99px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#131211;--surface:#1e1d1b;--surface2:#282724;
+  --border:rgba(255,255,255,.09);--border2:rgba(255,255,255,.18);
+  --text:#f0ede8;--text2:#9a9892;--text3:#635f5a;--accent:#f0ede8;
+  --mob:#9fe1a8;--mob-bg:#012a08;
+  --lift:#60a5fa;--lift-bg:#0f1f3d;
+  --cardio:#9fe1cb;--cardio-bg:#012a1f;
+  --green:#34d399;--amber:#fbbf24;--red:#f87171;
+}}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:40px}
+.app-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.app-bar h1{font-size:15px;font-weight:600}
+.app-bar p{font-size:10px;color:var(--text2);margin-top:1px}
+.top-btns{display:flex;gap:6px}
+.hbtn{font-size:11px;font-weight:500;padding:6px 12px;border:1px solid var(--border2);border-radius:var(--pill);background:var(--surface2);color:var(--text);cursor:pointer;white-space:nowrap}
+.hbtn.active{background:var(--accent);color:var(--bg);border-color:transparent}
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--accent);color:var(--bg);padding:10px 20px;border-radius:var(--pill);font-size:13px;font-weight:500;opacity:0;transition:opacity .3s;z-index:999;pointer-events:none;white-space:nowrap}
+#toast.show{opacity:1}
+.container{max-width:640px;margin:0 auto;padding:16px}
+.day-tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:16px;scrollbar-width:none}
+.day-tabs::-webkit-scrollbar{display:none}
+.dtab{flex-shrink:0;padding:7px 14px;border-radius:var(--rs);font-size:13px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text2);transition:all .15s}
+.dtab.active{background:var(--accent);color:var(--bg);border-color:transparent}
+.dtab.today-tab{border-color:var(--green);color:var(--green)}
+.dtab.today-tab.active{background:var(--accent);color:var(--bg);border-color:transparent}
+.dtab.rest{border-style:dashed}
+.day-panel{display:none}.day-panel.active{display:block}
+.day-title{font-size:17px;font-weight:600;margin-bottom:4px}
+.day-meta{font-size:12px;color:var(--text2);margin-bottom:16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.loc-tag{background:var(--surface2);border:1px solid var(--border);border-radius:var(--pill);padding:2px 10px;font-size:11px}
+.today-badge{background:#EAF3DE;color:#27500A;border:1px solid #97C459;border-radius:var(--pill);padding:2px 10px;font-size:11px;font-weight:600}
+.phase-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:5px 12px;border-radius:var(--rs);display:inline-block;margin:14px 0 8px}
+.ph-mob{background:var(--mob-bg);color:var(--mob)}
+.ph-lift{background:var(--lift-bg);color:var(--lift)}
+.ph-cardio{background:var(--cardio-bg);color:var(--cardio)}
+.ex-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);margin-bottom:8px;overflow:hidden}
+.ex-card.ss{border-left:3px solid #2563eb}
+.ss-tag{background:#EFF6FF;color:#2563eb;font-size:9px;font-weight:700;padding:3px 10px;letter-spacing:.06em;border-bottom:1px solid #BFDBFE}
+@media(prefers-color-scheme:dark){.ss-tag{background:#0f1f3d;color:#60a5fa;border-color:#1e3a6e}}
+.ex-info{padding:10px 14px 6px}
+.ex-name{font-size:14px;font-weight:600}
+.ex-ref{font-size:11px;color:var(--text2);margin-top:2px}
+.ex-target{font-size:10px;color:var(--green);font-weight:600;margin-top:2px}
+.ex-badge{display:inline-block;font-size:9px;font-weight:600;padding:2px 7px;border-radius:var(--pill);margin-top:4px;background:var(--lift-bg);color:var(--lift)}
+.ex-badge.aw{background:#FAEEDA;color:#633806}
+
+/* Suggestion banner */
+.sug-banner{background:#F0FDF4;border:1px solid #86EFAC;border-radius:var(--rs);padding:7px 12px;margin-top:4px;display:flex;align-items:center;justify-content:space-between}
+@media(prefers-color-scheme:dark){.sug-banner{background:#052e16;border-color:#166534}}
+.sug-label{font-size:10px;color:#166534;font-weight:600}
+.sug-val{font-size:14px;font-weight:600;color:#166534;font-family:'DM Mono',monospace}
+@media(prefers-color-scheme:dark){.sug-label,.sug-val{color:#86efac}}
+.sug-delta{font-size:10px;color:#166534;opacity:.7;margin-left:4px}
+
+.input-row{padding:8px 14px 12px;display:flex;gap:8px;align-items:center}
+.input-wrap{flex:1}
+.input-wrap label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);display:block;margin-bottom:4px}
+.input-wrap input{width:100%;font-size:20px;font-weight:600;padding:8px 10px;border:1.5px solid var(--border2);border-radius:var(--rs);background:var(--surface2);color:var(--text);font-family:'DM Mono',monospace;text-align:center;-moz-appearance:textfield}
+.input-wrap input::-webkit-outer-spin-button,.input-wrap input::-webkit-inner-spin-button{-webkit-appearance:none}
+.input-wrap input:focus{outline:none;border-color:var(--accent);background:var(--surface)}
+.session-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:16px;display:flex;gap:12px;align-items:center}
+.session-card .input-wrap input{font-size:18px}
+.session-date{flex:1.5}
+.submit-wrap{margin-top:20px}
+.submit-btn{width:100%;padding:16px;background:var(--accent);color:var(--bg);border:none;border-radius:var(--r);font-size:16px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:opacity .15s;display:flex;align-items:center;justify-content:center;gap:8px}
+.submit-btn:active{opacity:.7}
+.submit-btn.loading{opacity:.6;pointer-events:none}
+.rest-card{background:var(--surface);border:1px dashed var(--border2);border-radius:var(--r);padding:40px;text-align:center}
+.rest-card p{color:var(--text2);font-size:14px;line-height:1.6}
+
+/* ── Semaine tableau ─────────────────────────────────────────────────── */
+#semainePanel{display:none;margin-top:8px}
+#semainePanel.show{display:block}
+.semaine-grid{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.sem-table{border-collapse:collapse;width:100%;min-width:560px;font-size:12px}
+.sem-table th{background:var(--surface2);color:var(--text2);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;padding:8px 10px;text-align:left;border-bottom:2px solid var(--border2)}
+.sem-table td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+.sem-table tr:last-child td{border-bottom:none}
+.sem-table tbody tr:hover{background:var(--surface2)}
+.sem-ex{font-weight:500;color:var(--text)}
+.sem-ref{font-size:10px;color:var(--text3);margin-top:1px}
+.sem-relance{font-family:'DM Mono',monospace;font-size:12px;font-weight:600;color:var(--lift)}
+.sem-target{font-size:10px;color:var(--green);margin-top:2px}
+.sem-aw{display:inline-block;font-size:8px;font-weight:700;padding:1px 5px;border-radius:3px;background:#FAEEDA;color:#633806;vertical-align:middle;margin-left:4px}
+.sem-day-header{font-weight:600;color:var(--text);font-size:12px}
+.sem-loc{font-size:10px;color:var(--text3);font-weight:400}
+.sem-rest{color:var(--text3);font-style:italic}
+.sem-sug{font-family:'DM Mono',monospace;font-size:12px;font-weight:600;color:#27500A}
+@media(prefers-color-scheme:dark){.sem-sug{color:#9fe1a8}}
+.sem-sug-lbl{font-size:9px;color:var(--text3)}
+
+/* ── Historique ──────────────────────────────────────────────────────── */
+#historyPanel{display:none;margin-top:8px}
+#historyPanel.show{display:block}
+.hist-title{font-size:15px;font-weight:600;margin-bottom:12px}
+.hist-entry{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;margin-bottom:8px}
+.hist-date{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px;display:flex;justify-content:space-between}
+.hist-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:6px}
+.hist-item{background:var(--surface2);border-radius:8px;padding:6px 8px}
+.hist-item-name{font-size:9px;color:var(--text3);font-weight:600;text-transform:uppercase}
+.hist-item-val{font-size:14px;font-weight:600;font-family:'DM Mono',monospace;margin-top:2px}
+.no-hist{color:var(--text3);font-size:13px;text-align:center;padding:24px}
+
+/* ── Config ──────────────────────────────────────────────────────────── */
+#configBanner{background:#FFF8E6;border:1px solid #F5C97A;border-radius:var(--r);padding:12px 14px;margin-bottom:16px}
+#configBanner p{font-size:12px;color:#633806;margin-bottom:8px}
+#configBanner input{width:100%;font-size:12px;padding:8px 10px;border:1px solid #F5C97A;border-radius:8px;background:#FFFEF0;color:#1a1917;font-family:'DM Mono',monospace;margin-bottom:8px}
+#configBanner button{background:#1a1917;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;width:100%}
+#configBanner.hidden{display:none}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+<div class="app-bar">
+  <div><h1>🥊 Tracker — Bras de fer</h1><p id="appBarDate">Relance 2026 · Perte de poids</p></div>
+  <div class="top-btns">
+    <button class="hbtn" id="btnSemaine" onclick="toggleSemaine()">Semaine</button>
+    <button class="hbtn" id="btnHist" onclick="toggleHistory()">Historique</button>
+  </div>
+</div>
+
+<div class="container">
+  <div id="configBanner">
+    <p>⚙️ <strong>URL du Apps Script</strong> — colle l'URL de ton déploiement (une seule fois)</p>
+    <input type="url" id="scriptUrlInput" placeholder="https://script.google.com/macros/s/.../exec">
+    <button onclick="saveScriptUrl()">Enregistrer et tester</button>
+  </div>
+
+  <div id="semainePanel"></div>
+  <div id="historyPanel">
+    <div class="hist-title">📅 Historique des sessions</div>
+    <div id="historyContent"></div>
+  </div>
+
+  <div class="day-tabs" id="dayTabs"></div>
+  <div id="panels"></div>
+</div>
+
+<script>
+// ── Programme ────────────────────────────────────────────────────────────────
+// Progression: chaque exercice avance de 'step' lbs/min toutes les 'every' semaines
+// relance = poids de départ (semaine 0), maxTarget = cible finale
+const DAYS = [
+  { key:'lun', label:'Lun', title:'Traction & Dos · Biceps', loc:'🏋️ Yvon Deschamps',
+    phases:[
+      { cls:'lift', label:'2 — Lifts', ex:[
+        { n:'Underhand Pulldown',  ref:'3×10', relance:70,  maxTarget:100, step:2.5, every:2, unit:'lbs', aw:true },
+        { n:'Chest-Supported Row', ref:'3×10', relance:165, maxTarget:250, step:5,   every:2, unit:'lbs', aw:true, ss:true },
+        { n:'Assisted Chinups',    ref:'3×10', relance:70,  maxTarget:50,  step:-2.5,every:2, unit:'lbs assist', aw:true },
+        { n:'EZ Bar Curl',         ref:'3×10', relance:55,  maxTarget:80,  step:2.5, every:2, unit:'lbs' },
+        { n:'Short Curl Bicep',    ref:'3×8',  relance:55,  maxTarget:85,  step:2.5, every:2, unit:'lbs', aw:true, ss:true },
+        { n:'DB Wrist Curl',       ref:'3×10', relance:15,  maxTarget:20,  step:1.25,every:2, unit:'lbs', aw:true, ss:true },
+        { n:'Back Extension',      ref:'3×10', relance:0,   maxTarget:25,  step:2.5, every:3, unit:'lbs' },
+      ]},
+      { cls:'cardio', label:'3 — Cardio finisher', ex:[
+        { n:'Mountain Climber', ref:'10 min', relance:10, maxTarget:15, step:1, every:3, unit:'min' },
+      ]},
+    ]
+  },
+  { key:'mar', label:'Mar', title:'Natation · Core léger', loc:'🏊 Yvon Deschamps',
+    phases:[
+      { cls:'cardio', label:'2 — Cardio', ex:[
+        { n:'Natation', ref:'~25 min', relance:20, maxTarget:30, step:2, every:3, unit:'min' },
+      ]},
+    ]
+  },
+  { key:'mer', label:'Mer', title:'Poussée · Pec · AW', loc:'🏋️ Yvon Deschamps',
+    phases:[
+      { cls:'lift', label:'2 — Lifts', ex:[
+        { n:'Incline DB Press',     ref:'3×10',  relance:110, maxTarget:160, step:5,   every:2, unit:'lbs', aw:true },
+        { n:'Assisted Dips',        ref:'3×10',  relance:50,  maxTarget:30,  step:-2.5,every:2, unit:'lbs assist', ss:true },
+        { n:'Facepull',             ref:'3×10',  relance:40,  maxTarget:60,  step:2.5, every:2, unit:'lbs', aw:true },
+        { n:'Band Wrist Pronation', ref:'3×1min',relance:30,  maxTarget:100, step:5,   every:2, unit:'lbs', aw:true },
+        { n:'Back Extension',       ref:'3×10',  relance:0,   maxTarget:25,  step:2.5, every:3, unit:'lbs' },
+      ]},
+      { cls:'cardio', label:'3 — Cardio finisher', ex:[
+        { n:'Mountain Climber', ref:'10 min', relance:10, maxTarget:15, step:1, every:3, unit:'min' },
+      ]},
+    ]
+  },
+  { key:'jeu', label:'Jeu', title:'Bands · Parc Lafontaine', loc:'🌳 Parc LF',
+    phases:[
+      { cls:'lift', label:'2 — Lifts (bands)', ex:[
+        { n:'Band Bicep Curl',      ref:'3×10',  relance:30, maxTarget:60, step:2.5, every:2, unit:'lbs', aw:true },
+        { n:'Band Wrist Pronation', ref:'3×1min',relance:30, maxTarget:100,step:5,   every:2, unit:'lbs', aw:true, ss:true },
+        { n:'Band Tricep Pushdown', ref:'3×10',  relance:30, maxTarget:60, step:2.5, every:2, unit:'lbs', ss:true },
+        { n:'Squat (bodyweight)',   ref:'3×10',  relance:0,  maxTarget:80, step:5,   every:3, unit:'lbs' },
+        { n:'Pinch Grip (sangle)',  ref:'3×1min',relance:0,  maxTarget:25, step:2.5, every:2, unit:'lbs', aw:true },
+      ]},
+      { cls:'cardio', label:'3 — Cardio finisher', ex:[
+        { n:'Marche rapide', ref:'20 min', relance:20, maxTarget:30, step:2, every:3, unit:'min' },
+      ]},
+    ]
+  },
+  { key:'ven', label:'Ven', title:'Lourd · Grip · Force', loc:'🏋️ Yvon Deschamps',
+    phases:[
+      { cls:'lift', label:'2 — Lifts', ex:[
+        { n:'Squat',              ref:'3×10', relance:65, maxTarget:100, step:5,   every:2, unit:'lbs' },
+        { n:'Dumbbell Row',       ref:'3×8',  relance:55, maxTarget:80,  step:2.5, every:2, unit:'lbs', aw:true, ss:true },
+        { n:"Farmer's Carry",    ref:'3×30s', relance:35, maxTarget:50,  step:2.5, every:2, unit:'lbs', aw:true, ss:true },
+        { n:'Hanging Knee Raise', ref:'3×10', relance:0,  maxTarget:0,   step:0,   every:1, unit:'reps' },
+        { n:'Back Extension',     ref:'3×10', relance:0,  maxTarget:25,  step:2.5, every:3, unit:'lbs' },
+      ]},
+      { cls:'cardio', label:'3 — Cardio finisher', ex:[
+        { n:'Mountain Climber', ref:'10 min', relance:10, maxTarget:15, step:1, every:3, unit:'min' },
+      ]},
+    ]
+  },
+  { key:'sam', label:'Sam', title:'Natation · Récup active', loc:'🏊 Yvon Deschamps',
+    phases:[
+      { cls:'cardio', label:'2 — Cardio', ex:[
+        { n:'Natation', ref:'~25 min', relance:20, maxTarget:30, step:2, every:3, unit:'min' },
+      ]},
+    ]
+  },
+  { key:'dim', label:'Dim', rest:true }
+];
+
+// ── Config & state ───────────────────────────────────────────────────────────
+const SCRIPT_URL_KEY = 'aw_script_url_v3';
+let scriptUrl = localStorage.getItem(SCRIPT_URL_KEY) || '';
+if (scriptUrl) document.getElementById('configBanner').classList.add('hidden');
+
+function saveScriptUrl() {
+  const url = document.getElementById('scriptUrlInput').value.trim();
+  if (!url) return;
+  scriptUrl = url;
+  localStorage.setItem(SCRIPT_URL_KEY, url);
+  testUrl(url);
+}
+async function testUrl(url) {
+  try {
+    const r = await fetch(url);
+    const d = await r.json();
+    if (d.ok) { document.getElementById('configBanner').classList.add('hidden'); toast('✓ Connexion réussie !'); }
+    else throw new Error();
+  } catch { toast('❌ URL invalide — vérifie le déploiement'); }
+}
+
+let sessions = [];
+try { sessions = JSON.parse(localStorage.getItem('aw_sessions') || '[]'); } catch(e) {}
+
+// ── Date helpers ─────────────────────────────────────────────────────────────
+// RELANCE_DATE = date de début du programme (semaine 0)
+// Ajuste cette date si besoin — format YYYY-MM-DD
+const RELANCE_DATE = new Date('2026-06-07');
+
+function getWeeksSinceRelance() {
+  const now = new Date();
+  const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+  return Math.max(0, Math.floor((now - RELANCE_DATE) / msPerWeek));
+}
+
+// Calcule le poids suggéré pour un exercice en fonction des semaines écoulées
+function getSuggested(ex) {
+  if (ex.step === 0 || ex.maxTarget === 0) return null;
+  const weeks = getWeeksSinceRelance();
+  const progressions = Math.floor(weeks / ex.every);
+  const raw = ex.relance + (ex.step * progressions);
+  // Clamp à maxTarget
+  let suggested;
+  if (ex.step > 0) suggested = Math.min(raw, ex.maxTarget);
+  else suggested = Math.max(raw, ex.maxTarget); // pour assist (qui descend)
+  // Arrondir au multiple le plus proche de |step|
+  const unit = Math.abs(ex.step);
+  suggested = Math.round(suggested / unit) * unit;
+  return suggested;
+}
+
+// Cherche le dernier log pour cet exercice dans l'historique local
+function getLastLogged(exName) {
+  for (const s of sessions) {
+    for (const e of s.entries) {
+      if (e.exercice === exName && e.valeur) return parseFloat(e.valeur);
+    }
+  }
+  return null;
+}
+
+function today() {
+  return new Date().toLocaleDateString('fr-CA', {day:'numeric', month:'short', year:'numeric'});
+}
+function getExId(dayKey, pi, ei) { return `${dayKey}_${pi}_${ei}`; }
+function getSemaine() {
+  const now = new Date(); const d = now.getDay() || 7;
+  const mon = new Date(now); mon.setDate(now.getDate() - d + 1);
+  const j4 = new Date(mon.getFullYear(), 0, 4);
+  const wn = Math.ceil(((mon - j4) / 86400000 + j4.getDay() + 1) / 7);
+  return `${mon.getFullYear()}-S${String(wn).padStart(2,'0')}`;
+}
+
+function toast(msg, dur=2800) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), dur);
+}
+
+// ── Tabs ─────────────────────────────────────────────────────────────────────
+const todayDayMap = {1:'lun',2:'mar',3:'mer',4:'jeu',5:'ven',6:'sam',0:'dim'};
+const todayKey = todayDayMap[new Date().getDay()];
+let activeDay = todayKey;
+
+function renderTabs() {
+  document.getElementById('dayTabs').innerHTML = DAYS.map(d => {
+    const isToday = d.key === todayKey;
+    return `<div class="dtab${d.rest?' rest':''}${d.key===activeDay?' active':''}${isToday&&d.key!==activeDay?' today-tab':''}"
+      onclick="switchDay('${d.key}')">${d.label}${isToday?'<span style="display:block;font-size:8px;color:var(--green);font-weight:700;margin-top:1px">Auj.</span>':''}</div>`;
+  }).join('');
+}
+
+function switchDay(key) {
+  activeDay = key;
+  renderTabs();
+  document.querySelectorAll('.day-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(`panel_${key}`)?.classList.add('active');
+  // Close semaine/history if open
+  document.getElementById('semainePanel').classList.remove('show');
+  document.getElementById('btnSemaine').classList.remove('active');
+  document.getElementById('historyPanel').classList.remove('show');
+  document.getElementById('btnHist').classList.remove('active');
+}
+
+// ── Panels ───────────────────────────────────────────────────────────────────
+function renderPanels() {
+  const weeks = getWeeksSinceRelance();
+  document.getElementById('panels').innerHTML = DAYS.map(d => {
+    if (d.rest) return `<div class="day-panel${d.key===activeDay?' active':''}" id="panel_${d.key}">
+      <div class="rest-card"><p style="font-size:36px;margin-bottom:12px">🛌</p>
+      <p>Repos complet<br>Récupération musculaire et avant-bras</p></div></div>`;
+
+    const isToday = d.key === todayKey;
+    const todayBadge = isToday ? `<span class="today-badge">Aujourd'hui</span>` : '';
+
+    const sessionBlock = `<div class="session-card">
+      <div class="input-wrap session-date">
+        <label>Date</label>
+        <input type="text" id="date_${d.key}" value="${today()}" placeholder="7 juin 2026">
+      </div>
+      <div class="input-wrap">
+        <label>Durée (min)</label>
+        <input type="number" id="dur_${d.key}" inputmode="numeric" placeholder="60">
+      </div>
+    </div>`;
+
+    const phasesHTML = d.phases.map((phase, pi) => {
+      const exHTML = phase.ex.map((ex, ei) => {
+        const id = getExId(d.key, pi, ei);
+        const sug = getSuggested(ex);
+        const last = getLastLogged(ex.n);
+        const ssTag = ex.ss ? `<div class="ss-tag">SUPERSET ↑</div>` : '';
+        const awBadge = ex.aw ? `<span class="ex-badge aw">🥊 AW</span>` : '';
+        let sugBanner = '';
+        if (sug !== null) {
+          const delta = last ? (sug - last) : null;
+          const deltaStr = delta ? (delta > 0 ? `+${delta}` : `${delta}`) : '';
+          const weekNote = `sem. ${weeks}`;
+          sugBanner = `<div class="sug-banner">
+            <div><div class="sug-label">Suggestion (${weekNote})</div>
+            ${last ? `<div style="font-size:9px;color:var(--text3)">Dernier : ${last} ${ex.unit}</div>` : ''}</div>
+            <div style="text-align:right">
+              <span class="sug-val">${sug} ${ex.unit}</span>
+              ${deltaStr ? `<span class="sug-delta">${deltaStr}</span>` : ''}
+            </div>
+          </div>`;
+        }
+        const placeholder = sug !== null ? String(sug) : ex.relance;
+        return `${ssTag}<div class="ex-card${ex.ss?' ss':''}">
+          <div class="ex-info">
+            <div class="ex-name">${ex.n}</div>
+            <div class="ex-ref">${ex.ref}</div>
+            <div class="ex-target">Cible finale : ${ex.maxTarget} ${ex.unit}</div>
+            ${awBadge}
+            ${sugBanner}
+          </div>
+          <div class="input-row">
+            <div class="input-wrap">
+              <label>${ex.unit.includes('min') ? 'Minutes' : ex.unit === 'reps' ? 'Reps' : 'Poids ('+ex.unit+')'}</label>
+              <input type="number" id="inp_${id}" inputmode="decimal"
+                placeholder="${placeholder}" step="${ex.unit.includes('min')||ex.unit==='reps'?'1':'2.5'}">
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+      return `<div class="phase-lbl ph-${phase.cls}">${phase.label}</div>${exHTML}`;
+    }).join('');
+
+    return `<div class="day-panel${d.key===activeDay?' active':''}" id="panel_${d.key}">
+      <div class="day-title">${d.title}</div>
+      <div class="day-meta"><span class="loc-tag">${d.loc}</span>${todayBadge}<span style="font-size:11px;color:var(--text3)">Sem. ${weeks} depuis relance</span></div>
+      ${sessionBlock}${phasesHTML}
+      <div class="submit-wrap">
+        <button class="submit-btn" id="submitBtn_${d.key}" onclick="submitSession('${d.key}')">
+          ↗ Envoyer la session
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Vue Semaine ───────────────────────────────────────────────────────────────
+function toggleSemaine() {
+  const panel = document.getElementById('semainePanel');
+  const btn = document.getElementById('btnSemaine');
+  const showing = panel.classList.toggle('show');
+  btn.classList.toggle('active', showing);
+  // Close history
+  document.getElementById('historyPanel').classList.remove('show');
+  document.getElementById('btnHist').classList.remove('active');
+  if (showing) renderSemaine();
+}
+
+function renderSemaine() {
+  const weeks = getWeeksSinceRelance();
+  const days = DAYS.filter(d => !d.rest);
+
+  let html = `<div style="font-size:14px;font-weight:600;margin-bottom:12px">Programme — Semaine ${weeks}</div>
+  <div class="semaine-grid"><table class="sem-table">
+  <thead><tr>
+    <th>Jour</th><th>Exercice</th><th>Série / Reps</th><th>Suggestion<br><span style="text-transform:none;letter-spacing:0;font-weight:400">sem. ${weeks}</span></th><th>Cible finale</th>
+  </tr></thead><tbody>`;
+
+  days.forEach((d, di) => {
+    const isToday = d.key === todayKey;
+    const allEx = d.phases.flatMap(p => p.ex);
+    allEx.forEach((ex, ei) => {
+      const sug = getSuggested(ex);
+      const last = getLastLogged(ex.n);
+      html += `<tr${isToday?' style="background:rgba(29,158,117,.06)"':''}>`;
+      if (ei === 0) {
+        html += `<td rowspan="${allEx.length}" style="border-right:1px solid var(--border);white-space:nowrap;padding-right:14px">
+          <div class="sem-day-header${isToday?' ' : ''}">${isToday?'<span style="color:var(--green)">●</span> ':''}${d.label}</div>
+          <div class="sem-loc">${d.loc}</div>
+        </td>`;
+      }
+      html += `<td>
+        <div class="sem-ex">${ex.n}${ex.aw?'<span class="sem-aw">AW</span>':''}</div>
+        ${ex.ss?'<div class="sem-ref">↑ Superset</div>':''}
+      </td>
+      <td class="sem-ref">${ex.ref}</td>
+      <td>
+        ${sug !== null ? `<div class="sem-sug">${sug} ${ex.unit}</div>
+        ${last ? `<div class="sem-sug-lbl">Dernier : ${last} ${ex.unit}</div>` : ''}` : '<span class="sem-rest">—</span>'}
+      </td>
+      <td class="sem-target">${ex.maxTarget > 0 ? ex.maxTarget+' '+ex.unit : '—'}</td>
+      </tr>`;
+    });
+  });
+
+  html += '</tbody></table></div>';
+  // Dimanche
+  html += `<div style="margin-top:8px;font-size:12px;color:var(--text3);text-align:center;padding:8px">🛌 Dimanche — Repos complet</div>`;
+
+  document.getElementById('semainePanel').innerHTML = html;
+}
+
+// ── Historique ────────────────────────────────────────────────────────────────
+function toggleHistory() {
+  const panel = document.getElementById('historyPanel');
+  const btn = document.getElementById('btnHist');
+  const showing = panel.classList.toggle('show');
+  btn.classList.toggle('active', showing);
+  document.getElementById('semainePanel').classList.remove('show');
+  document.getElementById('btnSemaine').classList.remove('active');
+  if (showing) renderHistory();
+}
+
+function renderHistory() {
+  const el = document.getElementById('historyContent');
+  if (sessions.length === 0) {
+    el.innerHTML = '<div class="no-hist">Aucune session encore — enregistre ta première séance !</div>';
+    return;
+  }
+  el.innerHTML = sessions.slice(0, 30).map(s => `
+    <div class="hist-entry">
+      <div class="hist-date">
+        <span>${s.date} — ${s.jour}</span>
+        <span>${s.dur ? s.dur+' min' : ''}</span>
+      </div>
+      <div class="hist-grid">
+        ${s.entries.map(e => `
+          <div class="hist-item">
+            <div class="hist-item-name">${e.exercice.split(' ').slice(0,2).join(' ')}</div>
+            <div class="hist-item-val">${e.valeur} <span style="font-size:10px;font-weight:400">${e.unite}</span></div>
+          </div>`).join('')}
+      </div>
+    </div>`).join('');
+}
+
+// ── Submit ────────────────────────────────────────────────────────────────────
+async function submitSession(dayKey) {
+  const day = DAYS.find(d => d.key === dayKey);
+  const date = document.getElementById(`date_${dayKey}`)?.value.trim() || today();
+  const dur  = document.getElementById(`dur_${dayKey}`)?.value.trim() || '';
+  const entries = [];
+  day.phases.forEach((phase, pi) => {
+    phase.ex.forEach((ex, ei) => {
+      const val = document.getElementById(`inp_${getExId(dayKey, pi, ei)}`)?.value.trim();
+      if (val) entries.push({
+        id: `${dayKey}_${pi}_${ei}_${Date.now()}`,
+        date, semaine: getSemaine(), jour: day.title,
+        phase: phase.label, exercice: ex.n,
+        valeur: val, unite: ex.unit,
+        suggere: getSuggested(ex) ?? '',
+        aw: ex.aw ? '✓' : '',
+      });
+    });
+  });
+
+  if (entries.length === 0) { toast('⚠️ Entre au moins une valeur avant d\'envoyer'); return; }
+
+  const session = { date, dur, jour: day.title, dayKey, entries, ts: Date.now() };
+  sessions.unshift(session);
+  localStorage.setItem('aw_sessions', JSON.stringify(sessions.slice(0, 200)));
+
+  const btn = document.getElementById(`submitBtn_${dayKey}`);
+  btn.classList.add('loading'); btn.textContent = 'Envoi en cours…';
+
+  if (scriptUrl) {
+    try {
+      await fetch(scriptUrl, { method:'POST', headers:{'Content-Type':'text/plain'}, body:JSON.stringify({ action:'sync', entries }) });
+      toast(`✓ ${entries.length} exercice(s) envoyé(s) !`);
+    } catch { toast('Sauvegardé localement — Sheet hors ligne'); }
+  } else {
+    toast(`✓ ${entries.length} exercice(s) sauvegardé(s) localement`);
+  }
+
+  day.phases.forEach((phase, pi) => {
+    phase.ex.forEach((ex, ei) => {
+      const el = document.getElementById(`inp_${getExId(dayKey, pi, ei)}`);
+      if (el) el.value = '';
+    });
+  });
+  btn.classList.remove('loading'); btn.textContent = '↗ Envoyer la session';
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+const wk = getWeeksSinceRelance();
+document.getElementById('appBarDate').textContent = `Relance 2026 · Sem. ${wk} · ${getSemaine()}`;
+if (scriptUrl) document.getElementById('scriptUrlInput').value = scriptUrl;
+renderTabs();
+renderPanels();
+</script>
+</body>
+</html>
