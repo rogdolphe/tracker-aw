@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Recettes — Budget & Performance</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f7f6f3;--surface:#fff;--surface2:#f0efe9;--border:rgba(0,0,0,.09);--border2:rgba(0,0,0,.18);--text:#1a1917;--text2:#6b6a65;--text3:#a09e98;--green:#1d9e75;--amber:#ef9f27;--r:14px;--rs:10px;--pill:99px}
+@media(prefers-color-scheme:dark){:root{--bg:#131211;--surface:#1e1d1b;--surface2:#282724;--border:rgba(255,255,255,.09);--border2:rgba(255,255,255,.18);--text:#f0ede8;--text2:#9a9892;--text3:#635f5a}}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:"DM Sans",system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:40px}
+.app-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 16px;position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.app-bar h1{font-size:15px;font-weight:600}.app-bar p{font-size:10px;color:var(--text2);margin-top:1px}
+.top-btns{display:flex;gap:6px;flex-shrink:0}
+.hbtn{font-size:11px;font-weight:500;padding:6px 10px;border-radius:var(--pill);border:1px solid var(--border2);background:var(--surface2);color:var(--text);cursor:pointer;white-space:nowrap}
+.container{max-width:720px;margin:0 auto;padding:16px}
+.day-bar{background:var(--surface2);border-radius:var(--r);padding:11px 14px;margin-bottom:1rem;display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.db-val{font-size:16px;font-weight:600;color:var(--text);text-align:center}
+.db-lbl{font-size:10px;color:var(--text2);text-align:center;margin-top:1px}
+.db-sub{font-size:9px;color:var(--text3);text-align:center}
+.day-note{font-size:11px;color:var(--text2);background:var(--surface2);border-radius:var(--rs);padding:8px 12px;margin-bottom:1rem;line-height:1.5}
+.week-banners{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.week-banner{border-radius:var(--rs);padding:9px 12px;font-size:11px;line-height:1.5}
+.week-banner.debut{background:#E6F1FB;color:#0C447C;border-left:3px solid #2563eb}
+.week-banner.fin{background:#EAF3DE;color:#27500A;border-left:3px solid #1d9e75}
+.filter-row{display:flex;gap:6px;flex-wrap:nowrap;padding:.4rem 0 .8rem;overflow-x:auto;scrollbar-width:none}
+.filter-row::-webkit-scrollbar{display:none}
+.fbtn{flex-shrink:0;padding:5px 11px;border-radius:var(--pill);border:1px solid var(--border2);background:var(--surface);color:var(--text2);font-size:11px;font-weight:500;cursor:pointer;transition:all .15s;white-space:nowrap}
+.fbtn.active{background:var(--text);color:var(--bg);border-color:transparent}
+.meal-section{margin-bottom:1.8rem}
+.meal-header{display:flex;align-items:center;gap:10px;margin-bottom:.8rem;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.meal-icon{font-size:20px}.meal-title{font-size:14px;font-weight:600;color:var(--text)}
+.meal-meta{font-size:10px;color:var(--text3);margin-left:auto;text-align:right}
+.rb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(138px,1fr));gap:8px}
+.rb-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:11px;cursor:pointer;transition:all .15s;display:flex;flex-direction:column;gap:4px;position:relative}
+.rb-card:hover{background:var(--surface2);border-color:var(--border2)}
+.rb-card:active{transform:scale(.97)}
+.rb-card.hidden{display:none}
+.rb-card.debut{border-left:3px solid #2563eb}
+.rb-card.fin{border-left:3px solid #1d9e75}
+.rb-card.weekend{border:1.5px solid var(--amber)}
+.rb-icon{font-size:20px;line-height:1}
+.rb-name{font-size:11px;font-weight:500;color:var(--text);line-height:1.3}
+.rb-kcal{font-size:10px;color:var(--text3)}
+.rb-prot{font-size:10px;color:#27500A;font-weight:600;background:#EAF3DE;padding:1px 5px;border-radius:4px;display:inline-block}
+.rb-tag{font-size:9px;font-weight:500;padding:1px 5px;border-radius:var(--pill);display:inline-block;margin-top:2px}
+.rb-af{position:absolute;top:7px;right:7px;font-size:9px;background:#FAEEDA;color:#633806;border-radius:4px;padding:1px 4px;font-weight:600}
+.rb-week{position:absolute;bottom:7px;right:7px;font-size:8px;font-weight:600;padding:1px 4px;border-radius:3px}
+.rw-d{background:#E6F1FB;color:#0C447C}.rw-f{background:#EAF3DE;color:#27500A}.rw-w{background:#FFF8E6;color:#92600A}
+.tag-fr{background:#E6F1FB;color:#0C447C}.tag-es{background:#FAEEDA;color:#633806}
+.tag-it{background:#FBEAF0;color:#72243E}.tag-qc{background:#EAF3DE;color:#27500A}
+.tag-th{background:#FFF8E6;color:#92600A}
+.tag-af{background:#FAEEDA;color:#633806}.tag-rapide{background:#F1EFE8;color:#444441}.tag-batch{background:#EEEDFE;color:#3C3489}
+.tag-wknd{background:#FFF8E6;color:#92600A}
+.inv-panel{display:none;background:var(--surface2);border-radius:var(--r);padding:14px;margin-bottom:1rem}
+.inv-panel.show{display:block}
+.inv-cat{font-size:10px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin:10px 0 5px;padding-top:8px;border-top:1px solid var(--border)}
+.inv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:5px}
+.inv-item{background:var(--surface);border-radius:var(--rs);padding:6px 10px;display:flex;justify-content:space-between;align-items:center}
+.inv-name{font-size:11px;color:var(--text);font-weight:500}.inv-qty{font-size:10px;color:var(--text3)}
+.inv-low{background:#FAEEDA}.inv-low .inv-qty{color:#633806;font-weight:600}
+.low-panel{display:none;background:var(--surface2);border-radius:var(--r);padding:12px;margin-top:8px}
+.low-panel.show{display:block}
+.low-item{display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--surface);border-radius:var(--rs);margin-bottom:4px;cursor:pointer}
+.low-item.done{opacity:.4}
+.low-item.done .low-name{text-decoration:line-through}
+.low-name{font-size:12px;color:var(--text);flex:1}
+.low-qty{font-size:11px;color:var(--text3)}
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:flex-end;justify-content:center}
+.modal-backdrop.show{display:flex}
+.modal-box{background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-width:600px;max-height:85vh;overflow-y:auto;padding:0 0 32px}
+.modal-pill{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:12px auto 14px}
+.modal-head{padding:0 20px 12px;border-bottom:1px solid var(--border)}
+.modal-title{font-size:17px;font-weight:600;color:var(--text)}
+.modal-sub{font-size:12px;color:var(--text2);margin-top:3px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.modal-badge{font-size:10px;font-weight:500;padding:2px 7px;border-radius:var(--pill);background:var(--surface2);color:var(--text2)}
+.modal-body{padding:14px 20px}
+.m-sect{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin:14px 0 7px}
+.m-sect:first-child{margin-top:0}
+.timing-row{display:flex;gap:8px;margin-bottom:12px}
+.timing-card{flex:1;background:var(--surface2);border-radius:var(--rs);padding:8px;text-align:center}
+.timing-val{font-size:16px;font-weight:600;color:var(--text)}.timing-lbl{font-size:10px;color:var(--text2);margin-top:1px}
+.macro-row{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:6px}
+.macro-card{background:var(--surface2);border-radius:var(--rs);padding:8px;text-align:center}
+.macro-val{font-size:15px;font-weight:600;color:var(--text)}.macro-lbl{font-size:10px;color:var(--text2);margin-top:1px}
+.prot-bar{height:5px;border-radius:3px;background:var(--border2);margin-top:6px;overflow:hidden}
+.prot-fill{height:100%;background:var(--green);border-radius:3px}
+.prot-label{font-size:10px;color:#27500A;margin-top:3px;font-weight:500}
+.nutr-row{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:6px}
+.nutr-card{background:var(--surface2);border-radius:var(--rs);padding:6px 10px}
+.nutr-lbl{font-size:10px;color:var(--text3)}.nutr-val{font-size:12px;font-weight:500;color:var(--text);margin-top:1px}
+.ing-row{display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:var(--surface2);border-radius:var(--rs);margin-bottom:4px}
+.ing-name{font-size:13px;color:var(--text)}.ing-qty{font-size:12px;font-weight:500;color:var(--text2);white-space:nowrap;margin-left:8px}
+.step-row{display:flex;gap:10px;margin-bottom:9px;align-items:flex-start}
+.step-num{width:24px;height:24px;border-radius:50%;background:var(--text);color:var(--bg);font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.step-text{font-size:13px;color:var(--text2);line-height:1.55;flex:1}
+.tip-box{background:#EAF3DE;border-radius:var(--rs);padding:10px 14px;font-size:12px;color:#27500A;line-height:1.5;margin-top:10px}
+.batch-box{background:#EEEDFE;border-radius:var(--rs);padding:10px 14px;font-size:12px;color:#3C3489;line-height:1.5;margin-top:8px}
+.wknd-box{background:#FFF8E6;border-radius:var(--rs);padding:10px 14px;font-size:12px;color:#92600A;line-height:1.5;margin-top:8px}
+.close-btn{width:100%;padding:13px;background:var(--text);color:var(--bg);border:none;border-radius:var(--r);font-size:14px;font-weight:600;cursor:pointer;margin-top:18px;font-family:"DM Sans",sans-serif}
+</style>
+</head>
+<body>
+<div class="app-bar">
+  <div><h1>Recettes — Été 2026</h1><p>2100 kcal · 155g prot · Performance gym</p></div>
+  <div class="top-btns">
+    <button class="hbtn" onclick="toggleInv()">Stock</button>
+    <button class="hbtn" onclick="toggleLow()">Bas</button>
+  </div>
+</div>
+<div class="container">
+  <div class="day-bar">
+    <div><div class="db-val">2100</div><div class="db-lbl">kcal/jour</div><div class="db-sub">déficit ~500</div></div>
+    <div><div class="db-val">155g</div><div class="db-lbl">protéines</div><div class="db-sub">+ 5g créatine</div></div>
+    <div><div class="db-val">220g</div><div class="db-lbl">glucides</div><div class="db-sub">énergie gym</div></div>
+    <div><div class="db-val">65g</div><div class="db-lbl">lipides</div><div class="db-sub">hormones</div></div>
+  </div>
+  <div class="day-note">Répartition journalière cible : Déjeuner ~450 kcal · Snack matin ~250 kcal · Dîner ~550 kcal · Apéro ~200 kcal · Souper ~650 kcal. Les macros de chaque recette sont calculées pour 1 portion, ingrédients inclus tels qu'écrits.</div>
+  <div class="inv-panel" id="invPanel">
+    <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:10px">Inventaire — ⚠️ = vraiment bas</div>
+    <div class="inv-grid" id="invGrid"></div>
+  </div>
+  <div class="low-panel" id="lowPanel">
+    <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px">À racheter prochaine épicerie</div>
+    <div id="lowList"></div>
+  </div>
+  <div class="week-banners">
+    <div class="week-banner debut">Début semaine<br><span style="font-size:10px;opacity:.8">Lun·Mar·Mer — frais, gym lourd</span></div>
+    <div class="week-banner fin">Fin semaine<br><span style="font-size:10px;opacity:.8">Jeu·Ven·Sam — stocks, batch</span></div>
+  </div>
+  <div class="filter-row" id="filters"></div>
+  <div id="container"></div>
+</div>
+<div class="modal-backdrop" id="modal" onclick="closeModal(event)">
+  <div class="modal-box">
+    <div class="modal-pill"></div>
+    <div class="modal-head"><div class="modal-title" id="mTitle"></div><div class="modal-sub" id="mSub"></div></div>
+    <div class="modal-body" id="mBody"></div>
+  </div>
+</div>
+<script>
+const INV=[
+  {n:"Poitrines de poulet",q:"928g",cat:"Protéines"},
+  {n:"Bœuf haché maigre",q:"878g",cat:"Protéines"},
+  {n:"Crevettes pacifique gelées",q:"680g",cat:"Protéines"},
+  {n:"Tofu",q:"454g",cat:"Protéines"},
+  {n:"Œufs",q:"14x",cat:"Protéines"},
+  {n:"Yogourt Oikos 19g",q:"750ml",cat:"Protéines"},
+  {n:"Ton solide en canne",q:"240g",cat:"Protéines"},
+  {n:"Sardines drainées",q:"64g",cat:"Protéines",low:true},
+  {n:"Mozzarella sélection",q:"900g",cat:"Laitier"},
+  {n:"Crème à cuisson",q:"300ml",cat:"Laitier"},
+  {n:"Lait évaporé",q:"600ml",cat:"Laitier"},
+  {n:"Lait de coco",q:"450ml",cat:"Laitier"},
+  {n:"Lait 2%",q:"1000ml",cat:"Laitier"},
+  {n:"Margarine",q:"400g",cat:"Laitier"},
+  {n:"Beurre demi-sel",q:"50g",cat:"Laitier",low:true},
+  {n:"Chou vert",q:"1400g",cat:"Légumes"},
+  {n:"Carottes",q:"1007g",cat:"Légumes"},
+  {n:"Champignons",q:"650g",cat:"Légumes"},
+  {n:"Pommes de terre",q:"Sac 5lb",cat:"Légumes"},
+  {n:"Kale (chou frisé)",q:"~500g",cat:"Légumes"},
+  {n:"Tomates cerises",q:"450g",cat:"Légumes"},
+  {n:"Tomate rouge",q:"2x",cat:"Légumes"},
+  {n:"Oignon",q:"4x",cat:"Légumes"},
+  {n:"Ail",q:"12 gousses",cat:"Légumes"},
+  {n:"Avocat",q:"1x",cat:"Légumes",low:true},
+  {n:"Citron",q:"1x",cat:"Légumes",low:true},
+  {n:"Framboises fraîches",q:"200g",cat:"Fruits",low:true},
+  {n:"Framboises gelées",q:"80g",cat:"Fruits",low:true},
+  {n:"Riz blanc",q:"1089g",cat:"Féculents"},
+  {n:"Quinoa",q:"973g",cat:"Féculents"},
+  {n:"Spaghetti Barilla",q:"1 boîte",cat:"Féculents"},
+  {n:"Pappardelle",q:"490g",cat:"Féculents"},
+  {n:"Gruau",q:"387g",cat:"Féculents"},
+  {n:"Farine tout usage",q:"2540g",cat:"Féculents"},
+  {n:"Self-raising cake flour",q:"1875g",cat:"Féculents"},
+  {n:"Lentilles brunes",q:"563g",cat:"Légumineuses"},
+  {n:"Haricots soisson",q:"540g",cat:"Légumineuses"},
+  {n:"Pois chiches en canne",q:"800g",cat:"Légumineuses"},
+  {n:"Maïs en crème",q:"398g",cat:"Conserves"},
+  {n:"Macédoine",q:"800g",cat:"Conserves"},
+  {n:"Coulis tomate Aurora",q:"300g",cat:"Conserves"},
+  {n:"Pâte de tomate",q:"60g",cat:"Conserves",low:true},
+  {n:"Sauce soya",q:"400g",cat:"Condiments"},
+  {n:"Moutarde de Dijon",q:"300g",cat:"Condiments"},
+  {n:"Ketchup",q:"800g",cat:"Condiments"},
+  {n:"Miel",q:"600g",cat:"Condiments"},
+  {n:"Sirop d'érable",q:"100g",cat:"Condiments",low:true},
+  {n:"Beurre d'arachide naturel",q:"200g",cat:"Condiments"},
+  {n:"Worcestershire",q:"30g",cat:"Condiments",low:true},
+  {n:"Sriracha",q:"150g",cat:"Condiments"},
+  {n:"Vinaigre de riz",q:"150g",cat:"Condiments",low:true},
+  {n:"Vinaigre de vin rouge",q:"400g",cat:"Condiments"},
+  {n:"Huile d'olive",q:"600ml",cat:"Huiles"},
+  {n:"Huile d'arachide",q:"700ml",cat:"Huiles"},
+  {n:"Huile de sésame",q:"327ml",cat:"Huiles"},
+  {n:"Bouillon poulet poudre",q:"300g",cat:"Bouillons"},
+  {n:"Bouillon bœuf poudre",q:"100g",cat:"Bouillons"},
+  {n:"Fécule de maïs",q:"130g",cat:"Sec"},
+  {n:"Graines de chia",q:"234g",cat:"Sec"},
+  {n:"Ramen",q:"12x",cat:"Sec"},
+  {n:"Céréales muslix",q:"0g",cat:"Sec",low:true},
+  {n:"Biscuits vital choco",q:"260g",cat:"Sec"},
+  {n:"Cassonade",q:"634g",cat:"Sucrants"},
+  {n:"Sucre blanc",q:"500g",cat:"Sucrants"},
+  {n:"Créatine",q:"300g",cat:"Suppléments"},
+];
+
+const MEALS=[
+  {key:"dejeuner",icon:"🌅",title:"Déjeuner",time:"7h00",target:"~450 kcal · ~30g prot",recipes:[
+    {id:"oikos_gruau",icon:"🥣",name:"Oikos + gruau & framboises",tag:"rapide",tagLabel:"Rapide",week:"both",
+     kcal:410,prot:32,carb:48,fat:7,fiber:9,sodium:110,prep:3,cook:0,
+     ing:[["Yogourt Oikos 19g","175g"],["Gruau à cuisson rapide","60g"],["Framboises fraîches","80g"],["Graines de chia","15g"],["Miel","1 c.t. (7g)"]],
+     steps:["Verser le yogourt dans un bol.","Ajouter le gruau sec, les graines de chia et le miel — mélanger légèrement.","Disposer les framboises par-dessus.","Laisser reposer 5 minutes : le gruau et le chia absorbent l'humidité du yogourt et gonflent légèrement."],
+     tip:"Le gruau non cuit dans le yogourt crée une texture épaisse style overnight oats. Le chia fournit oméga-3 et prolonge la satiété. Les framboises apportent vitamine C et antioxydants pour la récupération musculaire."},
+
+    {id:"gruau_overnight",icon:"🥣",name:"Gruau overnight Oikos",tag:"batch",tagLabel:"Batch",week:"debut",
+     kcal:420,prot:28,carb:52,fat:8,fiber:10,sodium:90,prep:5,cook:0,
+     ing:[["Gruau","80g"],["Yogourt Oikos 19g","120g"],["Lait 2%","80ml"],["Framboises fraîches","80g"],["Graines de chia","15g"],["Miel","1 c.s."]],
+     steps:["Mélanger gruau + yogourt + lait + chia + miel dans un pot Mason de 500ml.","Ajouter les framboises par-dessus sans mélanger.","Fermer hermétiquement. Réfrigérer toute la nuit (minimum 6h).","Le matin : manger directement du pot, froid ou tiède (1 min micro-ondes)."],
+     tip:"L'amidon résistant du gruau cuit à froid améliore la sensibilité à l'insuline — important pour la perte de gras. Préparer 4 pots le dimanche soir = 4 déjeuners sans effort.",
+     batch:"5 jours au frigo en pot hermétique."},
+
+    {id:"omelette_kale_champ",icon:"🍳",name:"Omelette kale, champignons & ail",tag:"fr",flag:"🇫🇷",tagLabel:"Français",week:"debut",
+     kcal:380,prot:26,carb:8,fat:26,fiber:3,sodium:440,prep:5,cook:10,
+     ing:[["Œufs","3 gros"],["Kale (chou frisé)","60g, tiges retirées"],["Champignons","80g, tranchés"],["Ail","1 gousse, émincée"],["Huile d'olive","1 c.s."],["Sel","¼ c.t."],["Poivre noir","au goût"]],
+     steps:["Chauffer l'huile olive à feu vif dans une poêle antiadhésive.","Ajouter champignons en une couche — ne pas remuer 2 min pour les faire dorer plutôt que bouillir.","Ajouter l'ail, mélanger 30 sec. Ajouter le kale, sauter 2 min jusqu'à flétri. Saler et poivrer. Retirer dans une assiette.","Dans la même poêle à feu moyen-doux, verser les œufs battus salés.","Quand les bords sont pris (30 sec), déposer les légumes sur une moitié. Plier l'omelette.","Servir immédiatement — l'intérieur doit rester légèrement baveuse."],
+     tip:"Technique française classique : les bords de l'omelette se rabattent sur la garniture sans coloration excessive. L'omelette trop cuite est caoutchouteuse. Baveuse en dessous = parfaite."},
+
+    {id:"crepes_fines",icon:"🥞",name:"Crêpes fines + œufs cocotte",tag:"fr",flag:"🇫🇷",tagLabel:"Français",week:"weekend",weekend:true,
+     kcal:520,prot:30,carb:52,fat:22,fiber:2,sodium:520,prep:35,cook:20,
+     ing:[["Farine tout usage","150g"],["Œufs","2 pour pâte + 2 pour cocotte"],["Lait 2%","300ml"],["Margarine","15g fondue + ½ c.t. pour la poêle"],["Sel","1 pincée"],["Sucre","1 c.t."],["Crème à cuisson","2 c.s. pour la cocotte"],["Sel, poivre","pour les œufs"]],
+     steps:["Pâte à crêpes : fouetter farine + sel + sucre. Ajouter les 2 œufs et la moitié du lait. Fouetter jusqu'à lisse et sans grumeaux. Ajouter reste du lait + margarine fondue. Reposer 30 min à température ambiante.","Cuire les crêpes dans une poêle chaude légèrement beurrée, 1 min par côté. Empiler sur une assiette couverte.","Œufs cocotte : dans deux ramequins beurrés, verser 1 c.s. de crème chacun. Casser 1 œuf dans chaque. Saler, poivrer.","Four à 180°C (ou air fryer 150°C) 8-10 min — blancs pris, jaunes encore coulants.","Servir les crêpes + ramequins d'œufs cocotte."],
+     tip:"L'œuf cocotte est la façon classique française de servir les œufs avec les crêpes. Le jaune coulant sert de sauce naturelle. Repos obligatoire de la pâte pour que le gluten se détende et donne des crêpes souples.",
+     wknd:"Recette du dimanche matin — prendre le temps de la faire bien."},
+
+    {id:"toast_pb",icon:"🥜",name:"Toast beurre d'arachide & framboises",tag:"rapide",tagLabel:"Rapide",week:"both",
+     kcal:440,prot:20,carb:52,fat:18,fiber:6,sodium:240,prep:5,cook:3,
+     ing:[["Pain (fait maison ou ramen grillé)","2 tranches épaisses"],["Beurre d'arachide naturel","3 c.s. (45g)"],["Framboises fraîches","80g"],["Miel","1 c.t."],["Yogourt Oikos 19g (côté)","100g"]],
+     steps:["Griller le pain ou le ramen à sec dans une poêle chaude 2-3 min chaque côté jusqu'à doré et croustillant.","Étendre le beurre d'arachide généreusement sur le pain encore chaud.","Écraser légèrement les framboises à la fourchette et déposer sur le beurre d'arachide.","Arroser d'un filet de miel.","Servir avec le yogourt Oikos en bol côté — il complète les protéines de la portion."],
+     tip:"Le beurre d'arachide seul apporte 8g de protéines. Le yogourt Oikos côté ajoute 12g. Total : 20g de protéines. Sans le yogourt ce n'est qu'un déjeuner glucidique."},
+
+    {id:"galette_bretonne",icon:"🥞",name:"Galette bretonne œuf, champignons",tag:"fr",flag:"🇫🇷",tagLabel:"Français",week:"debut",
+     kcal:450,prot:26,carb:44,fat:20,fiber:3,sodium:560,prep:10,cook:15,
+     ing:[["Farine tout usage (ou de sarrasin si disponible)","120g"],["Œufs","1 dans la pâte + 1 sur la galette"],["Lait 2%","200ml"],["Margarine","10g fondue + cuisson"],["Sel","½ c.t."],["Champignons","80g, tranchés et sautés"],["Mozzarella sélection","40g, râpée"],["Sel, poivre","pour la garniture"]],
+     steps:["Pâte : fouetter farine + sel + 1 œuf + lait progressivement jusqu'à pâte lisse. Ajouter margarine fondue. Reposer 15 min.","Sauter les champignons à feu vif dans un peu de margarine, saler et poivrer. Réserver.","Dans une grande poêle chaude beurrée, verser une louche de pâte en tournant pour couvrir le fond en cercle de 25-28cm.","Cuire 2 min. Déposer champignons + mozza sur une moitié. Casser l'œuf à côté de la garniture.","Replier les bords de la galette vers le centre pour former un carré, laissant le jaune d'œuf visible au centre.","Couvrir 1 min pour que l'œuf et la mozza fondent. Servir immédiatement."],
+     tip:"La galette bretonne traditionnelle est faite à la farine de sarrasin, mais la farine tout usage donne un bon résultat. L'œuf au centre est la garniture classique du marché breton. La mozza remplace ici le fromage emmental traditionnel."},
+  ]},
+
+  {key:"snack_matin",icon:"🍎",title:"Snack matin",time:"10h00",target:"~250 kcal · ~20g prot",recipes:[
+    {id:"oikos_framboise",icon:"🥛",name:"Oikos nature + framboises",tag:"rapide",tagLabel:"Rapide",week:"both",
+     kcal:190,prot:22,carb:16,fat:3,fiber:3,sodium:75,prep:2,cook:0,
+     ing:[["Yogourt Oikos 19g","175g"],["Framboises fraîches","80g"],["Miel","1 c.t."]],
+     steps:["Verser le yogourt dans un bol ou manger directement du contenant.","Disposer les framboises par-dessus.","Arroser de miel."],
+     tip:"22g de protéines pour 190 kcal. Le meilleur ratio protéines/calories de ta journée. Idéal avant le gym ou comme collation post-entraînement légère."},
+
+    {id:"oeufs_durs_moutarde",icon:"🥚",name:"Œufs durs, sauce moutarde-citron",tag:"rapide",tagLabel:"Rapide",week:"both",
+     kcal:240,prot:18,carb:4,fat:16,fiber:0,sodium:380,prep:2,cook:12,
+     ing:[["Œufs","3"],["Moutarde de Dijon","1 c.s."],["Huile d'olive","1 c.s."],["Vinaigre de vin rouge","½ c.t."],["Sel, poivre","au goût"]],
+     steps:["Placer les œufs directement dans le panier de l'air fryer. 130°C pendant 15 min pour jaune encore tendre, 17 min pour bien cuit.","Ou : plonger dans eau bouillante 10 min, puis eau froide immédiatement.","Éplucher. Couper en deux dans la longueur.","Mélanger moutarde + huile olive + vinaigre à la fourchette jusqu'à émulsionné.","Déposer les demi-œufs sur une assiette. Napper de sauce. Poivrer."],
+     tip:"L'air fryer donne des œufs durs parfaitement reproductibles. L'eau froide immédiate après cuisson facilite l'épluchage et arrête la cuisson. La sauce moutarde-huile olive est une vinaigrette légère qui remplace la mayo.",
+     batch:"Cuire 6 œufs le dimanche, conserver en coquille jusqu'à 5 jours au frigo."},
+
+    {id:"toast_thon",icon:"🐟",name:"Rillettes de thon maison sur ramen",tag:"fr",flag:"🇫🇷",tagLabel:"Français",week:"both",
+     kcal:280,prot:28,carb:22,fat:10,fiber:2,sodium:640,prep:5,cook:3,
+     ing:[["Ton solide en canne","120g égoutté"],["Moutarde de Dijon","1 c.s."],["Huile d'olive","1 c.t."],["Vinaigre de vin rouge","½ c.t."],["Poivre noir","au goût"],["Ramen","1 bloc"]],
+     steps:["Égoutter le thon soigneusement. L'effeuiller à la fourchette dans un bol.","Ajouter moutarde, huile olive et vinaigre. Mélanger jusqu'à texture de rillettes homogène. Poivrer.","Griller le ramen à sec dans une poêle très chaude 2 min de chaque côté — doit être bien doré et croustillant.","Déposer les rillettes sur le ramen grillé encore chaud."],
+     tip:"Style rillettes de thon à la moutarde — version bistrot français classique. Le vinaigre de vin rouge équilibre le gras du thon. Le ramen grillé à sec crée une base croustillante qui tient bien mieux que du pain mou."},
+
+    {id:"biscuits_oikos",icon:"🍪",name:"Biscuits vital choco + Oikos",tag:"rapide",tagLabel:"Rapide",week:"both",
+     kcal:300,prot:28,carb:28,fat:10,fiber:4,sodium:180,prep:1,cook:0,
+     ing:[["Biscuits vital organic choco","60g (3 biscuits)"],["Yogourt Oikos 19g","150g"]],
+     steps:["Sortir le yogourt du frigo 5 min avant pour qu'il soit moins froid.","Manger les biscuits et le yogourt ensemble — tremper les biscuits dans le yogourt."],
+     tip:"Snack complet : biscuits (glucides complexes + fibres) + Oikos (protéines rapides). 28g de protéines en 1 minute. Limiter à 3 biscuits — ils sont caloriques."},
+
+    {id:"kale_chips_af",icon:"🥬",name:"Kale chips air fryer & Oikos",tag:"af",tagLabel:"Air Fryer",airfryer:true,week:"both",
+     kcal:250,prot:24,carb:22,fat:9,fiber:5,sodium:320,prep:6,cook:8,
+     ing:[["Kale (chou frisé)","100g, tiges retirées"],["Huile d'olive","1 c.s."],["Sel","½ c.t."],["Ail en poudre","¼ c.t."],["Yogourt Oikos 19g (côté)","100g"]],
+     steps:["Laver le kale et le sécher COMPLÈTEMENT avec un linge — l'humidité résiduelle empêche le croustillant.","Retirer les tiges centrales (trop dures). Déchirer en morceaux de 5-6 cm.","Dans un bol, mélanger avec huile olive + sel + ail en poudre. Bien enrober chaque feuille.","Étaler en couche simple dans le panier air fryer — ne pas empiler.","Air fryer 160°C pendant 5-7 min en surveillant. Sortir dès que croustillant et encore vert.","Servir immédiatement avec le yogourt Oikos en trempette."],
+     tip:"160°C maximum — au-delà le kale brûle et devient amer. Sécher parfaitement le kale est l'étape la plus importante. Le kale chips maison est incomparable avec les versions commerciales."},
+
+    {id:"bol_quinoa_snack",icon:"🌾",name:"Bol quinoa tiède, œuf poché",tag:"batch",tagLabel:"Batch",week:"fin",
+     kcal:340,prot:22,carb:44,fat:12,fiber:5,sodium:380,prep:3,cook:15,
+     ing:[["Quinoa","90g sec"],["Bouillon poulet poudre","½ c.t."],["Œuf","1"],["Vinaigre blanc","1 c.s. (pour le pochage)"],["Sauce soya","1 c.t."],["Huile de sésame","½ c.t."]],
+     steps:["Rincer le quinoa. Cuire dans 200ml eau + bouillon 15 min à couvert à feu doux. Éteindre, laisser reposer 5 min, égrainer à la fourchette.","Porter une petite casserole d'eau à frémissement (pas à ébullition). Ajouter le vinaigre.","Créer un tourbillon avec une cuillère. Casser l'œuf dans un verre d'abord, puis le glisser au centre du tourbillon.","Pocher 3 min exactement pour jaune coulant. Retirer avec une écumoire.","Servir quinoa chaud + œuf poché. Assaisonner sauce soya + huile sésame."],
+     tip:"Le quinoa cuit dans le bouillon plutôt que l'eau = différence de goût significative. L'œuf poché sur le quinoa avec le jaune coulant crée une sauce naturelle grasse-salée. Le tourbillon d'eau est la technique pour garder l'œuf compact.",
+     batch:"Cuire le quinoa en grande quantité. Réfrigérer en portions. Toujours pocher l'œuf frais."},
+
+    {id:"carottes_rotis_hummus",icon:"🥕",name:"Carottes rôties AF, Oikos façon houmous",tag:"af",tagLabel:"Air Fryer",airfryer:true,week:"fin",
+     kcal:280,prot:24,carb:30,fat:9,fiber:7,sodium:340,prep:6,cook:15,
+     ing:[["Carottes","220g, coupées en bâtonnets de 1cm"],["Huile d'olive","1 c.s."],["Cumin","½ c.t."],["Paprika fumé","¼ c.t."],["Sel","¼ c.t."],["Yogourt Oikos 19g","150g"],["Moutarde de Dijon","1 c.t."],["Ail en poudre","¼ c.t."]],
+     steps:["Couper les carottes en bâtonnets réguliers de 1cm d'épaisseur — même épaisseur = même cuisson.","Mélanger avec huile olive + cumin + paprika + sel. Bien enrober.","Air fryer 200°C pendant 14-16 min. Secouer le panier à mi-cuisson. Les bords doivent être légèrement caramélisés.","Pendant la cuisson : mélanger Oikos + moutarde + ail en poudre dans un petit bol.","Servir les carottes chaudes avec le bol de sauce Oikos en trempette."],
+     tip:"Les carottes rôties à l'air fryer ont une saveur concentrée et douce incomparable. Le mélange cumin-paprika est classique du Moyen-Orient. Le yogourt Oikos remplace le houmous de façon protéinée."},
+  ]},
+
+  {key:"diner",icon:"☀️",title:"Dîner",time:"12h00",target:"~550 kcal · ~45g prot",recipes:[
+    {id:"poulet_chasseur",icon:"🍗",name:"Poulet chasseur champignons",tag:"fr",flag:"🇫🇷",tagLabel:"Français",week:"debut",
+     kcal:580,prot:48,carb:42,fat:22,fiber:5,sodium:560,prep:8,cook:30,
+     ing:[["Poitrine de poulet","200g"],["Champignons","150g, tranchés"],["Oignon","½, émincé"],["Ail","3 gousses, émincées"],["Coulis tomate Aurora","100ml"],["Bouillon poulet poudre","1 c.t. dissous dans 150ml eau"],["Vinaigre de vin rouge","1 c.s."],["Thym séché","½ c.t."],["Huile d'olive","1 c.s."],["Farine tout usage","1 c.s."],["Riz blanc","90g sec"]],
+     steps:["Cuire le riz dans 200ml eau bouillante salée. Couvrir, feu doux 15 min. Laisser reposer 5 min.","Saler et poivrer le poulet. Fariner légèrement en tapotant l'excès.","Huile olive chaude dans une sauteuse. Dorer le poulet 3-4 min de chaque côté. Retirer et réserver.","Dans la même sauteuse, faire revenir oignon + champignons à feu vif 4-5 min sans remuer d'abord.","Ajouter l'ail, cuire 1 min. Déglacer avec le vinaigre de vin rouge — gratter le fond avec une cuillère en bois.","Ajouter coulis tomate + bouillon + thym. Remettre le poulet.","Mijoter à couvert 18 min à feu doux. Sauce doit napper une cuillère.","Servir sur le riz."],
+     tip:"Le poulet chasseur est la recette la plus reproducible de la cuisine française populaire. La farine sur le poulet lie naturellement la sauce pendant le mijotage. Déglacer au vinaigre après les champignons détache le fond caramélisé — c'est là que réside toute la saveur."},
+
+    {id:"supremes_champignons",icon:"🍄",name:"Suprêmes volaille, champignons & crème",tag:"fr",flag:"🇫🇷",tagLabel:"Français",week:"debut",
+     kcal:590,prot:50,carb:42,fat:24,fiber:3,sodium:520,prep:8,cook:22,
+     ing:[["Poitrine de poulet","200g, en médaillons de 2cm"],["Champignons","150g, tranchés"],["Oignon","½, émincé"],["Ail","2 gousses"],["Crème à cuisson","4 c.s. (60ml)"],["Bouillon poulet poudre","1 c.t. dissous dans 100ml eau"],["Thym séché","¼ c.t."],["Huile d'olive","1 c.s."],["Farine tout usage","½ c.s."],["Sel, poivre blanc","au goût"],["Riz blanc ou pappardelle","90g sec"]],
+     steps:["Cuire le riz ou les pappardelle selon les instructions.","Couper le poulet en médaillons de 2cm. Saler, poivrer, fariner légèrement.","Huile olive à feu vif. Saisir les médaillons 90 sec de chaque côté — doré à l'extérieur, pas encore cuit à cœur. Retirer.","Dans la même poêle, faire revenir oignon 2 min. Ajouter champignons, cuire 4 min sans remuer.","Ajouter ail + thym, 30 sec. Déglacer avec le bouillon, gratter le fond.","Baisser à feu moyen. Ajouter la crème. Mijoter 3 min — ne jamais faire bouillir fortement.","Remettre les médaillons de poulet. Cuire 4-5 min dans la sauce.","Servir sur riz ou pappardelle."],
+     tip:"Inspiré des Suprêmes de Volaille aux Champignons de Julia Child. La technique de sous-cuire le poulet avant la sauce est essentielle — il finit de cuire dans la crème et reste moelleux. Crème qui bout violemment = sauce qui tranche et poulet sec."},
+
+    {id:"bol_thon_riz",icon:"🐟",name:"Bol thon, riz & légumes sautés",tag:"rapide",tagLabel:"Rapide",week:"both",
+     kcal:510,prot:42,carb:54,fat:12,fiber:6,sodium:680,prep:8,cook:15,
+     ing:[["Ton solide en canne","170g (1 canne) égoutté"],["Riz blanc","90g sec"],["Champignons","100g, tranchés"],["Kale (chou frisé)","80g, tiges retirées"],["Ail","2 gousses"],["Sauce soya","2 c.s."],["Huile de sésame","1 c.t."],["Vinaigre de riz","1 c.t."],["Miel","1 c.t."],["Huile d'arachide","1 c.s."]],
+     steps:["Cuire le riz (200ml eau, couvrir, 15 min feu doux, repos 5 min).","Mélanger sauce soya + huile sésame + vinaigre + miel dans un petit bol — c'est la sauce.","Chauffer l'huile d'arachide à feu vif. Saisir les champignons 3 min sans remuer.","Ajouter l'ail, 30 sec. Ajouter le kale, sauter 2 min jusqu'à flétri.","Dans le bol : riz, légumes sautés, thon effeuillé par-dessus.","Verser la sauce uniformément."],
+     tip:"Le kale flétri dans la poêle chaude perd son amertume en 2 min. Bien séparer le thon en flocons plutôt que de l'émietter finement — les gros morceaux ont plus de texture."},
+
+    {id:"pasta_bolognaise",icon:"🍝",name:"Spaghetti bolognaise classique",tag:"it",flag:"🇮🇹",tagLabel:"Italien",week:"debut",
+     kcal:580,prot:42,carb:62,fat:16,fiber:6,sodium:560,prep:8,cook:25,
+     ing:[["Bœuf haché maigre","150g"],["Spaghetti Barilla","90g sec"],["Coulis tomate Aurora","150ml"],["Pâte de tomate","1 c.s."],["Oignon","½, finement émincé"],["Ail","3 gousses, émincées"],["Bouillon bœuf poudre","1 c.t. dissous dans 100ml eau"],["Huile d'olive","1 c.s."],["Origan séché","½ c.t."],["Thym séché","¼ c.t."],["Sel, poivre","au goût"]],
+     steps:["Cuire les spaghetti dans grande casserole d'eau bouillante fortement salée selon le temps indiqué sur la boîte. Garder 120ml d'eau de cuisson avant d'égoutter.","Pendant ce temps : chauffer huile olive à feu moyen. Faire revenir l'oignon 3 min, translucide.","Ajouter l'ail, 30 sec. Ajouter le bœuf haché — écraser avec la cuillère et cuire à feu vif jusqu'à plus de trace rose.","Ajouter la pâte de tomate. Cuire en remuant 2 min — elle doit légèrement caraméliser et foncer.","Ajouter coulis Aurora + bouillon + origan + thym. Sel, poivre. Mijoter à découvert 12-15 min.","Incorporer les spaghetti à la sauce. Ajouter un peu d'eau de cuisson si trop épais. Mélanger."],
+     tip:"La pâte de tomate caramélisée 2 min avant d'ajouter le coulis est la technique clé — elle perd son acidité et développe une profondeur umami. L'eau de cuisson amidonnée lie la sauce aux pâtes naturellement."},
+
+    {id:"soupe_lentilles",icon:"🍲",name:"Soupe lentilles brunes épicée",tag:"batch",tagLabel:"Batch",week:"fin",
+     kcal:480,prot:28,carb:68,fat:10,fiber:14,sodium:540,prep:8,cook:30,
+     ing:[["Lentilles brunes","160g, rincées"],["Carottes","100g, en dés"],["Oignon","½, émincé"],["Ail","3 gousses, émincées"],["Macédoine","150g"],["Bouillon poulet poudre","1 c.s. dissous dans 900ml eau"],["Sauce soya","1 c.s."],["Cumin moulu","1 c.t."],["Paprika fumé","½ c.t."],["Huile d'arachide","1 c.s."]],
+     steps:["Chauffer l'huile dans une grande casserole à feu moyen.","Ajouter oignon, cuire 3 min. Ajouter ail + cumin + paprika, remuer 30 sec — les épices toastent dans l'huile.","Ajouter carottes + macédoine, mélanger 2 min.","Ajouter les lentilles rincées + le bouillon. Porter à ébullition.","Couvrir et mijoter à feu doux 25-28 min jusqu'à lentilles très tendres.","Ajouter sauce soya. Goûter et ajuster le sel."],
+     tip:"Torréfier les épices sèches dans l'huile avant d'ajouter les liquides multiplie leur saveur. Les lentilles brunes n'ont pas besoin de trempage. 14g de fibres par portion — excellent pour la satiété en perte de poids.",
+     batch:"4-5 portions. Congèle parfaitement. Meilleure le lendemain."},
+
+    {id:"crevettes_riz_saute",icon:"🦐",name:"Crevettes sautées ail-gingembre & riz",tag:"af",tagLabel:"Air Fryer",airfryer:true,week:"fin",
+     kcal:520,prot:44,carb:54,fat:14,fiber:4,sodium:620,prep:15,cook:15,
+     ing:[["Crevettes pacifique","200g, dégelées et séchées"],["Riz blanc","90g sec"],["Chou vert","150g, émincé finement"],["Ail","3 gousses, râpées"],["Sauce soya","2 c.s."],["Miel","1 c.s."],["Huile de sésame","1 c.t."],["Sriracha","½ c.t."],["Huile d'arachide","1 c.s."]],
+     steps:["Cuire le riz.","Mélanger sauce soya + miel + huile sésame + sriracha : c'est la marinade.","Éponger les crevettes avec du papier absorbant — l'humidité empêche la caramélisation.","Mélanger les crevettes avec la marinade + ail. Mariner 10 min.","Air fryer 200°C pendant 6-7 min. Les crevettes doivent être roses et légèrement caramélisées.","Pendant ce temps, sauter le chou dans huile d'arachide à feu très vif 3-4 min — doit rester croquant.","Servir riz + chou sauté + crevettes par-dessus."],
+     tip:"Sécher les crevettes avant de les mariner est essentiel — l'humidité crée de la vapeur et empêche le caramélisation à l'air fryer. Le chou sauté à feu très vif garde sa texture croquante."},
+
+    {id:"minestrone_poulet",icon:"🍵",name:"Minestrone poulet & haricots",tag:"it",flag:"🇮🇹",tagLabel:"Italien",week:"fin",
+     kcal:540,prot:42,carb:56,fat:12,fiber:12,sodium:620,prep:10,cook:30,
+     ing:[["Poitrine de poulet","150g, coupée en dés de 2cm"],["Haricots soisson","180g (cuits ou en boîte)"],["Macédoine","200g"],["Carottes","80g, en dés"],["Coulis tomate Aurora","100ml"],["Pappardelle","50g, cassées en tronçons de 3cm"],["Bouillon poulet poudre","1 c.s. dissous dans 900ml eau"],["Oignon","½"],["Ail","3 gousses"],["Origan, thym","½ c.t. chacun"],["Huile d'olive","1 c.s."],["Sel, poivre","au goût"]],
+     steps:["Chauffer l'huile. Faire revenir oignon 2 min. Ajouter l'ail, 30 sec.","Ajouter les dés de poulet à feu vif. Cuire jusqu'à doré sur toutes les faces, 3-4 min.","Ajouter les carottes + macédoine, mélanger 2 min.","Verser coulis Aurora + bouillon + origan + thym. Saler, poivrer.","Ajouter les haricots. Couvrir et mijoter 15 min.","Ajouter les pappardelle cassées. Cuire à découvert 8-9 min jusqu'à pâtes al dente."],
+     tip:"Ajouter les pâtes directement dans la soupe (pas cuites séparément) — elles absorbent le bouillon et s'imprègnent de saveur. Ne pas préparer trop à l'avance car les pâtes continuent à gonfler.",
+     batch:"Cuire sans les pâtes pour congeler. Ajouter les pâtes au réchauffage."},
+
+    {id:"riz_champignons_oeuf",icon:"🍚",name:"Riz safrané champignons & œufs pochés",tag:"rapide",tagLabel:"Rapide",week:"both",
+     kcal:510,prot:28,carb:62,fat:18,fiber:4,sodium:480,prep:8,cook:20,
+     ing:[["Riz blanc","100g sec"],["Champignons","180g, tranchés"],["Œufs","2"],["Oignon","½, émincé"],["Ail","3 gousses"],["Bouillon poulet poudre","1 c.t."],["Sauce soya","1 c.s."],["Huile d'arachide","1 c.s."],["Vinaigre blanc","1 c.s. (pour les œufs)"],["Sel, poivre","au goût"]],
+     steps:["Cuire le riz dans 230ml eau + bouillon. Porter à ébullition, couvrir, feu très doux 15 min, reposer 5 min.","Chauffer huile arachide à feu vif. Champignons en une couche — ne pas remuer 2 min. Ajouter oignon + ail, cuire 3 min.","Ajouter sauce soya, sel, poivre. Mélanger avec le riz cuit.","Porter de l'eau frémissante à ébullition avec vinaigre. Créer un tourbillon.","Pocher les 2 œufs l'un après l'autre, 3 min chacun pour jaune coulant.","Servir le riz aux champignons avec les 2 œufs pochés par-dessus."],
+     tip:"Le riz cuit dans le bouillon absorbe la saveur dès le début. Les champignons sans remuer les 2 premières minutes développent une caramélisation que le mélange immédiat empêche. Les œufs pochés remplacent avantageusement la viande en protéines complètes."},
+
+    {id:"quinoa_boeuf_espagnol",icon:"🥘",name:"Quinoa bœuf, pois chiches, paprika",tag:"es",flag:"🇪🇸",tagLabel:"Espagnol",week:"fin",
+     kcal:550,prot:42,carb:52,fat:18,fiber:9,sodium:580,prep:8,cook:25,
+     ing:[["Bœuf haché maigre","150g"],["Quinoa","90g sec"],["Pois chiches en canne","150g, égouttés"],["Coulis tomate Aurora","100ml"],["Oignon","½"],["Ail","3 gousses"],["Paprika fumé","1½ c.t."],["Cumin","½ c.t."],["Bouillon bœuf poudre","1 c.t. dissous dans 200ml eau"],["Huile d'olive","1 c.s."],["Sel, poivre","au goût"]],
+     steps:["Rincer le quinoa. Cuire dans 200ml eau + ½ c.t. bouillon 15 min. Égrainer à la fourchette.","Chauffer l'huile à feu moyen. Faire revenir oignon 3 min.","Ajouter ail + paprika + cumin. Remuer 30 sec — les épices toastent.","Ajouter le bœuf haché à feu vif. Cuire en cassant jusqu'à doré.","Ajouter pois chiches + coulis Aurora + bouillon restant. Sel, poivre.","Mijoter 12 min jusqu'à sauce légèrement épaisse.","Servir la préparation bœuf-pois chiches sur le quinoa."],
+     tip:"Style cazuela espagnol. Le paprika fumé est l'épice clé — il change complètement le profil aromatique. Toaster les épices dans l'huile avant d'ajouter la viande = saveur incomparable vs épices ajoutées en fin de cuisson."},
+
+    {id:"poulet_coco_kale",icon:"🥥",name:"Poulet lait de coco, kale & riz",tag:"th",flag:"🌴",tagLabel:"Thaï/Coco",week:"debut",
+     kcal:560,prot:46,carb:48,fat:18,fiber:4,sodium:580,prep:8,cook:25,
+     ing:[["Poitrine de poulet","180g, en dés de 2cm"],["Lait de coco","180ml"],["Kale (chou frisé)","80g, tiges retirées"],["Oignon","½"],["Ail","3 gousses"],["Sauce soya","2 c.s."],["Sriracha","1 c.t."],["Bouillon poulet poudre","½ c.t."],["Huile d'arachide","1 c.s."],["Riz blanc","90g sec"]],
+     steps:["Cuire le riz.","Chauffer l'huile d'arachide à feu vif. Ajouter l'oignon, cuire 2 min.","Ajouter l'ail, 30 sec. Ajouter le poulet en dés. Saisir à feu vif 3-4 min jusqu'à doré.","Ajouter le lait de coco + bouillon + sauce soya + sriracha. Porter à légère ébullition.","Réduire le feu. Mijoter 10 min.","Ajouter le kale en lanières. Cuire 3 min jusqu'à flétri dans la sauce coco.","Servir sur le riz."],
+     tip:"Le kale dans la sauce coco chaude perd toute amertume et absorbe la saveur — texture fondante et douce. Le lait de coco tempère le sriracha. Utilise environ 180ml des 450ml disponibles."},
+  ]},
+
+  {key:"apero",icon:"🍷",title:"Apéro / Snack après-midi",time:"17h00",target:"~200 kcal · ~10g prot",recipes:[
+    {id:"collation_postgym",icon:"💪",name:"Collation post-gym (si entraînement)",tag:"rapide",tagLabel:"Rapide",week:"both",
+     kcal:280,prot:30,carb:24,fat:5,fiber:5,sodium:100,prep:2,cook:0,
+     ing:[["Yogourt Oikos 19g","175g"],["Framboises fraîches","80g"],["Miel","1 c.t."],["Graines de chia","10g"]],
+     steps:["Mélanger yogourt + miel dans un bol.","Ajouter les framboises et les graines de chia.","Consommer dans les 45-60 min qui suivent l'entraînement."],
+     tip:"Remplacer l'apéro normal par cette collation les jours de gym. 30g de protéines à absorption rapide dans la fenêtre de récupération optimale."},
+
+    {id:"caprese_simple",icon:"🍅",name:"Salade caprese & ramen grillé",tag:"it",flag:"🇮🇹",tagLabel:"Italien",week:"debut",
+     kcal:360,prot:16,carb:28,fat:20,fiber:3,sodium:420,prep:8,cook:3,
+     ing:[["Tomate rouge","1 moyenne, tranchée"],["Mozzarella sélection","70g, tranchée"],["Huile d'olive","1 c.s."],["Vinaigre de vin rouge","½ c.t."],["Origan séché","¼ c.t."],["Sel, poivre","au goût"],["Ramen","1 bloc"]],
+     steps:["Griller le ramen à sec dans une poêle très chaude, 2 min de chaque côté, jusqu'à doré.","Disposer tomates et mozzarella en tranches alternées sur une assiette.","Arroser d'huile olive + vinaigre. Saupoudrer d'origan. Saler, poivrer.","Servir avec le ramen grillé croustillant côté pour tremper ou manger séparément.","Laisser reposer 5 min à température ambiante avant de servir."],
+     tip:"La mozzarella et la tomate doivent être à température ambiante — sortir 15 min avant. La vinaigrette simple huile-vinaigre est la seule sauce nécessaire sur une caprese de qualité."},
+
+    {id:"chou_braise_apero",icon:"🥬",name:"Chou braisé en quartiers, sauce soya",tag:"rapide",tagLabel:"Rapide",week:"both",
+     kcal:190,prot:5,carb:18,fat:10,fiber:6,sodium:540,prep:5,cook:12,
+     ing:[["Chou vert","220g, coupé en 4 quartiers (trognon intact)"],["Huile d'arachide","1 c.s."],["Ail","3 gousses, émincées"],["Sauce soya","1 c.s."],["Bouillon poulet poudre","½ c.t. dissous dans 4 c.s. eau"],["Sriracha","1 c.t."]],
+     steps:["Couper le chou en quartiers épais en conservant le trognon — il tient les feuilles ensemble pendant la cuisson.","Chauffer l'huile à feu très vif jusqu'à légère fumée.","Poser les quartiers face plate dans la poêle — ne pas toucher pendant 3 min. Doit dorer et caraméliser.","Retourner. Ajouter l'ail, cuire 1 min.","Ajouter sauce soya + bouillon dilué + sriracha. Couvrir immédiatement.","Braiser à feu moyen 5-6 min jusqu'à tendre mais encore avec de la tenue."],
+     tip:"Le trognon intact est essentiel pour que les quartiers gardent leur forme. La caramélisation face plate sans remuer crée une surface dorée qui n'existe pas en chou bouilli. Résultat : fondant, légèrement sucré, savoureux."},
+
+    {id:"champignons_ail",icon:"🍄",name:"Champignons sautés ail & thym",tag:"fr",flag:"🇫🇷",tagLabel:"Français",week:"debut",
+     kcal:180,prot:5,carb:10,fat:13,fiber:3,sodium:360,prep:4,cook:8,
+     ing:[["Champignons","200g, tranchés"],["Ail","3 gousses, émincées"],["Huile d'olive","1½ c.s."],["Thym séché","¼ c.t."],["Vinaigre de vin rouge","½ c.t."],["Sel, poivre","au goût"]],
+     steps:["Chauffer l'huile dans une grande poêle à feu très vif.","Ajouter les champignons EN UNE COUCHE — ne pas empiler. Ne pas remuer pendant 2 min pour qu'ils dorent.","Remuer, ajouter l'ail + thym. Cuire encore 3 min.","Déglacer avec le vinaigre — le fond caramélisé se détache. Mélanger 30 sec.","Saler et poivrer. Servir chaud."],
+     tip:"La règle des champignons : poêle très chaude + pas de remuer les 2 premières minutes = caramélisation dorée. Remuer immédiatement = champignons qui rendent leur eau et bouillent dans leur jus. La différence de saveur est énorme."},
+
+    {id:"avocat_oeuf",icon:"🥑",name:"Avocat & œuf cocotte",tag:"rapide",tagLabel:"Rapide",week:"debut",
+     kcal:340,prot:16,carb:12,fat:26,fiber:8,sodium:280,prep:5,cook:10,
+     ing:[["Avocat mûr","1 entier"],["Œuf","1"],["Huile d'olive","1 c.t."],["Jus de citron","½ citron pressé"],["Sel","¼ c.t."],["Poivre noir","au goût"],["Sriracha","quelques gouttes"]],
+     steps:["Couper l'avocat en deux. Retirer le noyau.","Option A — four/air fryer : déposer les moitiés dans un plat. Casser l'œuf dans le creux (si trop petit, retirer un peu de chair). Air fryer 180°C 10-12 min.","Option B — séparé : préparer les moitiés d'avocat. Pocher l'œuf 3 min (eau frémissante + vinaigre + tourbillon). Déposer sur l'avocat.","Assaisonner huile olive + citron + sel + poivre + sriracha.","Manger à la cuillère directement dans la peau."],
+     tip:"L'avocat cuit au four est excellent et chaud — texture crémeuse et chaude. Attention : le creuset doit être assez large pour l'œuf. Si l'avocat est trop petit, enlever une cuillère de chair avant de casser l'œuf."},
+
+    {id:"tomates_marinées",icon:"🍅",name:"Tomates cerises marinées à l'huile",tag:"it",flag:"🇮🇹",tagLabel:"Italien",week:"both",
+     kcal:150,prot:3,carb:10,fat:11,fiber:2,sodium:260,prep:8,cook:0,
+     ing:[["Tomates cerises","180g"],["Huile d'olive","1 c.s."],["Vinaigre de vin rouge","1 c.t."],["Ail","1 gousse, très finement émincée"],["Origan séché","¼ c.t."],["Sel","¼ c.t."],["Poivre noir","au goût"]],
+     steps:["Couper les tomates cerises en deux dans un bol.","Ajouter huile olive + vinaigre + ail + origan + sel + poivre.","Mélanger délicatement.","Laisser mariner MINIMUM 15 min à température ambiante avant de servir — le sel extrait le jus des tomates et crée une petite sauce.","Servir à température ambiante."],
+     tip:"Le temps de marinade est important — 15 min minimum, 30 min c'est mieux. Le jus rendu par les tomates avec le sel crée une sauce naturelle. Ces tomates peuvent accompagner n'importe quel plat ou servir seules comme apéro léger."},
+
+    {id:"mimosa_français",icon:"🥚",name:"Œufs mimosa à la française",tag:"fr",flag:"🇫🇷",tagLabel:"Français",week:"both",
+     kcal:250,prot:18,carb:4,fat:18,fiber:0,sodium:380,prep:5,cook:15,
+     ing:[["Œufs","3"],["Moutarde de Dijon","1 c.s."],["Huile d'olive","1 c.s."],["Vinaigre de vin rouge","½ c.t."],["Sel","¼ c.t."],["Poivre blanc","¼ c.t."],["Paprika","pour décorer"]],
+     steps:["Cuire les œufs durs (air fryer 130°C 17 min, ou eau bouillante 10 min). Eau froide immédiate.","Éplucher soigneusement. Couper en deux dans la longueur.","Retirer les jaunes avec une petite cuillère. Les déposer dans un bol.","Écraser les jaunes à la fourchette jusqu'à poudre fine. Ajouter moutarde + huile olive + vinaigre.","Mélanger énergiquement jusqu'à texture lisse et crémeuse (comme une mayonnaise légère). Saler, poivrer.","Remplir les blancs avec la mixture de jaunes — à la cuillère ou à la poche si disponible.","Saupoudrer de paprika."],
+     tip:"Les œufs mimosa sont l'apéro le plus reproductible de la cuisine française de bistrot. La clé : émulsionner les jaunes avec l'huile et la moutarde — la moutarde est un agent émulsifiant naturel. Résultat crémeux sans mayonnaise du commerce."},
+  ]},
+
+  {key:"souper",icon:"🌙",title:"Souper",time:"19h30",target:"~650 kcal · ~50g prot",recipes:[
+    {id:"boeuf_chou_saute",icon:"🥘",name:"Bœuf haché, chou vert & carottes sautés",tag:"qc",flag:"🍁",tagLabel:"Québécois",week:"debut",
+     kcal:580,prot:44,carb:38,fat:26,fiber:10,sodium:620,prep:8,cook:18,
+     ing:[["Bœuf haché maigre","200g"],["Chou vert","280g, émincé en julienne fine"],["Carottes","120g, en julienne"],["Oignon","½, émincé"],["Ail","3 gousses, émincées"],["Sauce soya","2 c.s."],["Moutarde de Dijon","1 c.t."],["Huile d'arachide","1 c.s."],["Poivre noir","au goût"],["Pommes de terre","220g, en dés de 2cm, bouillies 12 min"]],
+     steps:["Cuire les pommes de terre en dés dans eau bouillante salée 12 min jusqu'à tendres. Égoutter.","Chauffer l'huile d'arachide à feu très vif dans une grande poêle ou wok.","Ajouter le bœuf haché. Cuire en cassant à la spatule — ne pas remuer trop souvent pour obtenir de la coloration. Retirer.","Dans la même poêle toujours à feu vif, ajouter oignon. Cuire 1 min.","Ajouter carottes + chou. Sauter 4 min en remuant — le chou doit réduire de volume mais rester légèrement croquant.","Remettre le bœuf. Ajouter sauce soya + moutarde. Mélanger à feu vif 1 min.","Ajouter les pommes de terre. Mélanger doucement. Servir."],
+     tip:"Recette québécoise d'inspiration franco-asiatique. La coloration du bœuf sans remuer crée des morceaux savoureux (réaction de Maillard). Le chou émincé fin cuit rapidement et garde sa texture. Les pommes de terre bouillie séparément évitent de détremper la poêle."},
+
+    {id:"poulet_provencal",icon:"🍗",name:"Poulet provençal, ail confit, tomates",tag:"fr",flag:"🇫🇷",tagLabel:"Français",airfryer:true,week:"debut",
+     kcal:620,prot:50,carb:46,fat:24,fiber:5,sodium:480,prep:35,cook:25,
+     ing:[["Poitrine de poulet","200g"],["Pommes de terre","280g, en quartiers de 3cm"],["Tomates cerises","100g"],["Ail","6 gousses entières, non pelées"],["Huile d'olive","3 c.s."],["Vinaigre de vin rouge","1 c.s."],["Moutarde de Dijon","1 c.t."],["Thym séché","½ c.t."],["Romarin séché","¼ c.t."],["Paprika","½ c.t."],["Sel","½ c.t."]],
+     steps:["Mélanger 2 c.s. huile + vinaigre + moutarde + thym + romarin + paprika + sel.","Badigeonner le poulet de la marinade. Mariner minimum 30 min (ou toute la nuit au frigo).","Cuire les pommes de terre en quartiers à l'eau bouillante salée 8 min (pré-cuisson). Égoutter.","Mélanger pommes de terre + 1 c.s. huile + sel. Déposer dans le panier air fryer avec les gousses d'ail.","Air fryer 190°C : déposer le poulet mariné sur les pommes de terre. Cuire 20-22 min en retournant le poulet à mi-cuisson.","Ajouter les tomates cerises les 5 dernières minutes.","Presser les gousses d'ail confites sur le poulet avant de servir."],
+     tip:"L'ail confit non pelé dans l'air fryer devient doux et crémeux — pressé hors de sa peau il crée une sauce sans effort. Les pommes de terre pré-cuites à l'eau absorbent la marinade qui tombe du poulet pendant la cuisson.",
+     wknd:"Idéal aussi le weekend — mariner la veille et cuire en 22 min."},
+
+    {id:"hachis_parmentier",icon:"🥔",name:"Hachis parmentier classique",tag:"fr",flag:"🇫🇷",tagLabel:"Français",week:"fin",
+     kcal:620,prot:42,carb:54,fat:24,fiber:5,sodium:640,prep:12,cook:35,
+     ing:[["Bœuf haché maigre","180g"],["Pommes de terre","350g, en morceaux"],["Lait 2%","4 c.s. chaud"],["Margarine","1 c.s."],["Oignon","½, finement émincé"],["Ail","3 gousses"],["Bouillon bœuf poudre","1 c.t."],["Worcestershire","1 c.t."],["Moutarde de Dijon","1 c.t."],["Ketchup","1 c.s."],["Sel","½ c.t."],["Poivre noir","au goût"]],
+     steps:["Cuire les pommes de terre en morceaux dans l'eau bouillante salée 15-18 min jusqu'à très tendres (pointe de couteau sans résistance).","Égoutter. Écraser à la fourchette ou au presse-purée avec lait chaud + margarine + sel + poivre. Ne jamais mixer — le gluten se libère et la purée devient collante.","Pendant ce temps : faire revenir oignon + ail dans un peu de margarine 3 min. Ajouter le bœuf haché à feu vif, cuire en cassant.","Ajouter worcestershire + moutarde + ketchup + bouillon. Mélanger. Mijoter 5 min.","Dans un plat allant au four : étaler la viande en couche uniforme. Couvrir de la purée.","Air fryer 180°C 10-12 min ou four 200°C 20 min jusqu'à surface dorée."],
+     tip:"La purée doit être à la fourchette ou au presse-purée — jamais au mixer ou au robot. L'amidon de la pomme de terre libéré par l'agitation mécanique rend la purée élastique et collante. Le lait doit être chaud pour une purée onctueuse.",
+     batch:"Se congèle parfaitement en portions individuelles."},
+
+    {id:"boulettes_sauce",icon:"🍖",name:"Boulettes bœuf, sauce worcestershire",tag:"fr",flag:"🇫🇷",tagLabel:"Français",airfryer:true,week:"fin",
+     kcal:640,prot:44,carb:58,fat:24,fiber:2,sodium:680,prep:12,cook:18,
+     ing:[["Bœuf haché maigre","200g"],["Œuf","1"],["Moutarde de Dijon","1 c.s."],["Ail en poudre","½ c.t."],["Farine tout usage","2 c.s."],["Sel","¼ c.t."],["Poivre noir","¼ c.t."],["Riz blanc","100g sec"],["Bouillon bœuf poudre","1 c.t. dissous dans 200ml eau"],["Worcestershire","1½ c.s."],["Lait évaporé","3 c.s."]],
+     steps:["Cuire le riz dans 230ml eau bouillante salée. Couvrir, feu doux 15 min, reposer 5 min.","Mélanger bœuf + œuf + moutarde + ail en poudre + farine + sel + poivre. Bien amalgamer avec les mains.","Former 8 boulettes compactes — les compresser fermement pour qu'elles tiennent.","Air fryer 180°C pendant 12 min. Secouer le panier à mi-cuisson.","Sauce : dans une petite casserole, verser bouillon + worcestershire. Porter à ébullition. Ajouter lait évaporé. Réduire à feu doux 3 min en remuant.","Servir les boulettes sur le riz, nappées de sauce."],
+     tip:"Les boulettes compressées à la main tiennent bien mieux que les boulettes simplement formées. Le lait évaporé donne la même onctuosité que la crème avec moins de matières grasses. Ne jamais faire bouillir après ajout du lait évaporé — il peut trancher.",
+     batch:"Former les boulettes crues, congeler à plat sur une plaque, transférer dans un sac zip. Cuire directement congelées +5-6 min à l'air fryer."},
+
+    {id:"ramen_crevettes_bouillon",icon:"🍜",name:"Ramen crevettes, bouillon coco & kale",tag:"th",flag:"🌴",tagLabel:"Thaï/Coco",airfryer:true,week:"fin",
+     kcal:580,prot:40,carb:58,fat:18,fiber:5,sodium:860,prep:8,cook:12,
+     ing:[["Crevettes pacifique","150g, dégelées"],["Ramen","1 bloc"],["Lait de coco","120ml"],["Bouillon poulet poudre","1 c.s."],["Kale (chou frisé)","70g, tiges retirées"],["Ail","2 gousses, émincées"],["Sauce soya","1 c.s."],["Sriracha","1 c.t."],["Huile de sésame","½ c.t."]],
+     steps:["Sécher les crevettes avec du papier absorbant. Assaisonner d'une pincée de sel.","Air fryer crevettes à 200°C pendant 6-7 min — doivent être roses et légèrement dorées aux bords.","En parallèle : porter 280ml eau + lait de coco + bouillon à ébullition dans une casserole.","Ajouter ail + sauce soya + sriracha + huile sésame.","Ajouter le ramen. Cuire exactement 3 min.","Ajouter le kale les 60 dernières secondes — il flétrit rapidement.","Verser dans un bol profond. Déposer les crevettes par-dessus immédiatement.","Servir sans délai — les crevettes perdent leur croustillant après 3-4 min."],
+     tip:"L'association bouillon coco + kale est remarquable : le lait de coco adoucit le bouillon et le kale perd toute amertume dans le bouillon chaud. Servir immédiatement est impératif pour le contraste croustillant-chaud des crevettes."},
+
+    {id:"pasta_mozza_tomate",icon:"🍝",name:"Pappardelle mozza fondue & coulis Aurora",tag:"it",flag:"🇮🇹",tagLabel:"Italien",week:"debut",
+     kcal:640,prot:46,carb:68,fat:22,fiber:5,sodium:580,prep:8,cook:22,
+     ing:[["Poitrine de poulet","160g, en dés de 2cm"],["Pappardelle","100g sec"],["Coulis tomate Aurora","160ml"],["Mozzarella sélection","70g, en dés"],["Oignon","½"],["Ail","3 gousses"],["Bouillon poulet poudre","½ c.t."],["Origan séché","½ c.t."],["Huile d'olive","1 c.s."],["Sel, poivre","au goût"]],
+     steps:["Cuire les pappardelle dans grande eau bouillante salée selon le temps indiqué. Garder 150ml d'eau de cuisson.","Chauffer l'huile. Faire revenir oignon 2 min. Ajouter ail, 30 sec.","Ajouter les dés de poulet à feu vif. Saisir 4 min jusqu'à dorés.","Ajouter coulis Aurora + bouillon + origan + sel + poivre. Mijoter 8 min.","Incorporer les pappardelle égouttées + eau de cuisson. Bien mélanger à feu moyen 1 min.","Retirer DU FEU. Ajouter les dés de mozza. Couvrir 2 min — elle fond doucement sans chauffer.","Servir immédiatement."],
+     tip:"Retirer du feu avant d'ajouter la mozza est la technique clé — sur le feu elle durcit et devient élastique. Hors du feu elle fond lentement en créant des fils crémeux. L'eau de cuisson amidonnée lie la sauce aux pâtes naturellement."},
+
+    {id:"gratin_chou_boeuf",icon:"🧀",name:"Gratin chou vert, bœuf & mozzarella",tag:"fr",flag:"🇫🇷",tagLabel:"Français",week:"fin",
+     kcal:620,prot:48,carb:28,fat:34,fiber:7,sodium:680,prep:15,cook:35,
+     ing:[["Bœuf haché maigre","200g"],["Chou vert","350g, en lanières de 2cm"],["Mozzarella sélection","90g, râpée ou en tranches"],["Oignon","½"],["Ail","3 gousses"],["Bouillon bœuf poudre","1 c.t. dissous dans 150ml eau"],["Lait évaporé","4 c.s."],["Farine tout usage","1 c.s."],["Moutarde de Dijon","1 c.t."],["Margarine","1 c.s."],["Sel","½ c.t."],["Poivre","au goût"]],
+     steps:["Blanchir le chou en lanières dans eau bouillante salée 5 min. Égoutter. Presser dans un linge pour enlever l'excès d'eau — étape cruciale pour éviter un gratin détrempé.","Faire revenir oignon + ail dans margarine 2 min. Ajouter le bœuf à feu vif jusqu'à doré. Ajouter moutarde + sel + poivre.","Béchamel légère : dans la même casserole, ajouter farine au bœuf, mélanger 1 min. Verser lait évaporé + bouillon progressivement en fouettant. Cuire 3 min jusqu'à sauce nappante.","Dans un plat allant au four : couche de chou, couche de bœuf-sauce, mozza par-dessus.","Air fryer 180°C 12-15 min ou four 200°C 20 min jusqu'à mozza dorée et bouillonnante."],
+     tip:"Presser le chou blanchi après égouttage est l'étape la plus importante — l'eau résiduelle dans le chou détrempe complètement le gratin. La béchamel légère au lait évaporé remplace avantageusement la crème dans un gratin."},
+
+    {id:"tofu_af_kale",icon:"🫘",name:"Tofu croustillant AF, kale & quinoa",tag:"af",tagLabel:"Air Fryer",airfryer:true,week:"fin",
+     kcal:560,prot:32,carb:54,fat:24,fiber:9,sodium:680,prep:25,cook:20,
+     ing:[["Tofu ferme","200g"],["Quinoa","90g sec"],["Kale (chou frisé)","100g, tiges retirées"],["Sauce soya","2 c.s."],["Miel","1 c.t."],["Huile de sésame","1 c.t."],["Ail en poudre","½ c.t."],["Fécule de maïs","1 c.s."],["Huile d'arachide","1 c.s."],["Bouillon poulet poudre","½ c.t."]],
+     steps:["Envelopper le tofu dans un linge propre. Poser une assiette + un objet lourd dessus. Presser 20 min minimum — enlève l'eau pour le croustillant.","Cuire le quinoa dans 200ml eau + bouillon 15 min à couvert. Égrainer.","Couper le tofu pressé en cubes de 2cm. Dans un bol : sauce soya + miel + huile sésame + ail. Enrober les cubes. Saupoudrer la fécule de maïs par-dessus, mélanger délicatement.","Air fryer 200°C pendant 16-18 min. Secouer le panier à mi-cuisson. Les cubes doivent être dorés et croustillants.","Pendant ce temps, chauffer huile d'arachide à feu vif. Ajouter le kale. Sauter 3 min avec une pincée de sel jusqu'à flétri et légèrement croustillant sur les bords.","Assembler : quinoa, kale sauté, tofu croustillant par-dessus."],
+     tip:"Presser le tofu 20 min est obligatoire — sans cela l'humidité crée de la vapeur et le tofu reste mou. La fécule de maïs crée une croûte fine qui croustille à l'air fryer. Le kale sauté à feu très vif croustille sur les bords tout en restant tendre au centre."},
+
+    {id:"burger_boeuf",icon:"🍔",name:"Burger bœuf maison, mozza",tag:"qc",flag:"🍁",tagLabel:"Québécois",week:"weekend",weekend:true,
+     kcal:680,prot:46,carb:48,fat:32,fiber:4,sodium:760,prep:55,cook:15,
+     ing:[["Bœuf haché maigre","200g"],["Mozzarella sélection","50g, en tranches"],["Tomate rouge","½, en tranches"],["Oignon","¼, en rondelles"],["Moutarde de Dijon","1 c.s."],["Ketchup","1 c.s."],["Farine tout usage","150g"],["Lait 2%","85ml tiède"],["Levure sèche","4g (¾ c.t.)"],["Œuf","1"],["Margarine","15g fondue"],["Sel","½ c.t."]],
+     steps:["Pain burger : dissoudre levure dans le lait tiède (38°C) avec 1 pincée de sucre. Attendre 5 min — doit mousser.","Mélanger farine + sel. Ajouter levure activée + œuf + margarine fondue. Pétrir 6-8 min jusqu'à pâte lisse et élastique.","Former 2 boules. Aplatir légèrement. Laisser lever 45 min couvert d'un linge.","Four 200°C 13-15 min jusqu'à dorés. Laisser refroidir 5 min avant de couper.","Galettes : former 2 galettes de 100g. Aplatir à 1.5cm. Saler et poivrer généreusement.","Poêle très chaude (légère fumée). Cuire 3 min sans toucher. Retourner. Déposer la mozza. Couvrir 1 min.","Assembler : moutarde + galette mozza + tomate + oignon + ketchup."],
+     tip:"L'eau à 38°C est critique : trop froide = levure inactive, trop chaude = levure tuée. Ne jamais presser la galette avec la spatule — expulse les jus. La poêle très chaude crée la croûte dorée. La mozza se met 1 min avant la fin pour fondre sans sécher.",
+     wknd:"Recette du weekend — la levée de 45 min est incompressible."},
+
+    {id:"pizza_maison",icon:"🍕",name:"Pizza maison, coulis Aurora & mozza",tag:"it",flag:"🇮🇹",tagLabel:"Italien",week:"weekend",weekend:true,
+     kcal:680,prot:36,carb:74,fat:26,fiber:5,sodium:720,prep:75,cook:14,
+     ing:[["Farine tout usage","210g"],["Eau tiède (38°C)","135ml"],["Levure sèche","4g"],["Huile d'olive","2 c.s. + filet pour plaque"],["Sel","1 c.t."],["Coulis tomate Aurora","100ml — ne pas diluer"],["Mozzarella sélection","130g, en tranches ou râpée"],["Oignon","½, en rondelles fines"],["Ail","2 gousses, émincées"],["Origan séché","1 c.t."]],
+     steps:["Dissoudre levure dans eau tiède + 1 pincée de sucre. Attendre 5-8 min — doit mousser et sentir la levure.","Mélanger farine + sel. Creuser un puits. Ajouter levure activée + huile. Pétrir 10 min jusqu'à pâte lisse, légèrement collante.","Couvrir d'un film. Laisser lever 1h à température ambiante — doit doubler de volume.","Huiler généreusement une plaque. Étaler la pâte avec les doigts en allant du centre vers les bords. Laisser reposer 10 min — la pâte se détend.","Étaler le coulis Aurora non dilué (c'est la sauce — pas besoin d'assaisonnement supplémentaire).","Disposer la mozza, oignon, ail, origan.","Four préchauffé à 240°C, grille du bas, 12-14 min jusqu'à bords bien dorés et mozza bouillonnante."],
+     tip:"La levée d'1h est incompressible. L'étalement avec les doigts (pas le rouleau) préserve les bulles d'air. Le coulis Aurora non dilué = sauce parfaite naturellement assaisonnée. Four à la température maximale possible = croûte croustillante.",
+     wknd:"Préparer la pâte en fin d'après-midi."},
+  ]},
+];
+
+const FILTERS=["Tout","Début sem.","Fin sem.","Weekend","🇫🇷 Français","🇪🇸 Espagnol","🇮🇹 Italien","🍁 Québécois","🌴 Thaï","Air Fryer","Batch"];
+let activeFilter="Tout";
+
+function renderInv(){
+  const g=document.getElementById("invGrid");
+  const cats=[...new Set(INV.map(i=>i.cat))];
+  cats.forEach(cat=>{
+    const d=document.createElement("div");d.style.cssText="grid-column:1/-1";
+    d.innerHTML=`<div class="inv-cat">${cat}</div>`;g.appendChild(d);
+    INV.filter(i=>i.cat===cat).forEach(item=>{
+      const el=document.createElement("div");el.className="inv-item"+(item.low?" inv-low":"");
+      el.innerHTML=`<span class="inv-name">${item.n}</span><span class="inv-qty">${item.low?"⚠️ ":""}${item.q}</span>`;
+      g.appendChild(el);
+    });
+  });
+}
+function toggleInv(){document.getElementById("invPanel").classList.toggle("show");}
+
+function toggleLow(){
+  const p=document.getElementById("lowPanel");
+  p.classList.toggle("show");
+  if(!p.dataset.built){
+    p.dataset.built="1";
+    const low=INV.filter(i=>i.low);
+    const ll=document.getElementById("lowList");
+    low.forEach((item,i)=>{
+      const el=document.createElement("div");el.className="low-item";el.id="li"+i;
+      el.onclick=()=>el.classList.toggle("done");
+      el.innerHTML=`<span class="low-name">${item.n}</span><span class="low-qty">${item.q}</span>`;
+      ll.appendChild(el);
+    });
+  }
+}
+
+function renderFilters(){
+  document.getElementById("filters").innerHTML=FILTERS.map(f=>
+    `<button class="fbtn${f===activeFilter?" active":""}" onclick="setFilter(${JSON.stringify(f)})">${f}</button>`
+  ).join("");
+}
+function setFilter(f){
+  activeFilter=f;renderFilters();
+  document.querySelectorAll(".rb-card").forEach(c=>{
+    const tag=c.dataset.tag,af=c.dataset.af,wk=c.dataset.week,wknd=c.dataset.weekend;
+    let show=true;
+    if(f==="Début sem.")show=wk==="debut"||wk==="both";
+    else if(f==="Fin sem.")show=wk==="fin"||wk==="both";
+    else if(f==="Weekend")show=wknd==="1";
+    else if(f==="🇫🇷 Français")show=tag==="fr";
+    else if(f==="🇪🇸 Espagnol")show=tag==="es";
+    else if(f==="🇮🇹 Italien")show=tag==="it";
+    else if(f==="🍁 Québécois")show=tag==="qc";
+    else if(f==="🌴 Thaï")show=tag==="th";
+    else if(f==="Air Fryer")show=af==="1";
+    else if(f==="Batch")show=tag==="batch";
+    c.classList.toggle("hidden",!show);
+  });
+  document.querySelectorAll(".meal-section").forEach(s=>{
+    const cards=[...s.querySelectorAll(".rb-card")];
+    s.style.display=cards.some(c=>!c.classList.contains("hidden"))?"":"none";
+  });
+}
+
+function renderAll(){
+  const cont=document.getElementById("container");
+  MEALS.forEach(meal=>{
+    const sec=document.createElement("div");sec.className="meal-section";
+    sec.innerHTML=`<div class="meal-header">
+      <span class="meal-icon">${meal.icon}</span>
+      <span class="meal-title">${meal.title}</span>
+      <span class="meal-meta">${meal.time}<br><span style="font-size:9px">${meal.target}</span></span>
+    </div><div class="rb-grid" id="g_${meal.key}"></div>`;
+    cont.appendChild(sec);
+    const g=sec.querySelector(`#g_${meal.key}`);
+    meal.recipes.forEach(r=>{
+      const card=document.createElement("div");
+      let cls="rb-card";
+      if(r.weekend)cls+=" weekend";
+      else if(r.week==="debut")cls+=" debut";
+      else if(r.week==="fin")cls+=" fin";
+      card.className=cls;
+      card.dataset.tag=r.tag;card.dataset.af=r.airfryer?"1":"0";
+      card.dataset.week=r.week||"both";card.dataset.weekend=r.weekend?"1":"0";
+      const wl=r.weekend?"W":r.week==="debut"?"D":r.week==="fin"?"F":"";
+      const wc=r.weekend?"rw-w":r.week==="debut"?"rw-d":r.week==="fin"?"rw-f":"";
+      card.innerHTML=`${r.airfryer?'<div class="rb-af">AF</div>':""}
+        <div class="rb-icon">${r.icon}</div>
+        <div class="rb-name">${r.name}</div>
+        <div class="rb-kcal">${r.kcal} kcal</div>
+        <div class="rb-prot">${r.prot}g prot</div>
+        <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-top:3px">
+          ${r.flag?`<span style="font-size:11px">${r.flag}</span>`:""}
+          <span class="rb-tag tag-${r.weekend?"wknd":r.tag}">${r.weekend?"Weekend":r.tagLabel}</span>
+        </div>
+        ${wl?`<div class="rb-week ${wc}">${wl}</div>`:""}`;
+      card.onclick=()=>openRecipe(meal,r);
+      g.appendChild(card);
+    });
+  });
+}
+
+function openRecipe(meal,r){
+  document.getElementById("mTitle").textContent=`${r.icon} ${r.name}`;
+  const pct=Math.min(Math.round((r.prot/155)*100),100);
+  const badges=[r.airfryer?"Air Fryer":null,r.tag==="batch"?"Batch cook":null,
+    r.week==="debut"?"Début semaine":r.week==="fin"?"Fin semaine":null,
+    r.weekend?"Weekend":null].filter(Boolean);
+  document.getElementById("mSub").innerHTML=
+    `<span>${meal.icon} ${meal.title} · ${meal.time}</span>`+
+    (r.flag?`<span>${r.flag}</span>`:"")+
+    badges.map(b=>`<span class="modal-badge">${b}</span>`).join("");
+  let body=`<div class="timing-row">
+    <div class="timing-card"><div class="timing-val">${r.prep}min</div><div class="timing-lbl">Préparation</div></div>
+    <div class="timing-card"><div class="timing-val">${r.cook}min</div><div class="timing-lbl">Cuisson</div></div>
+    <div class="timing-card"><div class="timing-val">${r.prep+r.cook}min</div><div class="timing-lbl">Total</div></div>
+  </div>
+  <div class="m-sect">Macros — 1 portion complète</div>
+  <div class="macro-row">
+    <div class="macro-card"><div class="macro-val">${r.kcal}</div><div class="macro-lbl">kcal</div></div>
+    <div class="macro-card"><div class="macro-val">${r.prot}g</div><div class="macro-lbl">protéines</div></div>
+    <div class="macro-card"><div class="macro-val">${r.carb}g</div><div class="macro-lbl">glucides</div></div>
+    <div class="macro-card"><div class="macro-val">${r.fat}g</div><div class="macro-lbl">lipides</div></div>
+  </div>
+  <div class="prot-bar"><div class="prot-fill" style="width:${pct}%"></div></div>
+  <div class="prot-label">${pct}% de l'objectif journalier (155g protéines)</div>
+  <div class="nutr-row">
+    <div class="nutr-card"><div class="nutr-lbl">Fibres</div><div class="nutr-val">${r.fiber}g</div></div>
+    <div class="nutr-card"><div class="nutr-lbl">Sodium estimé</div><div class="nutr-val">${r.sodium}mg</div></div>
+  </div>
+  <div class="m-sect">Ingrédients — 1 portion</div>
+  ${r.ing.map(([n,q])=>`<div class="ing-row"><span class="ing-name">${n}</span><span class="ing-qty">${q}</span></div>`).join("")}
+  <div class="m-sect">Préparation</div>
+  ${r.steps.map((s,i)=>`<div class="step-row"><div class="step-num">${i+1}</div><div class="step-text">${s}</div></div>`).join("")}`;
+  if(r.tip)body+=`<div class="tip-box">${r.tip}</div>`;
+  if(r.batch)body+=`<div class="batch-box">Batch cook : ${r.batch}</div>`;
+  if(r.wknd)body+=`<div class="wknd-box">Weekend : ${r.wknd}</div>`;
+  body+=`<button class="close-btn" onclick="document.getElementById('modal').classList.remove('show')">Fermer</button>`;
+  document.getElementById("mBody").innerHTML=body;
+  document.getElementById("modal").classList.add("show");
+}
+function closeModal(e){if(e.target===document.getElementById("modal"))document.getElementById("modal").classList.remove("show");}
+
+renderAll();renderFilters();renderInv();
+</script>
+</body>
+</html>
