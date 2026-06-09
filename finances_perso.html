@@ -187,8 +187,8 @@ async function loadFromGH(){
     }
     const j=await r.json();
     ghSha=j.sha;
-    const txt=atob(j.content.replace(/\n/g,""));
-    return JSON.parse(txt||"{}");
+    const raw=j.content?atob(j.content.replace(/\n/g,"")):""
+    return JSON.parse(raw.trim()||"{}");
   }catch(e){
     setSyncBadge("error",e.message);
     console.error("loadFromGH:",e);
