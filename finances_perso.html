@@ -84,7 +84,7 @@ a{color:var(--blu)}
   <h1>FINANCES.PERSO</h1>
   <span class="sub" id="hdr-date"></span>
   <span class="hnet" id="hdr-net"></span>
-  ${ghCfg?.token?`<span id="gh-badge" title="GitHub Sync" style="font-size:13px;cursor:pointer;margin-left:6px;color:var(--tx3)" onclick="sT(4)">☁</span>`:`<span id="gh-badge" style="display:none"></span>`}
+  <span id="gh-badge" style="font-size:13px;cursor:pointer;margin-left:6px;color:var(--tx3);display:none" onclick="sT(4)" title="GitHub Sync"></span>
 </div>
 <div id="tabs">
   <button class="tab on" onclick="sT(0)">Tableau de bord</button>
@@ -238,10 +238,12 @@ function save(){
   }
 }
 
-// Chargement GitHub (après render initial — remplace si données plus récentes)
+// Chargement GitHub (lancé APRÈS que tout le code est chargé — voir fin du script)
 async function ghInit(){
+  const badge=$("gh-badge");
+  if(badge){badge.style.display=ghCfg?.token?"inline":"none";if(ghCfg?.token)badge.textContent="☁";}
   if(!ghCfg?.token){render();return;}
-  render(); // afficher immédiatement avec les données locales
+  render();
   setSyncBadge("syncing");
   const remote=await loadFromGH();
   if(remote&&Object.keys(remote).length>0){
@@ -251,7 +253,6 @@ async function ghInit(){
   render();
   setSyncBadge("ok");
 }
-ghInit();
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
 let tab=0,dSlider=D.ccPmt,subEdit=null,evType=null,sdEdit=null,payeEditMode=false,calView="grid",simParams=null,_simTimer=null,charts={};
@@ -1777,4 +1778,4 @@ window.doCheckInClaude=async function(){
   setTimeout(()=>window.open("https://claude.ai","_blank"),600);
 };
 
-render();
+ghInit(); // toutes les fonctions sont définies ici — démarrage sécuritaire
