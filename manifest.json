@@ -1,0 +1,26 @@
+{
+  "name": "FINANCES.PERSO",
+  "short_name": "Finances",
+  "description": "Planificateur financier personnel — budgets, dettes, projections",
+  "start_url": "./finances_perso.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#d97706",
+  "orientation": "portrait-primary",
+  "lang": "fr",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
