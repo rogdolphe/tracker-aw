@@ -536,7 +536,11 @@ async function loadFromSheet() {
   if(!scriptUrl) return false;
   setSyncStatus('syncing','Chargement…');
   try {
-    const r = await fetch(scriptUrl+'?action=all&t='+Date.now());
+    // Timeout de 8 secondes — ne jamais bloquer l'app
+    const controller = new AbortController();
+    const timer = setTimeout(()=>controller.abort(), 8000);
+    const r = await fetch(scriptUrl+'?action=all&t='+Date.now(), {signal: controller.signal});
+    clearTimeout(timer);
     const d = await r.json();
     if(!d.ok) throw new Error(d.error||'Sheet error');
 
@@ -557,7 +561,8 @@ async function loadFromSheet() {
     setSyncStatus('online','Sync ✓ '+new Date().toLocaleTimeString('fr-CA',{hour:'2-digit',minute:'2-digit'}));
     return true;
   } catch(e) {
-    setSyncStatus('error','Hors ligne');
+    const msg = e.name==='AbortError' ? 'Timeout — hors ligne' : 'Hors ligne';
+    setSyncStatus('error', msg);
     return false;
   }
 }
@@ -566,17 +571,24 @@ async function pushToSheet(entries, sessionId) {
   if(!scriptUrl) return;
   setSyncStatus('syncing','Envoi…');
   try {
+    const controller = new AbortController();
+    const timer = setTimeout(()=>controller.abort(), 10000);
     const rows = entries.map(e=>({...e, session_id:sessionId}));
     const r = await fetch(scriptUrl, {
       method:'POST', headers:{'Content-Type':'text/plain'},
-      body: JSON.stringify({action:'gym_sync', entries:rows})
+      body: JSON.stringify({action:'gym_sync', entries:rows}),
+      signal: controller.signal
     });
+    clearTimeout(timer);
     const d = await r.json();
     if(!d.ok) throw new Error(d.error);
     sessions = sessions.map(s=>s.id===sessionId?{...s,synced:true}:s);
     sv('gymlog_sessions', sessions);
     setSyncStatus('online','Sync ✓ '+new Date().toLocaleTimeString('fr-CA',{hour:'2-digit',minute:'2-digit'}));
-  } catch { setSyncStatus('error','Hors ligne — sauvegardé localement'); }
+  } catch(e) {
+    const msg = e.name==='AbortError' ? 'Timeout — réessaie plus tard' : 'Hors ligne — sauvegardé localement';
+    setSyncStatus('error', msg);
+  }
 }
 
 async function pushLibToSheet() {
@@ -1019,17 +1031,28 @@ async function init(){
   if(scriptUrl) document.getElementById('setupBanner').style.display='none';
   if(scriptUrl) document.getElementById('scriptInp').value=scriptUrl;
 
+  // Afficher l'app immédiatement avec les données locales
   renderTabs(); renderPanels();
+
+  // Toujours cacher le loading screen après 300ms max
+  // (même si le Sheet est lent ou hors ligne)
+  const hideLoader = ()=>document.getElementById('loadScreen').classList.add('hidden');
+  const loaderTimer = setTimeout(hideLoader, 300);
 
   if(scriptUrl){
     document.getElementById('loadMsg').textContent='Connexion au Sheet…';
-    const ok = await loadFromSheet();
-    if(ok){ renderPanels(); renderTabs(); }
-    else setSyncStatus('error','Hors ligne');
+    try {
+      const ok = await loadFromSheet();
+      if(ok){ renderPanels(); renderTabs(); }
+    } catch(e) {
+      setSyncStatus('error','Hors ligne');
+    }
   } else {
     setSyncStatus('','Non configuré');
   }
-  document.getElementById('loadScreen').classList.add('hidden');
+
+  clearTimeout(loaderTimer);
+  hideLoader();
 }
 
 init();
