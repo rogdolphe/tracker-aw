@@ -115,6 +115,16 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 .w-inp::-webkit-outer-spin-button,.w-inp::-webkit-inner-spin-button{-webkit-appearance:none}
 .w-inp:focus{outline:none;border-color:var(--accent);background:var(--surface)}
 .w-unit{font-size:12px;color:var(--text3);font-weight:500;white-space:nowrap}
+/* Sets / reps controls */
+.sets-row{padding:0 12px 4px;display:flex;align-items:center;gap:8px}
+.sets-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);white-space:nowrap}
+.sets-ctrl{display:flex;align-items:center;gap:4px}
+.ctrl-btn{width:26px;height:26px;border-radius:6px;border:1.5px solid var(--border2);background:var(--surface2);color:var(--text);font-size:16px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;flex-shrink:0;transition:all .12s}
+.ctrl-btn:hover{background:var(--accent);color:var(--bg);border-color:transparent}
+.ctrl-val{min-width:28px;text-align:center;font-size:14px;font-weight:600;color:var(--text);font-family:'DM Mono',monospace}
+.reps-sel{font-size:13px;font-weight:600;font-family:'DM Mono',monospace;padding:4px 6px;border:1.5px solid var(--border2);border-radius:6px;background:var(--surface2);color:var(--text);cursor:pointer;-webkit-appearance:none;appearance:none;text-align:center}
+.reps-sel:focus{outline:none;border-color:var(--accent)}
+.sets-sep{font-size:12px;color:var(--text3);font-weight:500}
 /* Buttons */
 .add-ex-btn{width:100%;padding:12px;border:1.5px dashed var(--border2);border-radius:var(--r);background:none;color:var(--text2);font-size:13px;font-weight:500;cursor:pointer;margin-top:4px;font-family:'DM Sans',sans-serif;transition:all .15s}
 .add-ex-btn:hover{border-color:var(--accent);color:var(--accent)}
@@ -275,7 +285,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 </div>
 <div class="view" id="view-semaine">
   <div style="font-size:14px;font-weight:600;margin-bottom:4px" id="semTitle"></div>
-  <div style="font-size:11px;color:var(--text2);margin-bottom:12px">✏ renommer · − retirer · ↺ rétablir</div>
+  <div style="font-size:11px;color:var(--text2);margin-bottom:12px">Vue lecture seule — gérer les exercices depuis l'onglet Journal</div>
   <div class="sem-scroll"><table class="sem-table">
     <thead><tr><th>Jour</th><th>Exercice</th><th>Séries</th><th>Suggestion</th><th>Cible</th></tr></thead>
     <tbody id="semBody"></tbody>
@@ -367,50 +377,97 @@ const PROG = [
 // BIBLIOTHÈQUE PAR DÉFAUT
 // ══════════════════════════════════════════════════════════════════════════════
 const DEFAULT_LIB = [
-  {id:'l001',cat:'Haltères libres',name:'Romanian Deadlift',muscle:'Ischio-jambiers, fessiers',unit:'lbs',notes:''},
-  {id:'l002',cat:'Haltères libres',name:'Dumbbell Bench Press',muscle:'Pectoraux, triceps',unit:'lbs',notes:''},
-  {id:'l003',cat:'Haltères libres',name:'Dumbbell Shoulder Press',muscle:'Deltoïdes',unit:'lbs',notes:''},
-  {id:'l004',cat:'Haltères libres',name:'Dumbbell Lateral Raise',muscle:'Deltoïdes latéraux',unit:'lbs',notes:''},
-  {id:'l005',cat:'Haltères libres',name:'Hammer Curl',muscle:'Biceps, brachioradial',unit:'lbs',notes:'AW — bras de fer'},
-  {id:'l006',cat:'Haltères libres',name:'Dumbbell Lunge',muscle:'Quadriceps, fessiers',unit:'lbs',notes:''},
-  {id:'l007',cat:'Haltères libres',name:'Goblet Squat',muscle:'Quadriceps, fessiers',unit:'lbs',notes:''},
-  {id:'l008',cat:'Haltères libres',name:'Dumbbell Deadlift',muscle:'Dos, ischio-jambiers',unit:'lbs',notes:''},
-  {id:'l009',cat:'Machines',name:'Leg Press',muscle:'Quadriceps, fessiers',unit:'lbs',notes:''},
-  {id:'l010',cat:'Machines',name:'Leg Curl',muscle:'Ischio-jambiers',unit:'lbs',notes:''},
-  {id:'l011',cat:'Machines',name:'Leg Extension',muscle:'Quadriceps',unit:'lbs',notes:''},
-  {id:'l012',cat:'Machines',name:'Cable Row',muscle:'Dos, biceps',unit:'lbs',notes:'AW — bras de fer'},
-  {id:'l013',cat:'Machines',name:'Lat Pulldown (câble)',muscle:'Grand dorsal',unit:'lbs',notes:''},
-  {id:'l014',cat:'Machines',name:'Chest Press Machine',muscle:'Pectoraux',unit:'lbs',notes:''},
-  {id:'l015',cat:'Machines',name:'Cable Tricep Pushdown',muscle:'Triceps',unit:'lbs',notes:'AW'},
-  {id:'l016',cat:'Machines',name:'Cable Bicep Curl',muscle:'Biceps',unit:'lbs',notes:'AW'},
-  {id:'l017',cat:'Machines',name:'Pec Deck',muscle:'Pectoraux',unit:'lbs',notes:''},
-  {id:'l018',cat:'Machines',name:'Seated Calf Raise',muscle:'Mollets',unit:'lbs',notes:''},
-  {id:'l019',cat:'Bandes élastiques',name:'Band Pull Apart',muscle:'Deltoïdes postérieurs',unit:'lbs',notes:'AW'},
-  {id:'l020',cat:'Bandes élastiques',name:'Band Face Pull',muscle:'Deltoïdes postérieurs, trapèzes',unit:'lbs',notes:'AW'},
-  {id:'l021',cat:'Bandes élastiques',name:'Band Lateral Walk',muscle:'Abducteurs, fessiers',unit:'lbs',notes:''},
-  {id:'l022',cat:'Bandes élastiques',name:'Band Good Morning',muscle:'Ischio-jambiers, dos',unit:'lbs',notes:''},
-  {id:'l023',cat:'Bandes élastiques',name:'Band Overhead Press',muscle:'Deltoïdes',unit:'lbs',notes:''},
-  {id:'l024',cat:'Poids du corps',name:'Pull-Up',muscle:'Grand dorsal, biceps',unit:'reps',notes:'AW — bras de fer'},
-  {id:'l025',cat:'Poids du corps',name:'Chin-Up',muscle:'Grand dorsal, biceps supination',unit:'reps',notes:'AW — bras de fer'},
-  {id:'l026',cat:'Poids du corps',name:'Dips (barres parallèles)',muscle:'Triceps, pectoraux',unit:'reps',notes:''},
-  {id:'l027',cat:'Poids du corps',name:'Push-Up',muscle:'Pectoraux, triceps',unit:'reps',notes:''},
-  {id:'l028',cat:'Poids du corps',name:'Inverted Row',muscle:'Dos, biceps',unit:'reps',notes:'AW'},
-  {id:'l029',cat:'Poids du corps',name:'Planche (isométrique)',muscle:'Core complet',unit:'min',notes:''},
-  {id:'l030',cat:'Poids du corps',name:'Dead Hang',muscle:'Avant-bras, grip',unit:'min',notes:'AW — incontournable bras de fer'},
-  {id:'l031',cat:'Poids du corps',name:'Hollow Body Hold',muscle:'Core, abdominaux',unit:'min',notes:''},
-  {id:'l032',cat:'Cardio',name:'Vélo stationnaire',muscle:'Cardio général',unit:'min',notes:''},
-  {id:'l033',cat:'Cardio',name:'Tapis roulant',muscle:'Cardio général',unit:'min',notes:''},
-  {id:'l034',cat:'Cardio',name:'Rameur (ergomètre)',muscle:'Cardio + dos + jambes',unit:'min',notes:''},
-  {id:'l035',cat:'Cardio',name:'Elliptique',muscle:'Cardio général',unit:'min',notes:''},
-  {id:'l036',cat:'Cardio',name:'Corde à sauter',muscle:'Cardio + coordination',unit:'min',notes:''},
-  {id:'l037',cat:'Cardio',name:'HIIT (intervalles)',muscle:'Cardio général',unit:'min',notes:''},
-  {id:'l038',cat:'Bras de fer',name:'Wrist Roller (pronation)',muscle:'Avant-bras, pronateurs',unit:'min',notes:'AW'},
-  {id:'l039',cat:'Bras de fer',name:'Wrist Roller (supination)',muscle:'Avant-bras, supinateurs',unit:'min',notes:'AW'},
-  {id:'l040',cat:'Bras de fer',name:'Thick Bar Curl',muscle:'Biceps, avant-bras',unit:'lbs',notes:'AW'},
-  {id:'l041',cat:'Bras de fer',name:'Pinch Grip Deadlift',muscle:'Pouce, grip pinch',unit:'lbs',notes:'AW'},
-  {id:'l042',cat:'Bras de fer',name:'Top Roll Simulation',muscle:'Doigts, poignet',unit:'lbs',notes:'AW'},
-  {id:'l043',cat:'Bras de fer',name:'Table bras de fer (practice)',muscle:'AW complet',unit:'min',notes:'AW'},
-  {id:'l044',cat:'Bras de fer',name:'Dead Hang thick bar',muscle:'Avant-bras, grip',unit:'min',notes:'AW'},
+  // ── Haltères libres ──────────────────────────────────────────────────────
+  {id:'l001',cat:'Haltères libres',name:'Dumbbell Row',muscle:'Grand dorsal, biceps, rhomboïdes',unit:'lbs',notes:'AW — mouvement fondamental tireur'},
+  {id:'l002',cat:'Haltères libres',name:'Romanian Deadlift (haltères)',muscle:'Ischio-jambiers, fessiers, bas du dos',unit:'lbs',notes:'Genoux légèrement fléchis, charnière hanche'},
+  {id:'l003',cat:'Haltères libres',name:'Dumbbell Bench Press',muscle:'Pectoraux, triceps, deltoïdes antérieurs',unit:'lbs',notes:'Plus d'amplitude que barre'},
+  {id:'l004',cat:'Haltères libres',name:'Incline Dumbbell Press',muscle:'Pectoraux haut, deltoïdes antérieurs',unit:'lbs',notes:'Banc à 30-45°'},
+  {id:'l005',cat:'Haltères libres',name:'Dumbbell Shoulder Press',muscle:'Deltoïdes, triceps',unit:'lbs',notes:''},
+  {id:'l006',cat:'Haltères libres',name:'Dumbbell Lateral Raise',muscle:'Deltoïdes latéraux',unit:'lbs',notes:'Bras légèrement fléchis, monter jusqu'aux épaules'},
+  {id:'l007',cat:'Haltères libres',name:'Hammer Curl',muscle:'Biceps, brachioradial, avant-bras',unit:'lbs',notes:'AW — excellente pour grip et bras de fer'},
+  {id:'l008',cat:'Haltères libres',name:'Dumbbell Lunge',muscle:'Quadriceps, fessiers, ischio-jambiers',unit:'lbs',notes:'Avant et arrière ou marche'},
+  {id:'l009',cat:'Haltères libres',name:'Goblet Squat',muscle:'Quadriceps, fessiers, core',unit:'lbs',notes:'Haltère tenu verticalement devant la poitrine'},
+  {id:'l010',cat:'Haltères libres',name:'Dumbbell Deadlift',muscle:'Dos complet, ischio-jambiers, fessiers',unit:'lbs',notes:''},
+  {id:'l011',cat:'Haltères libres',name:'Zottman Curl',muscle:'Biceps montée, avant-bras descente',unit:'lbs',notes:'AW — supination en haut, pronation en bas'},
+  {id:'l012',cat:'Haltères libres',name:'Dumbbell Pullover',muscle:'Grand dorsal, dentelé antérieur, triceps',unit:'lbs',notes:'Banc ou sol, bras tendus'},
+  {id:'l013',cat:'Haltères libres',name:'Turkish Get-Up (kettlebell/haltère)',muscle:'Core complet, épaules, stabilisateurs',unit:'lbs',notes:'Mouvement complet au sol → debout en 6 étapes. Commence léger.'},
+  {id:'l014',cat:'Haltères libres',name:'Hip Thrust (haltères)',muscle:'Fessiers, ischio-jambiers',unit:'lbs',notes:'Épaules sur banc, haltère sur les hanches'},
+  // ── Barre (barbell) ──────────────────────────────────────────────────────
+  {id:'l020',cat:'Barre (Barbell)',name:'Squat (barre)',muscle:'Quadriceps, fessiers, ischio-jambiers, core',unit:'lbs',notes:'Barre sur trapèzes (back squat) ou clavicules (front squat)'},
+  {id:'l021',cat:'Barre (Barbell)',name:'Squat (sans barre — goblet ou bodyweight)',muscle:'Quadriceps, fessiers',unit:'lbs',notes:'Accessible sans rack. Haltère devant ou bodyweight.'},
+  {id:'l022',cat:'Barre (Barbell)',name:'Bench Press (barre)',muscle:'Pectoraux, triceps, deltoïdes antérieurs',unit:'lbs',notes:'Prise légèrement plus large que les épaules'},
+  {id:'l023',cat:'Barre (Barbell)',name:'Incline Bench Press (barre)',muscle:'Pectoraux haut, deltoïdes antérieurs, triceps',unit:'lbs',notes:'Banc à 30-45°. Variante haltères aussi possible.'},
+  {id:'l024',cat:'Barre (Barbell)',name:'Deadlift (barre)',muscle:'Dos complet, fessiers, ischio-jambiers, trapèzes',unit:'lbs',notes:'Exercice fondamental. Focus sur la charnière hanche et dos droit.'},
+  {id:'l025',cat:'Barre (Barbell)',name:'Barbell Row',muscle:'Grand dorsal, biceps, rhomboïdes, trapèzes',unit:'lbs',notes:'AW — dos courbé ou quasi-droit selon variante'},
+  {id:'l026',cat:'Barre (Barbell)',name:'Overhead Press / Military Press',muscle:'Deltoïdes, triceps, trapèzes',unit:'lbs',notes:'Debout ou assis'},
+  {id:'l027',cat:'Barre (Barbell)',name:'Barbell Curl',muscle:'Biceps, brachioradial',unit:'lbs',notes:'AW — prise supination standard'},
+  {id:'l028',cat:'Barre (Barbell)',name:'Romanian Deadlift (barre)',muscle:'Ischio-jambiers, fessiers, bas du dos',unit:'lbs',notes:'Jambes tendues, charnière hanche'},
+  {id:'l029',cat:'Barre (Barbell)',name:'Hip Thrust (barre)',muscle:'Fessiers, ischio-jambiers',unit:'lbs',notes:'Épaules sur banc, barre sur les hanches avec pad'},
+  // ── Machines & câbles ────────────────────────────────────────────────────
+  {id:'l030',cat:'Machines & Câbles',name:'Leg Press',muscle:'Quadriceps, fessiers, ischio-jambiers',unit:'lbs',notes:'Position pieds haute = plus fessiers, basse = plus quadriceps'},
+  {id:'l031',cat:'Machines & Câbles',name:'Leg Curl (assis ou couché)',muscle:'Ischio-jambiers',unit:'lbs',notes:''},
+  {id:'l032',cat:'Machines & Câbles',name:'Leg Extension',muscle:'Quadriceps',unit:'lbs',notes:''},
+  {id:'l033',cat:'Machines & Câbles',name:'Cable Row',muscle:'Grand dorsal, biceps, rhomboïdes',unit:'lbs',notes:'AW — excellent pour pull latéral'},
+  {id:'l034',cat:'Machines & Câbles',name:'Lat Pulldown (câble)',muscle:'Grand dorsal, biceps',unit:'lbs',notes:'Prise large ou étroite'},
+  {id:'l035',cat:'Machines & Câbles',name:'Chest Press Machine',muscle:'Pectoraux, triceps',unit:'lbs',notes:''},
+  {id:'l036',cat:'Machines & Câbles',name:'Cable Tricep Pushdown (corde ou barre)',muscle:'Triceps long et latéral',unit:'lbs',notes:'AW — triceps important pour le poussé en bras de fer'},
+  {id:'l037',cat:'Machines & Câbles',name:'Cable Bicep Curl',muscle:'Biceps',unit:'lbs',notes:'AW'},
+  {id:'l038',cat:'Machines & Câbles',name:'Pec Deck / Butterfly',muscle:'Pectoraux',unit:'lbs',notes:''},
+  {id:'l039',cat:'Machines & Câbles',name:'Seated Calf Raise',muscle:'Mollets (soléaire)',unit:'lbs',notes:''},
+  {id:'l040',cat:'Machines & Câbles',name:'Cable Face Pull',muscle:'Deltoïdes postérieurs, trapèzes, rotateurs',unit:'lbs',notes:'AW — santé épaule et stabilisation'},
+  {id:'l041',cat:'Machines & Câbles',name:'Cable Lateral Raise',muscle:'Deltoïdes latéraux',unit:'lbs',notes:''},
+  {id:'l042',cat:'Machines & Câbles',name:'Cable Woodchop (rotation)',muscle:'Core, obliques, épaules',unit:'lbs',notes:'Rotation diagonale haut-bas ou bas-haut'},
+  // ── Bandes élastiques ────────────────────────────────────────────────────
+  {id:'l050',cat:'Bandes élastiques',name:'Band Pull Apart',muscle:'Deltoïdes postérieurs, rhomboïdes',unit:'lbs',notes:'AW — stabilité épaule et coude'},
+  {id:'l051',cat:'Bandes élastiques',name:'Band Face Pull',muscle:'Deltoïdes postérieurs, trapèzes',unit:'lbs',notes:'AW'},
+  {id:'l052',cat:'Bandes élastiques',name:'Band Lateral Walk',muscle:'Abducteurs, fessiers médian',unit:'lbs',notes:''},
+  {id:'l053',cat:'Bandes élastiques',name:'Band Good Morning',muscle:'Ischio-jambiers, bas du dos',unit:'lbs',notes:''},
+  {id:'l054',cat:'Bandes élastiques',name:'Band Overhead Press',muscle:'Deltoïdes',unit:'lbs',notes:''},
+  {id:'l055',cat:'Bandes élastiques',name:'Band Chest Fly',muscle:'Pectoraux',unit:'lbs',notes:''},
+  {id:'l056',cat:'Bandes élastiques',name:'Band Hip Thrust',muscle:'Fessiers',unit:'lbs',notes:'Bande sur les hanches, couché sur le sol'},
+  // ── Poids du corps ───────────────────────────────────────────────────────
+  {id:'l060',cat:'Poids du corps',name:'Pull-Up (traction)',muscle:'Grand dorsal, biceps, rhomboïdes',unit:'reps',notes:'AW — fondamental bras de fer. Prise pronation.'},
+  {id:'l061',cat:'Poids du corps',name:'Chin-Up (traction supination)',muscle:'Grand dorsal, biceps, biceps court',unit:'reps',notes:'AW — prise supination, plus biceps que pull-up'},
+  {id:'l062',cat:'Poids du corps',name:'Dips (barres parallèles)',muscle:'Triceps, pectoraux bas, deltoïdes antérieurs',unit:'reps',notes:'Torse droit = triceps, penché = pectoraux'},
+  {id:'l063',cat:'Poids du corps',name:'Push-Up large (écartés)',muscle:'Pectoraux, triceps, deltoïdes',unit:'reps',notes:'Mains plus larges que les épaules — pectoraux dominants'},
+  {id:'l064',cat:'Poids du corps',name:'Push-Up rapproché (diamant)',muscle:'Triceps, pectoraux interne',unit:'reps',notes:'Mains rapprochées en diamant — triceps dominants'},
+  {id:'l065',cat:'Poids du corps',name:'Push-Up standard',muscle:'Pectoraux, triceps, deltoïdes',unit:'reps',notes:'Mains à largeur d'épaules'},
+  {id:'l066',cat:'Poids du corps',name:'Inverted Row (TRX ou barre basse)',muscle:'Grand dorsal, biceps, rhomboïdes',unit:'reps',notes:'AW — tirage horizontal, bon substitut pull-up'},
+  {id:'l067',cat:'Poids du corps',name:'Planche (isométrique)',muscle:'Core complet, deltoïdes, fessiers',unit:'min',notes:'Gainage anterior. Bas du dos neutre, pas cambré.'},
+  {id:'l068',cat:'Poids du corps',name:'Planche latérale',muscle:'Obliques, abducteurs, core',unit:'min',notes:''},
+  {id:'l069',cat:'Poids du corps',name:'Hollow Body Hold',muscle:'Core, abdominaux profonds',unit:'min',notes:'Bas du dos plaqué au sol, bras et jambes tendus'},
+  {id:'l070',cat:'Poids du corps',name:'Crunch',muscle:'Abdominaux droits (rectus abdominis)',unit:'reps',notes:'Amplitude courte — ne pas aller jusqu'aux genoux'},
+  {id:'l071',cat:'Poids du corps',name:'Crunch inverse (reverse crunch)',muscle:'Abdominaux bas, hip flexors',unit:'reps',notes:'Genoux vers la poitrine plutôt que torse vers les genoux'},
+  {id:'l072',cat:'Poids du corps',name:'Hanging Leg Raise',muscle:'Abdominaux, hip flexors',unit:'reps',notes:'AW — grip, avant-bras + core. Suspendu à une barre.'},
+  {id:'l073',cat:'Poids du corps',name:'Dead Hang',muscle:'Avant-bras, grip, décompression dorsale',unit:'min',notes:'AW — incontournable. Tenu passivement en suspension.'},
+  {id:'l074',cat:'Poids du corps',name:'Hip Thrust (poids du corps)',muscle:'Fessiers, ischio-jambiers',unit:'reps',notes:'Épaules sur banc ou sol, pas de charge'},
+  {id:'l075',cat:'Poids du corps',name:'Burpee',muscle:'Corps complet — cardio force',unit:'reps',notes:''},
+  {id:'l076',cat:'Poids du corps',name:'Mountain Climber',muscle:'Core, hip flexors, cardio',unit:'min',notes:''},
+  {id:'l077',cat:'Poids du corps',name:'Superman (hyperextension sol)',muscle:'Bas du dos, fessiers, ischio-jambiers',unit:'reps',notes:'Face au sol, soulever bras et jambes simultanément'},
+  {id:'l078',cat:'Poids du corps',name:'Nordic Curl',muscle:'Ischio-jambiers excentrique',unit:'reps',notes:'Genoux fixés, descente lente. Prévention blessure.'},
+  // ── Cardio ───────────────────────────────────────────────────────────────
+  {id:'l080',cat:'Cardio',name:'Vélo stationnaire',muscle:'Cardio général, quadriceps',unit:'min',notes:''},
+  {id:'l081',cat:'Cardio',name:'Tapis roulant (marche rapide)',muscle:'Cardio, membres inférieurs',unit:'min',notes:''},
+  {id:'l082',cat:'Cardio',name:'Tapis roulant (course)',muscle:'Cardio général',unit:'min',notes:''},
+  {id:'l083',cat:'Cardio',name:'Rameur (ergomètre)',muscle:'Cardio + dos + jambes + bras',unit:'min',notes:'AW — cardio complet qui inclut le tirage'},
+  {id:'l084',cat:'Cardio',name:'Elliptique',muscle:'Cardio général, corps complet',unit:'min',notes:''},
+  {id:'l085',cat:'Cardio',name:'Corde à sauter',muscle:'Cardio, coordination, mollets',unit:'min',notes:''},
+  {id:'l086',cat:'Cardio',name:'HIIT (intervalles haute intensité)',muscle:'Cardio général',unit:'min',notes:'Ex : 30 sec effort / 30 sec repos × 10-15 ronds'},
+  {id:'l087',cat:'Cardio',name:'Natation (longueurs)',muscle:'Corps complet, cardio',unit:'min',notes:''},
+  // ── Bras de fer (spécifique) ─────────────────────────────────────────────
+  {id:'l090',cat:'Bras de fer',name:'Wrist Roller (pronation)',muscle:'Pronateurs, avant-bras antérieur',unit:'min',notes:'AW — mouvement de base table. Rouler lentement.'},
+  {id:'l091',cat:'Bras de fer',name:'Wrist Roller (supination)',muscle:'Supinateurs, avant-bras postérieur',unit:'min',notes:'AW — opposition du mouvement pronation'},
+  {id:'l092',cat:'Bras de fer',name:'Thick Bar Curl',muscle:'Biceps, avant-bras, grip',unit:'lbs',notes:'AW — barres épaisses = simulation diamètre poignet adverse'},
+  {id:'l093',cat:'Bras de fer',name:'Pinch Grip Deadlift',muscle:'Grip pince, pouce, intrinsèques main',unit:'lbs',notes:'AW — esssentiel pour le premier mouvement à la table'},
+  {id:'l094',cat:'Bras de fer',name:'Top Roll Simulation (câble)',muscle:'Doigts extenseurs, poignet',unit:'lbs',notes:'AW — simuler le déroulement des doigts à la table'},
+  {id:'l095',cat:'Bras de fer',name:'Reverse Curl (prise pronation)',muscle:'Brachioradial, avant-bras extenseurs',unit:'lbs',notes:'AW — Devon Larratt methodology. Prise dessus.'},
+  {id:'l096',cat:'Bras de fer',name:'Table bras de fer (practice)',muscle:'AW complet — tous les groupes',unit:'min',notes:'Sessions de pratique réelle avec partenaire ou table'},
+  {id:'l097',cat:'Bras de fer',name:'Dead Hang thick bar',muscle:'Avant-bras, grip passif',unit:'min',notes:'AW — tenue passive sur barre épaisse'},
+  {id:'l098',cat:'Bras de fer',name:'Towel Pull-Up',muscle:'Avant-bras, grip, grand dorsal',unit:'reps',notes:'AW — serviette sur barre, grip instable. Devon Larratt recommandé.'},
+  {id:'l099',cat:'Bras de fer',name:'Rice Bucket (résistance dans riz)',muscle:'Intrinsèques main, extenseurs doigts',unit:'min',notes:'AW — plonger et tourner la main dans un seau de riz. Récupération ET force.'},
+  {id:'l100',cat:'Bras de fer',name:'Wrist Curl (supination, haltère)',muscle:'Fléchisseurs du poignet, avant-bras',unit:'lbs',notes:'AW — mouvement de cupping à la table'},
+  {id:'l101',cat:'Bras de fer',name:'Reverse Wrist Curl (pronation)',muscle:'Extenseurs du poignet, avant-bras dorsal',unit:'lbs',notes:'AW — opposition au wrist curl'},
+  {id:'l102',cat:'Bras de fer',name:'Finger Extension (bande)',muscle:'Extenseurs des doigts, équilibre main',unit:'reps',notes:'AW — prévention blessure, équilibre fléchisseurs/extenseurs'},
 ];
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -600,6 +657,12 @@ function exCard(dk,pi,ei,ex,isExtra=false){
   const unit=isExtra?ex.unit:ex.unit;
   const isTime=unit.includes('min'),isReps=unit==='reps';
 
+  // Default sets/reps — read from state or use 3/10
+  const srKey=`sr_${id}`;
+  if(!window._sr) window._sr={};
+  if(!window._sr[srKey]) window._sr[srKey]={sets:3,reps:10};
+  const sr=window._sr[srKey];
+
   if(isDel) return `<div class="ex-card deleted">
     <div class="ex-top"><div class="ex-l">
       <div class="ex-name" style="text-decoration:line-through;opacity:.5">${nm}</div>
@@ -620,6 +683,23 @@ function exCard(dk,pi,ei,ex,isExtra=false){
   }
   const ph=sug!==null?String(sug):isExtra?'':String(ex.relance);
 
+  // Reps options 1-25
+  const repsOpts=Array.from({length:25},(_,i)=>i+1)
+    .map(n=>`<option value="${n}"${n===sr.reps?' selected':''}>${n}</option>`).join('');
+
+  const setsRepsRow = (isTime||isReps) ? '' :
+    `<div class="sets-row">
+      <span class="sets-lbl">Séries</span>
+      <div class="sets-ctrl">
+        <button class="ctrl-btn" onclick="chgSets('${srKey}',-1,event)">−</button>
+        <span class="ctrl-val" id="sv_${srKey}">${sr.sets}</span>
+        <button class="ctrl-btn" onclick="chgSets('${srKey}',1,event)">+</button>
+      </div>
+      <span class="sets-sep">×</span>
+      <span class="sets-lbl">Reps</span>
+      <select class="reps-sel" id="rv_${srKey}" onchange="chgReps('${srKey}',this.value)">${repsOpts}</select>
+    </div>`;
+
   return `<div class="ex-card${isExtra?' extra':''}">
     <div class="ex-top"><div class="ex-l">
       <div class="ex-name">${nm}${isMod?'<span class="bdg bdg-mod" style="margin-left:4px">modifié</span>':''}</div>
@@ -627,8 +707,12 @@ function exCard(dk,pi,ei,ex,isExtra=false){
       ${!isExtra&&ex.max>0?`<div class="ex-tgt">→ ${ex.max} ${unit}</div>`:''}
       ${ex.aw?'<div><span class="bdg bdg-aw">🥊 AW</span></div>':''}
     </div>
-    ${isExtra?`<button onclick="rmExtra('${dk}','${ei}')" style="font-size:15px;color:var(--text3);background:none;border:none;cursor:pointer;padding:2px 4px;line-height:1">×</button>`:''}
+    ${isExtra
+      ?`<button onclick="rmExtra('${dk}','${ei}')" style="font-size:16px;color:var(--text3);background:none;border:none;cursor:pointer;padding:2px 6px;line-height:1" title="Retirer">×</button>`
+      :`<button onclick="toggleDelEx('${dk}',${pi},${ei})" style="font-size:11px;font-weight:600;padding:3px 9px;border-radius:var(--pill);border:1px solid var(--border2);background:var(--surface2);color:var(--text3);cursor:pointer;flex-shrink:0" title="Retirer de la session">−</button>`
+    }
     </div>
+    ${setsRepsRow}
     ${sugBar}
     <div class="w-row">
       <input class="w-inp" type="number" id="inp_${id}" inputmode="decimal"
@@ -636,6 +720,18 @@ function exCard(dk,pi,ei,ex,isExtra=false){
       <div class="w-unit">${unit}</div>
     </div>
   </div>`;
+}
+
+function chgSets(key, delta, e){
+  e.stopPropagation();
+  if(!window._sr[key]) window._sr[key]={sets:3,reps:10};
+  window._sr[key].sets = Math.max(1, Math.min(10, window._sr[key].sets + delta));
+  const el=document.getElementById('sv_'+key);
+  if(el) el.textContent=window._sr[key].sets;
+}
+function chgReps(key, val){
+  if(!window._sr[key]) window._sr[key]={sets:3,reps:10};
+  window._sr[key].reps=parseInt(val);
 }
 
 function renderPhase(d,ph,pi){
@@ -737,21 +833,31 @@ async function submit(dk){
   day.phases.forEach((ph,pi)=>ph.ex.forEach((ex,ei)=>{
     if(delEx[`${dk}_${pi}_${ei}`]) return;
     const v=document.getElementById(`inp_pr_${dk}_${pi}_${ei}`)?.value.trim();
-    if(v) entries.push({
-      date, semaine:getSem(), jour:day.title, day_key:dk, dur,
-      phase:ph.label, type:'programme',
-      exercice:getN(dk,pi,ei,ex.n), exercice_original:ex.n,
-      valeur:v, unite:ex.unit, suggere:getSug(ex)??'', aw:ex.aw?'✓':'', ts:Date.now()
-    });
+    if(v) {
+      const srk=`sr_pr_${dk}_${pi}_${ei}`;
+      const sr=window._sr&&window._sr[srk]?window._sr[srk]:{sets:3,reps:10};
+      entries.push({
+        date, semaine:getSem(), jour:day.title, day_key:dk, dur,
+        phase:ph.label, type:'programme',
+        exercice:getN(dk,pi,ei,ex.n), exercice_original:ex.n,
+        valeur:v, unite:ex.unit, suggere:getSug(ex)??'',
+        aw:ex.aw?'✓':'', sets:sr.sets, reps:sr.reps, ts:Date.now()
+      });
+    }
   }));
   (extras[dk]||[]).forEach((ex,ei)=>{
     const v=document.getElementById(`inp_ex_${dk}_${ei}`)?.value.trim();
-    if(v) entries.push({
-      date, semaine:getSem(), jour:day.title, day_key:dk, dur,
-      phase:'Extra', type:'extra',
-      exercice:ex.name, exercice_original:ex.name,
-      valeur:v, unite:ex.unit, suggere:'', aw:ex.aw?'✓':'', ts:Date.now()
-    });
+    if(v) {
+      const srk=`sr_ex_${dk}_${ei}`;
+      const sr=window._sr&&window._sr[srk]?window._sr[srk]:{sets:3,reps:10};
+      entries.push({
+        date, semaine:getSem(), jour:day.title, day_key:dk, dur,
+        phase:'Extra', type:'extra',
+        exercice:ex.name, exercice_original:ex.name,
+        valeur:v, unite:ex.unit, suggere:'',
+        aw:ex.aw?'✓':'', sets:sr.sets, reps:sr.reps, ts:Date.now()
+      });
+    }
   });
 
   if(!entries.length){toast('⚠️ Entre au moins une valeur');return;}
