@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CIV.SOBRE — L'Empire du Plateau</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0d1117">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+:root{
+  --ink:#0d1117; --panel:#151b24; --panel2:#1b2330; --line:#2a3344;
+  --parch:#e7dec8; --dim:#8d99ab; --gold:#c9a227; --gold-dim:#7a6418;
+  --green:#6fae57; --green-d:#2e4d24; --red:#c0392b; --red-d:#4d1f19;
+  --water:#16324a; --fog:#222a36; --orange:#d98e3a;
+  --mono:ui-monospace,'SF Mono','Cascadia Mono',Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ink);color:var(--parch);font-family:var(--mono);font-size:13px;line-height:1.5}
+h1,h2,h3{font-family:Georgia,'Times New Roman',serif;font-variant:small-caps;letter-spacing:.14em;font-weight:600;margin:0 0 8px}
+h1{font-size:21px;color:var(--gold)}
+h2{font-size:15px;color:var(--gold);border-bottom:1px solid var(--line);padding-bottom:5px;margin-top:4px}
+h3{font-size:13px;color:var(--parch)}
+small,.dim{color:var(--dim)}
+.wrap{max-width:1020px;margin:0 auto;padding:14px}
+header.top{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px;border-bottom:2px solid var(--gold-dim);padding-bottom:8px;margin-bottom:10px}
+.era{font-size:11px;color:var(--dim);letter-spacing:.2em;text-transform:uppercase}
+nav.tabs{display:flex;flex-wrap:wrap;gap:4px;margin:10px 0}
+nav.tabs button{background:var(--panel);border:1px solid var(--line);color:var(--dim);font-family:var(--mono);font-size:12px;padding:7px 11px;cursor:pointer}
+nav.tabs button.on{color:var(--gold);border-color:var(--gold-dim);background:var(--panel2)}
+.card{background:var(--panel);border:1px solid var(--line);padding:12px;margin-bottom:10px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+@media(max-width:640px){.grid2,.grid3,.grid4{grid-template-columns:1fr 1fr}}
+.stat{background:var(--panel2);border:1px solid var(--line);padding:8px 10px}
+.stat b{display:block;font-size:16px;margin-top:2px}
+.g{color:var(--green)}.r{color:var(--red)}.au{color:var(--gold)}.o{color:var(--orange)}
+button.act{background:var(--gold-dim);border:1px solid var(--gold);color:#fff;font-family:var(--mono);font-size:12px;padding:8px 14px;cursor:pointer}
+button.act:disabled{opacity:.35;cursor:not-allowed}
+button.ghost{background:transparent;border:1px solid var(--line);color:var(--dim);font-family:var(--mono);font-size:11px;padding:6px 10px;cursor:pointer}
+input,select{background:var(--ink);border:1px solid var(--line);color:var(--parch);font-family:var(--mono);font-size:12px;padding:6px 8px;width:100%}
+label.f{display:block;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin:8px 0 3px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+td,th{border-bottom:1px solid var(--line);padding:5px 6px;text-align:left}
+th{color:var(--dim);font-size:10px;letter-spacing:.1em;text-transform:uppercase}
+.tribunal{display:flex;gap:14px;justify-content:center;margin:14px 0}
+.tribunal button{width:116px;height:116px;border-radius:50%;font-size:36px;cursor:pointer;font-family:Georgia,serif;border:3px solid}
+.tribunal .oui{background:var(--green-d);border-color:var(--green);color:var(--green)}
+.tribunal .non{background:var(--red-d);border-color:var(--red);color:var(--red);border-radius:0}
+.tribunal button span{display:block;font-size:11px;font-family:var(--mono);letter-spacing:.2em;margin-top:4px}
+.routine{max-width:480px;margin:0 auto}
+.rrow{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px dashed var(--line)}
+.rrow .tg{display:flex;gap:5px}
+.rrow .tg button{width:40px;height:30px;font-size:14px;cursor:pointer;background:var(--panel2);border:1px solid var(--line);color:var(--dim);font-family:var(--mono)}
+.rrow .tg button.yes.on{background:var(--green-d);border-color:var(--green);color:var(--green)}
+.rrow .tg button.no.on{background:var(--red-d);border-color:var(--red);color:var(--red)}
+.bar{height:9px;background:var(--ink);border:1px solid var(--line);position:relative;margin:4px 0}
+.bar i{position:absolute;left:0;top:0;bottom:0;background:var(--gold)}
+.bar.menace i{background:var(--red)}
+svg .terr{cursor:pointer;stroke:#0d1117;stroke-width:2}
+svg .terr.owned{fill:var(--gold-dim)}
+svg .terr.owned.cap{fill:#9a7b1a}
+svg .terr.fog{fill:var(--fog)}
+svg .terr.prem{stroke:#5e4f9c;stroke-width:2.5}
+svg .terr.sel{stroke:var(--parch);stroke-width:3}
+svg text{font-family:var(--mono);fill:var(--parch);font-size:10px;pointer-events:none}
+svg text.def{fill:var(--dim);font-size:9px}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cal .d{background:var(--panel2);border:1px solid var(--line);min-height:84px;padding:3px 4px;font-size:9px;position:relative;overflow:hidden}
+.cal .d.sober{border-color:var(--green)}
+.cal .d.rel{border-color:var(--red)}
+.cal .d.today{outline:2px solid var(--gold)}
+.cal .d .ev{color:var(--gold);display:block;line-height:1.25}
+.cal .d .deb{color:var(--red);display:block;line-height:1.25}
+.cal .d .cre{color:var(--orange);display:block;line-height:1.25}
+.cal .d .pay{color:var(--green);display:block;line-height:1.25}
+.cal .d .sol{display:block;border-top:1px dashed var(--line);margin-top:2px;font-weight:bold}
+.cal .d .c1s{display:block;color:var(--dim);font-size:8px}
+.cal .hd{text-align:center;color:var(--dim);font-size:9px;text-transform:uppercase;letter-spacing:.1em}
+.msg{border:1px solid var(--gold-dim);background:#1f1a08;padding:8px 10px;margin:8px 0;font-size:12px}
+.msg.warn{border-color:var(--red);background:#240d0a}
+.flexr{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+hr{border:none;border-top:1px solid var(--line);margin:10px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <div>
+    <h1>⚔ CIV.SOBRE</h1>
+    <div class="era" id="era-line">L'Empire du Plateau</div>
+  </div>
+  <div style="text-align:right;font-size:11px" id="top-stats"></div>
+</header>
+<nav class="tabs" id="tabs"></nav>
+<div id="app"></div>
+<div style="margin-top:18px;font-size:10px;color:var(--dim);text-align:center">
+  CIV.SOBRE v2 — chaque jour sobre est un tour de jeu. La capitale ne tombe jamais.
+</div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ============ TERRITOIRES — quartiers de Montréal ============ */
+/* prem = quartier "classe" : défense plus haute, gemme plus riche */
+var TERR = {
+  plateau:   {nom:"Le Plateau",     def:0,  bonus:{prod:2}, bld:"Parc La Fontaine", gem:{}, cap:true},
+  mileend:   {nom:"Mile End",       def:6,  bonus:{cul:1},  bld:"Café Olimpico",        gem:{cul:10}},
+  villeray:  {nom:"Villeray",       def:8,  bonus:{soc:1},  bld:"Marché Jean-Talon",    gem:{prod:10}},
+  rosemont:  {nom:"Rosemont",       def:8,  bonus:{soc:1},  bld:"Jardin botanique",     gem:{soc:10}},
+  hochelaga: {nom:"Hochelaga",      def:8,  bonus:{mil:1},  bld:"Stade olympique",      gem:{mil:10}},
+  villemarie:{nom:"Ville-Marie",    def:10, bonus:{prod:2}, bld:"Place Ville Marie",    gem:{prod:20}},
+  outremont: {nom:"Outremont",      def:12, bonus:{cul:1},  bld:"Théâtre Outremont",    gem:{cul:15}},
+  ndg:       {nom:"NDG / CDN",      def:12, bonus:{prod:1}, bld:"Oratoire St-Joseph",   gem:{cul:15}},
+  verdun:    {nom:"Verdun",         def:12, bonus:{soc:2},  bld:"Plage de Verdun",      gem:{soc:20}},
+  griffintown:{nom:"Griffintown",   def:14, bonus:{prod:2}, bld:"Silo Five Roses",      gem:{prod:25}, prem:true},
+  montroyal: {nom:"Mont-Royal",     def:14, bonus:{mil:2},  bld:"La Croix",             gem:{mil:20}},
+  vieuxmtl:  {nom:"Vieux-Montréal", def:16, bonus:{cul:2},  bld:"Basilique Notre-Dame", gem:{cul:30}, prem:true},
+  longueuil: {nom:"Longueuil",      def:20, bonus:{prod:2}, bld:"Pont Jacques-Cartier", gem:{prod:25}},
+  laval:     {nom:"Laval",          def:24, bonus:{prod:3}, bld:"Centropolis",          gem:{prod:30}}
+};
+var ADJ = {
+  plateau:["mileend","rosemont","villemarie","villeray"],
+  mileend:["plateau","outremont","villeray"],
+  villeray:["mileend","plateau","rosemont","laval"],
+  rosemont:["plateau","villeray","hochelaga"],
+  hochelaga:["rosemont","villemarie","longueuil"],
+  outremont:["mileend","montroyal","ndg"],
+  villemarie:["plateau","hochelaga","vieuxmtl","montroyal","griffintown"],
+  griffintown:["villemarie","verdun","vieuxmtl"],
+  vieuxmtl:["villemarie","griffintown","longueuil"],
+  montroyal:["outremont","villemarie","ndg","verdun"],
+  ndg:["outremont","montroyal","verdun"],
+  verdun:["ndg","griffintown","montroyal"],
+  longueuil:["hochelaga","vieuxmtl"],
+  laval:["villeray"]
+};
+var POLY = {
+  laval:     {p:"40,20 660,20 660,85 40,85", t:[330,55]},
+  villeray:  {p:"210,135 340,130 345,205 215,210", t:[255,175]},
+  rosemont:  {p:"350,130 500,135 505,210 355,205", t:[400,175]},
+  outremont: {p:"95,215 205,212 208,290 100,295", t:[120,255]},
+  mileend:   {p:"215,212 310,215 312,278 218,282", t:[235,250]},
+  plateau:   {p:"320,215 430,218 432,300 322,295", t:[345,260]},
+  hochelaga: {p:"440,218 590,222 588,310 438,305", t:[480,265]},
+  ndg:       {p:"15,300 100,298 105,380 20,385", t:[28,345]},
+  montroyal: {p:"110,300 215,295 220,372 115,378", t:[125,340]},
+  villemarie:{p:"322,302 432,305 430,372 325,370", t:[340,340]},
+  verdun:    {p:"130,385 280,380 278,440 135,445", t:[165,415]},
+  griffintown:{p:"290,380 395,378 393,432 292,435", t:[298,405]},
+  vieuxmtl:  {p:"405,378 520,375 518,428 407,430", t:[420,402]},
+  longueuil: {p:"460,460 670,455 670,515 462,515", t:[530,490]}
+};
+
+/* ============ MERVEILLES — monuments du Québec, version pimpée ============ */
+var WONDERS = [
+  {id:"banq", nom:"La Grande BAnQ Impériale", pts:"cul", cout:150,
+   cond:"Terminer un chapitre du roman (Paris 1536)", bonus:{cul:2},
+   fail:"Pas assez de culture pour bâtir la Grande BAnQ. Lis, écris, joue."},
+  {id:"forum", nom:"Le Forum Ressuscité", pts:"soc", cout:120,
+   cond:"Organiser une sortie ou un événement social", bonus:{soc:2},
+   fail:"Pas assez de social pour ressusciter le Forum. Sors, invite, écris à quelqu'un."},
+  {id:"oratoire", nom:"L'Oratoire du Saint-Bras", pts:"mil", cout:200,
+   cond:"Compétition de bras de fer ou nouveau PR au gym", bonus:{mil:3},
+   fail:"Pas assez de fer dans l'avant-bras pour l'Oratoire. Retourne au gym."},
+  {id:"habitat", nom:"Habitat 67 — Suite Italienne", pts:"prod", cout:180,
+   cond:"Fonds Italie financé à 100%", bonus:{prod:2},
+   fail:"Pas assez de production pour la Suite Italienne. La Route de la Soie attend."},
+  {id:"stade", nom:"Le Stade Olympique — Enfin Payé", pts:"prod", cout:300,
+   cond:"Capital One à 0$", bonus:{prod:5},
+   fail:"Pas assez de production. Le vrai a pris 30 ans à payer — fais mieux."}
+];
+var PEN = [
+  "50 burpees au parc La Fontaine",
+  "100 push-ups répartis dans la journée",
+  "500 m de nage supplémentaires à la prochaine séance",
+  "Montée des escaliers du Mont-Royal",
+  "30 min de cardio à jeun demain matin",
+  "5 km de marche rapide, téléphone en mode avion"
+];
+var MILESTONES = [7,14,30,60,90,180,365];
+var ROUTINE = [
+  {k:"gym", ic:"🏋️", nom:"Entraînement (gym / nage / bras de fer)", pts:"+3 ⚔"},
+  {k:"cul", ic:"🎭", nom:"Culture (roman, musique, lecture)", pts:"+3 🎭"},
+  {k:"soc", ic:"🤝", nom:"Social (sortie, contact, invitation)", pts:"+3 🤝"},
+  {k:"bud", ic:"💵", nom:"Budget quotidien respecté", pts:"+2 ⚙"},
+  {k:"c1p", ic:"💳", nom:"Paiement C1 effectué", pts:"+5 ⚙"}
+];
+
+/* ============ ÉTAT ============ */
+var DEF_STATE = {
+  start:null, lastDay:null,
+  pts:{prod:0,cul:0,soc:0,mil:0},
+  troops:0, attack:0, shields:0, streak:0, best:0, totalSober:0,
+  menace:0, raid:null,
+  owned:{plateau:true},
+  order:[],
+  built:{},
+  hist:[],
+  pendExp:null,
+  fin:{
+    des:860.37, c1:4451.51, ws:170, apr:19.9, c1pmt:575,
+    pay:1670.38, payStart:"2026-06-11", bud:40, budSat:100,
+    save:20, goalIt:600, it:0, food:0, extraC1:0,
+    split:{c1:40,it:30,food:30},
+    subs:[
+      {nom:"Loyer", amt:769.00, type:"d", day:1},
+      {nom:"Beneva", amt:28.94, type:"d", day:2},
+      {nom:"Tim Dillon", amt:8.14, type:"c", day:1},
+      {nom:"F1 TV", amt:12.99, type:"c", day:13},
+      {nom:"Gym", amt:27.59, type:"c", day:14},
+      {nom:"Colba", amt:47.08, type:"c", day:17},
+      {nom:"Chatr", amt:28.74, type:"c", day:29},
+      {nom:"YouTube Premium", amt:14.94, type:"c", day:30}
+    ],
+    debts:[{nom:"Ticket", solde:135, pmt:40, day:27}],
+    extras:[]
+  },
+  events:[],
+  gh:{owner:"rogdolphe",repo:"tracker-aw",file:"civ_data.json"}
+};
+var C;
+try{ C = JSON.parse(localStorage.getItem("civ_sobre_data")||"null"); }catch(e){ C=null; }
+if(!C) C = JSON.parse(JSON.stringify(DEF_STATE));
+(function merge(d,c){ for(var k in d){ if(c[k]===undefined) c[k]=d[k];
+  else if(d[k]&&typeof d[k]==="object"&&!Array.isArray(d[k])) merge(d[k],c[k]); } })(DEF_STATE,C);
+
+var tab="jour", selTerr=null, calRef=new Date();
+var togg={gym:0,cul:0,soc:0,bud:0,c1p:0};
+
+/* ============ OUTILS ============ */
+function $(id){return document.getElementById(id);}
+function fv(n,d){ if(d===undefined)d=0; var neg=n<0; n=Math.abs(n);
+  var s=n.toFixed(d).replace(/\B(?=(\d{3})+(?!\d))/g," ");
+  return (neg?"-":"")+s+"$"; }
+function fi(n){ return Math.round(n).toString(); }
+function today(){ return new Date().toLocaleDateString("fr-CA"); }
+function dstr(d){ return d.toLocaleDateString("fr-CA"); }
+function noon(s){ return new Date(s+"T12:00"); }
+function daysBetween(a,b){ return Math.round((b-a)/86400000); }
+function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;"); }
+function save(){ C.ts=Date.now(); localStorage.setItem("civ_sobre_data", JSON.stringify(C)); ghQueue(); }
+function mult(){ return C.streak>=30?2 : C.streak>=7?1.5 : 1; }
+function strength(){ return C.troops + C.attack; }
+function ownedBonus(){
+  var b={prod:0,cul:0,soc:0,mil:0},k,j,w;
+  for(k in C.owned){ if(C.owned[k]&&TERR[k]){ var bo=TERR[k].bonus; for(j in bo) b[j]+=bo[j]; } }
+  for(w=0;w<WONDERS.length;w++){ if(C.built[WONDERS[w].id]){ var wb=WONDERS[w].bonus; for(j in wb) b[j]+=wb[j]; } }
+  return b;
+}
+function rate30(){
+  var n=0,s=0,lim=new Date(); lim.setDate(lim.getDate()-30);
+  for(var i=0;i<C.hist.length;i++){ var h=C.hist[i];
+    if(noon(h.d)>=lim){ n++; s+=h.s; } }
+  return n? s/n : (C.totalSober>0?1:0);
+}
+function ciToday(){ for(var i=0;i<C.hist.length;i++) if(C.hist[i].d===today()) return C.hist[i]; return null; }
+function mapDone(){ for(var k in TERR) if(!C.owned[k]) return false; return true; }
+function nOwned(){ var n=0; for(var k in C.owned) if(C.owned[k]) n++; return n; }
+
+/* ============ BARBARES — jours manqués & raids ============ */
+function processMissed(){
+  if(!C.start) return;
+  var from = noon(C.lastDay||C.start); from.setDate(from.getDate()+1);
+  var y=new Date(); y.setDate(y.getDate()-1); y.setHours(12,0,0,0);
+  if(from>y) return;
+  var hset={}; C.hist.forEach(function(h){hset[h.d]=1;});
+  var missed=0, d=new Date(from);
+  while(d<=y){ if(!hset[dstr(d)]) missed++; d.setDate(d.getDate()+1); }
+  C.lastDay=dstr(y);
+  if(missed>0){
+    C.menace=Math.min(100, C.menace+missed*15);
+    C.streak=0;
+    C.raid=(C.raid||"")+" "+missed+" jour(s) sans tribunal — la menace barbare monte (+"+(missed*15)+").";
+  }
+  checkRaid(); save();
+}
+function checkRaid(){
+  if(C.menace>=100){
+    if(C.order.length){
+      var t=C.order.pop(); C.owned[t]=false;
+      C.raid="⚑ LES BARBARES ONT PILLÉ "+TERR[t].nom.toUpperCase()+" ! Reprends ta routine pour reconquérir.";
+    } else {
+      C.raid="⚑ Les barbares assiègent les portes. La capitale tient — mais reprends ta routine.";
+    }
+    C.menace=35;
+  }
+}
+
+/* ============ MOTEUR DE JEU ============ */
+window.tgB=function(k,v){ togg[k]=v; render(); };
+window.doCheckin = function(sober){
+  if(ciToday()){ alert("Déjà jugé aujourd'hui."); return; }
+  if(!C.start){ C.start=today(); C.lastDay=today(); }
+  var b=[]; ROUTINE.forEach(function(r){ if(togg[r.k]) b.push(r.k); });
+  C.hist.unshift({d:today(), s:sober?1:0, b:b});
+  C.lastDay=today();
+  if(sober){
+    C.streak++; C.totalSober++;
+    if(C.streak>C.best) C.best=C.streak;
+    if(C.streak%7===0 && C.shields<3) C.shields++;
+    var m=mult(), ob=ownedBonus();
+    C.pts.prod += Math.round(10*m) + ob.prod + (b.indexOf("bud")>=0?2:0) + (b.indexOf("c1p")>=0?5:0);
+    C.pts.cul  += ob.cul + (b.indexOf("cul")>=0?3:0);
+    C.pts.soc  += ob.soc + (b.indexOf("soc")>=0?3:0);
+    C.pts.mil  += ob.mil + (b.indexOf("gym")>=0?3:0);
+    /* routine complète (3+/5) = discipline → attaque & la menace recule */
+    if(b.length>=3){ C.attack++; C.menace=Math.max(0,C.menace-10); }
+    else C.menace=Math.max(0,C.menace-5);
+    var sv=C.fin.save||0, sp=C.fin.split;
+    C.fin.extraC1 += sv*sp.c1/100;
+    C.fin.it      += sv*sp.it/100;
+    C.fin.food    += sv*sp.food/100;
+  } else {
+    C.menace=Math.min(100,C.menace+20);
+    relapse();
+    checkRaid();
+  }
+  togg={gym:0,cul:0,soc:0,bud:0,c1p:0};
+  save(); render();
+};
+function relapse(){
+  if(C.shields>0){
+    C.shields--; shave(0.10,0); C.pendExp=null;
+    alert("Un bouclier a absorbé l'assaut. -10% des crédits. La série tient.");
+    return;
+  }
+  var lost={ prod:Math.round(C.pts.prod*0.30), cul:Math.round(C.pts.cul*0.30),
+             soc:Math.round(C.pts.soc*0.30), mil:Math.round(C.pts.mil*0.30),
+             troops:Math.round(C.troops*0.25), terr:null };
+  shave(0.30,0.25);
+  C.streak=0;
+  if(C.order.length){ var t=C.order.pop(); C.owned[t]=false; lost.terr=t; }
+  C.pendExp={d:today(), lost:lost};
+}
+function shave(p,tp){
+  C.pts.prod=Math.round(C.pts.prod*(1-p)); C.pts.cul=Math.round(C.pts.cul*(1-p));
+  C.pts.soc=Math.round(C.pts.soc*(1-p)); C.pts.mil=Math.round(C.pts.mil*(1-p));
+  C.troops=Math.round(C.troops*(1-tp));
+}
+window.doExpiation = function(){
+  if(!C.pendExp) return;
+  var sel=$("pen-sel");
+  if(!sel||!confirm("Pénitence accomplie : "+sel.value+" ?\nL'honneur récupère la moitié des pertes.")) return;
+  var L=C.pendExp.lost;
+  C.pts.prod+=Math.round(L.prod/2); C.pts.cul+=Math.round(L.cul/2);
+  C.pts.soc+=Math.round(L.soc/2); C.pts.mil+=Math.round(L.mil/2);
+  C.troops+=Math.round(L.troops/2);
+  C.pendExp=null; save(); render();
+};
+window.undoToday = function(){
+  var h=ciToday(); if(!h) return;
+  if(!confirm("Annuler le check-in d'aujourd'hui?")) return;
+  C.hist=C.hist.filter(function(x){return x.d!==today();});
+  if(h.s){ C.streak=Math.max(0,C.streak-1); C.totalSober=Math.max(0,C.totalSober-1); }
+  save(); render();
+};
+window.recruit = function(){
+  if(C.pts.mil<10){ alert("Il faut 10 ⚔ par troupe. Va t'entraîner."); return; }
+  var n=Math.floor(C.pts.mil/10);
+  var q=parseInt(prompt("Recruter combien de troupes? (10 ⚔ chacune — max "+n+")","1")||"0",10);
+  if(!q||q<1) return; q=Math.min(q,n);
+  C.pts.mil-=q*10; C.troops+=q; save(); render();
+};
+window.selT = function(k){ selTerr=k; render(); };
+window.conquer = function(k){
+  var t=TERR[k]; if(!t||C.owned[k]) return;
+  var adjOk=false; for(var a in C.owned){ if(C.owned[a]&&ADJ[a]&&ADJ[a].indexOf(k)>=0) adjOk=true; }
+  if(!adjOk){ alert("Territoire non adjacent à l'empire."); return; }
+  var cost=t.def*2, lossT=Math.ceil(t.def/2);
+  if(strength()<t.def){ alert("Force insuffisante : "+t.def+" requis (troupes "+C.troops+" + attaque "+C.attack+" = "+strength()+"). La routine forge l'attaque."); return; }
+  if(C.troops<lossT){ alert("Pas assez de troupes à sacrifier ("+lossT+" requises). Recrute au gym."); return; }
+  if(C.pts.prod<cost){ alert("Production insuffisante : "+cost+" ⚙ requis."); return; }
+  var gemTxt=Object.keys(t.gem).map(function(g){ var ic={prod:"⚙",cul:"🎭",soc:"🤝",mil:"⚔"}[g]; return "+"+t.gem[g]+" "+ic; }).join(", ");
+  if(!confirm("Conquérir "+t.nom+" ?\nCoût : "+cost+" ⚙ et "+lossT+" troupes.\nButin : "+t.bld+(gemTxt?" (gemme "+gemTxt+")":""))) return;
+  C.pts.prod-=cost; C.troops-=lossT; C.owned[k]=true; C.order.push(k);
+  for(var g in t.gem) C.pts[g]+=t.gem[g];
+  save(); render();
+};
+window.buildWonder = function(id){
+  var w=null,i; for(i=0;i<WONDERS.length;i++) if(WONDERS[i].id===id) w=WONDERS[i];
+  if(!w||C.built[id]) return;
+  if(C.pts[w.pts]<w.cout){ alert(w.fail+" ("+fi(C.pts[w.pts])+"/"+w.cout+")"); return; }
+  if(!confirm("Condition réelle accomplie?\n« "+w.cond+" »\n\nBâtir "+w.nom+" pour "+w.cout+" pts?")) return;
+  C.pts[w.pts]-=w.cout; C.built[id]=today(); save(); render();
+};
+window.spendFood = function(){
+  var a=parseFloat(prompt("Montant à dépenser du Marché (resto / ingrédients premium)? Disponible: "+fv(C.fin.food,2),"")||"0");
+  if(a>0){ C.fin.food=Math.max(0,C.fin.food-a); save(); render(); }
+};
+window.transferC1 = function(){
+  if(C.fin.extraC1<=0) return;
+  if(!confirm("Marquer "+fv(C.fin.extraC1,2)+" comme transféré vers Capital One?\n(Fais le vrai virement dans Desjardins.)")) return;
+  C.fin.c1=Math.max(0,C.fin.c1-C.fin.extraC1); C.fin.extraC1=0; save(); render();
+};
+
+/* check-in financier + dépenses/revenus sporadiques (onglet Aujourd'hui) */
+window.finCI = function(){
+  var d=$("fc-des").value, c=$("fc-c1").value, w=$("fc-ws").value;
+  if(d!=="") C.fin.des=parseFloat(d)||0;
+  if(c!=="") C.fin.c1=parseFloat(c)||0;
+  if(w!=="") C.fin.ws=parseFloat(w)||0;
+  save(); render();
+};
+window.addExtra = function(){
+  var n=$("ex-n").value, a=parseFloat($("ex-a").value)||0, k=$("ex-k").value, d=$("ex-d").value||today();
+  if(!n||a<=0) return;
+  C.fin.extras.push({d:d,nom:n,amt:a,k:k});
+  /* effet immédiat si aujourd'hui ou passé */
+  if(d<=today()){
+    if(k==="dep-d") C.fin.des-=a;
+    else if(k==="dep-c") C.fin.c1+=a;
+    else C.fin.des+=a;
+  }
+  save(); render();
+};
+window.delExtra = function(i){
+  if(!confirm("Supprimer cette entrée? (les soldes ne sont pas recalculés automatiquement)")) return;
+  C.fin.extras.splice(i,1); save(); render();
+};
+
+window.uF = function(k,v){ C.fin[k]=(k==="payStart")?v:(parseFloat(v)||0); save(); };
+window.uS = function(k,v){ C.fin.split[k]=parseFloat(v)||0; save(); };
+window.uG = function(k,v){ C.gh[k]=v; save(); };
+window.uSub = function(i,k,v){ C.fin.subs[i][k]=(k==="nom"||k==="type")?v:(parseFloat(v)||0); save(); };
+window.addSub = function(){ C.fin.subs.push({nom:"Nouveau",amt:0,type:"c",day:1}); save(); render(); };
+window.delSub = function(i){ C.fin.subs.splice(i,1); save(); render(); };
+window.uDebt = function(i,k,v){ C.fin.debts[i][k]=(k==="nom")?v:(parseFloat(v)||0); save(); };
+window.addDebt = function(){ C.fin.debts.push({nom:"Dette",solde:0,pmt:0,day:1}); save(); render(); };
+window.delDebt = function(i){ C.fin.debts.splice(i,1); save(); render(); };
+window.addEv = function(){
+  var d=$("ev-d").value, n=$("ev-n").value, c=parseFloat($("ev-c").value)||0, f=$("ev-f").value;
+  if(!d||!n) return;
+  C.events.push({d:d,nom:n,cout:c,fonds:f}); save(); render();
+};
+window.delEv = function(i){ C.events.splice(i,1); save(); render(); };
+window.calNav = function(m){ calRef=new Date(calRef.getFullYear(), calRef.getMonth()+m, 1); render(); };
+window.sT = function(t){ tab=t; render(); };
+window.dismissRaid = function(){ C.raid=null; save(); render(); };
+window.expJSON = function(){
+  var blob=new Blob([JSON.stringify(C,null,1)],{type:"application/json"});
+  var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="civ_data.json"; a.click();
+};
+window.impJSON = function(ev){
+  var f=ev.target.files[0]; if(!f) return;
+  var r=new FileReader();
+  r.onload=function(){ try{ C=JSON.parse(r.result); save(); render(); alert("Importé."); }
+    catch(e){ alert("JSON invalide."); } };
+  r.readAsText(f);
+};
+window.impFin = function(){
+  var found=null;
+  try{
+    for(var i=0;i<localStorage.length;i++){
+      var k=localStorage.key(i); if(k==="civ_sobre_data") continue;
+      try{ var o=JSON.parse(localStorage.getItem(k));
+        if(o && typeof o.des==="number" && typeof o.c1==="number"){ found=o; break; }
+      }catch(e){}
+    }
+  }catch(e){}
+  if(found){ C.fin.des=found.des; C.fin.c1=found.c1;
+    if(typeof found.apr==="number") C.fin.apr=found.apr;
+    if(typeof found.ccPmt==="number") C.fin.c1pmt=found.ccPmt;
+    save(); render(); alert("Soldes importés de FINANCES.PERSO : Desjardins "+fv(C.fin.des,2)+", C1 "+fv(C.fin.c1,2));
+  } else alert("Données FINANCES.PERSO introuvables dans ce navigateur. Entre les soldes dans Aujourd'hui.");
+};
+
+/* ============ SYNC GITHUB ============ */
+var ghTimer=null, ghSha=null;
+function ghTok(){ return localStorage.getItem("civ_gh_token")||""; }
+window.setTok = function(v){ localStorage.setItem("civ_gh_token", v.trim()); };
+function ghURL(){ return "https://api.github.com/repos/"+C.gh.owner+"/"+C.gh.repo+"/contents/"+C.gh.file; }
+function ghQueue(){ if(!ghTok()) return; clearTimeout(ghTimer); ghTimer=setTimeout(ghSave,1500); }
+function ghSave(retry){
+  var t=ghTok(); if(!t) return;
+  var body={message:"civ sync "+new Date().toISOString(),
+    content:btoa(unescape(encodeURIComponent(JSON.stringify(C))))};
+  if(ghSha) body.sha=ghSha;
+  fetch(ghURL(),{method:"PUT",headers:{Authorization:"token "+t,"Content-Type":"application/json"},
+    body:JSON.stringify(body)})
+  .then(function(r){return r.json();})
+  .then(function(j){
+    if(j.content&&j.content.sha){ ghSha=j.content.sha;
+      var el=$("gh-st"); if(el) el.textContent="✓ synchronisé "+new Date().toLocaleTimeString("fr-CA");
+    } else if(!retry){
+      /* conflit de sha (modifié depuis un autre appareil) : récupérer le sha et retenter */
+      fetch(ghURL(),{headers:{Authorization:"token "+t}})
+      .then(function(r){return r.json();})
+      .then(function(m){ if(m.sha){ ghSha=m.sha; ghSave(true); } });
+    } else { var el2=$("gh-st"); if(el2) el2.textContent="✗ conflit de sync"; }
+  })
+  .catch(function(){ var el=$("gh-st"); if(el) el.textContent="✗ erreur de sync"; });
+}
+function ghLoad(){
+  var t=ghTok(); if(!t) return;
+  fetch(ghURL(),{headers:{Authorization:"token "+t}})
+  .then(function(r){return r.json();})
+  .then(function(j){
+    if(j.sha) ghSha=j.sha;
+    if(j.content){
+      var txt=decodeURIComponent(escape(atob(j.content.replace(/\n/g,"")))).trim()||"{}";
+      var remote=JSON.parse(txt);
+      if(remote && remote.hist && (remote.ts||0) > (C.ts||0)){
+        C=remote;
+        (function merge(d,c){ for(var k in d){ if(c[k]===undefined) c[k]=d[k];
+          else if(d[k]&&typeof d[k]==="object"&&!Array.isArray(d[k])) merge(d[k],c[k]); } })(DEF_STATE,C);
+        localStorage.setItem("civ_sobre_data", JSON.stringify(C));
+        processMissed(); render();
+      }
+    }
+  }).catch(function(){});
+}
+
+/* ============ MOTEUR FINANCIER — projection quotidienne ============ */
+function isPayday(d){
+  var s=noon(C.fin.payStart);
+  var n=daysBetween(s,d);
+  return n>=0 && n%14===0;
+}
+function subDay(sub,d){
+  var last=new Date(d.getFullYear(), d.getMonth()+1, 0).getDate();
+  return d.getDate()===Math.min(sub.day,last);
+}
+function buildProj(nDays){
+  /* projette des/c1 jour par jour à partir des soldes ACTUELS (flux dès demain) */
+  var des=C.fin.des, c1=C.fin.c1;
+  var debts=C.fin.debts.map(function(x){return {nom:x.nom,solde:x.solde,pmt:x.pmt,day:x.day};});
+  var exmap={}; C.fin.extras.forEach(function(e){ (exmap[e.d]=exmap[e.d]||[]).push(e); });
+  var t0=new Date(); t0.setHours(12,0,0,0);
+  var out={};
+  for(var i=0;i<=nDays;i++){
+    var d=new Date(t0); d.setDate(d.getDate()+i);
+    var ds=dstr(d), items=[];
+    if(i>0){
+      if(d.getDate()===1){ c1=c1*(1+C.fin.apr/1200); items.push({c:"cre",t:"~intérêts C1"}); }
+      if(isPayday(d)){
+        des+=C.fin.pay; items.push({c:"pay",t:"💰+"+fi(C.fin.pay)});
+        var half=C.fin.c1pmt/2;
+        if(half>0){ des-=half; c1-=half; items.push({c:"deb",t:"💳C1 −"+fi(half)}); }
+      }
+      C.fin.subs.forEach(function(s){
+        if(subDay(s,d)){
+          if(s.type==="d"){ des-=s.amt; items.push({c:"deb",t:esc(s.nom)+" −"+fi(s.amt)}); }
+          else { c1+=s.amt; items.push({c:"cre",t:"~"+esc(s.nom)+" "+fi(s.amt)}); }
+        }
+      });
+      debts.forEach(function(dt){
+        if(dt.solde>0 && d.getDate()===dt.day){
+          var p=Math.min(dt.pmt,dt.solde); c1+=p; dt.solde-=p;
+          items.push({c:"cre",t:"~"+esc(dt.nom)+" "+fi(p)});
+        }
+      });
+      (exmap[ds]||[]).forEach(function(e){
+        if(e.k==="dep-d"){ des-=e.amt; items.push({c:"deb",t:esc(e.nom)+" −"+fi(e.amt)}); }
+        else if(e.k==="dep-c"){ c1+=e.amt; items.push({c:"cre",t:"~"+esc(e.nom)+" "+fi(e.amt)}); }
+        else { des+=e.amt; items.push({c:"pay",t:"+"+esc(e.nom)+" "+fi(e.amt)}); }
+      });
+      des -= (d.getDay()===6? C.fin.budSat : C.fin.bud);
+    } else {
+      if(isPayday(d)) items.push({c:"pay",t:"💰 paye"});
+      C.fin.subs.forEach(function(s){ if(subDay(s,d)) items.push({c:s.type==="d"?"deb":"cre",t:esc(s.nom)}); });
+    }
+    out[ds]={des:des,c1:Math.max(0,c1),items:items};
+  }
+  return out;
+}
+
+/* ============ PRÉDICTIONS ============ */
+function predict(rate){
+  var res={};
+  var bal=C.fin.c1, m=0, pmt=C.fin.c1pmt + C.fin.save*rate*30*(C.fin.split.c1/100);
+  if(pmt>bal*C.fin.apr/1200 && bal>0){
+    while(bal>0 && m<240){ bal=bal*(1+C.fin.apr/1200)-pmt; m++; }
+    var d=new Date(); d.setMonth(d.getMonth()+m); res.c1zero=d; res.c1months=m;
+  } else res.c1zero=null;
+  var trip=noon("2026-09-11"); var dj=Math.max(0,daysBetween(new Date(),trip));
+  res.italy=C.fin.it + C.fin.save*rate*(C.fin.split.it/100)*dj;
+  var prodNeed=0,milNeed=0,k;
+  for(k in TERR){ if(!C.owned[k]){ prodNeed+=TERR[k].def*2; milNeed+=Math.ceil(TERR[k].def/2)*10; } }
+  prodNeed=Math.max(0,prodNeed-C.pts.prod);
+  milNeed=Math.max(0,milNeed-C.troops*10-C.pts.mil);
+  var ob=ownedBonus();
+  var prodDay=(10*mult()+ob.prod+2)*rate, milDay=(3+ob.mil)*rate;
+  var days=(prodDay>0&&milDay>0)? Math.max(prodNeed/prodDay, milNeed/milDay) : null;
+  if(days!==null){ var md=new Date(); md.setDate(md.getDate()+Math.ceil(days)); res.mapDate=md; }
+  else res.mapDate=null;
+  return res;
+}
+
+/* ============ RENDUS ============ */
+var TABS=[["jour","⚔ Aujourd'hui"],["carte","🗺 Carte"],["ville","🏙 Ville"],["empire","🏛 Empire"],
+          ["cal","📅 Calendrier"],["pred","📈 Analyses"],["param","⚙ Paramètres"]];
+
+function render(){
+  $("tabs").innerHTML = TABS.map(function(t){
+    return '<button class="'+(tab===t[0]?"on":"")+'" onclick="sT(\''+t[0]+'\')">'+t[1]+'</button>';
+  }).join("");
+  $("top-stats").innerHTML =
+    '<span class="au">⚙ '+fi(C.pts.prod)+'</span> · 🎭 '+fi(C.pts.cul)+' · 🤝 '+fi(C.pts.soc)+
+    ' · ⚔ '+fi(C.pts.mil)+'<br><small>Force '+strength()+' ('+C.troops+'t+'+C.attack+'a) · Boucliers '+C.shields+
+    ' · Quartiers '+nOwned()+'/14 · Série <b class="g">'+C.streak+'j</b></small>';
+  var era = C.totalSober>=90?"III — L'Âge d'Or":C.totalSober>=30?"II — L'Expansion":"I — La Fondation";
+  $("era-line").textContent="L'Empire du Plateau — Ère "+era+" · "+C.totalSober+" jours sobres · Desjardins "+fv(C.fin.des,2)+" · C1 "+fv(C.fin.c1,2);
+  var R={jour:rJour,carte:rCarte,ville:rVille,empire:rEmpire,cal:rCal,pred:rPred,param:rParam};
+  $("app").innerHTML = R[tab]();
+}
+
+function menaceBar(){
+  var lvl=C.menace>=70?"r":(C.menace>=40?"o":"g");
+  return '<div class="card"><div class="flexr" style="justify-content:space-between">'+
+   '<h3 style="margin:0">⚑ Menace barbare</h3><b class="'+lvl+'">'+fi(C.menace)+'%</b></div>'+
+   '<div class="bar menace"><i style="width:'+C.menace+'%"></i></div>'+
+   '<small class="dim">Jour sans tribunal : +15 · Rechute : +20 · Routine complète (3+/5) : −10 et +1 attaque · Routine partielle : −5. À 100%, les barbares pillent ton dernier quartier conquis.</small></div>';
+}
+
+function rJour(){
+  var h=ciToday(), out="";
+  if(C.raid) out+='<div class="msg warn">'+esc(C.raid)+' <button class="ghost" onclick="dismissRaid()">OK</button></div>';
+  if(C.pendExp){
+    out+='<div class="card" style="border-color:var(--red)"><h2 class="r">⚑ Révolte</h2>'+
+    '<p>Rechute enregistrée'+(C.pendExp.lost.terr?(' — <b>'+TERR[C.pendExp.lost.terr].nom+'</b> s\'est soulevé et a quitté l\'empire'):'')+
+    '. Pertes : '+C.pendExp.lost.prod+' ⚙, '+C.pendExp.lost.mil+' ⚔, '+C.pendExp.lost.troops+' troupes.</p>'+
+    '<p><b>Expiation</b> — une pénitence d\'athlète, accomplie dans les 48h, restaure la moitié des pertes :</p>'+
+    '<select id="pen-sel">'+PEN.map(function(p){return '<option>'+p+'</option>';}).join("")+'</select>'+
+    '<div style="margin-top:8px"><button class="act" onclick="doExpiation()">Pénitence accomplie — restaurer l\'honneur</button></div></div>';
+  }
+  if(h){
+    out+='<div class="card"><h2>Le tribunal a siégé</h2><p>Verdict du '+h.d+' : '+
+      (h.s?'<b class="g">○ SOBRE</b> — l\'empire produit.':'<b class="r">✕ RECHUTE</b> — les barbares ont frappé.')+
+      '</p><p class="dim">Routine : '+(h.b.length?h.b.join(", "):"aucune")+' ('+h.b.length+'/5)</p>'+
+      '<button class="ghost" onclick="undoToday()">Annuler le check-in du jour</button></div>';
+  } else {
+    /* lien GYM.AW : séance complétée aujourd'hui → bonus gym pré-coché */
+    if(localStorage.getItem("gym_done_"+today())==="1" && !togg._gymAuto){ togg.gym=1; togg._gymAuto=1; }
+    out+='<div class="card"><h2>Le tribunal quotidien</h2>'+
+    '<p class="dim" style="text-align:center">Un seul verdict. Pas de négociation.</p>'+
+    '<div class="routine">'+
+    ROUTINE.map(function(r){
+      return '<div class="rrow"><span>'+r.ic+' '+r.nom+' <b class="au">'+r.pts+'</b></span>'+
+        '<span class="tg">'+
+        '<button class="yes'+(togg[r.k]===1?" on":"")+'" onclick="tgB(\''+r.k+'\',1)">✓</button>'+
+        '<button class="no'+(togg[r.k]===0?" on":"")+'" onclick="tgB(\''+r.k+'\',0)">✕</button>'+
+        '</span></div>';
+    }).join("")+
+    '</div>'+
+    '<div class="tribunal">'+
+    '<button class="oui" onclick="doCheckin(true)">○<span>SOBRE</span></button>'+
+    '<button class="non" onclick="doCheckin(false)">✕<span>RECHUTE</span></button>'+
+    '</div>'+
+    '<p class="dim" style="text-align:center">Jour sobre : +'+fi(10*mult())+' ⚙ (×'+mult()+') + bonus de quartiers. Routine 3+/5 : +1 attaque.<br>'+
+    'Économie réelle : +'+fv(C.fin.save,2)+' répartis C1 / Italie / Bouffe.</p></div>';
+  }
+  out+=menaceBar();
+  /* ----- check-in financier ----- */
+  out+='<div class="card"><h2>Trésor impérial — mise à jour des soldes</h2><div class="grid3">'+
+   '<div><label class="f">Desjardins $ (actuel '+fv(C.fin.des,2)+')</label><input type="number" step="0.01" id="fc-des" placeholder="'+C.fin.des.toFixed(2)+'"></div>'+
+   '<div><label class="f">Capital One $ (actuel '+fv(C.fin.c1,2)+')</label><input type="number" step="0.01" id="fc-c1" placeholder="'+C.fin.c1.toFixed(2)+'"></div>'+
+   '<div><label class="f">Wealthsimple $ (actuel '+fv(C.fin.ws,2)+')</label><input type="number" step="0.01" id="fc-ws" placeholder="'+C.fin.ws.toFixed(2)+'"></div>'+
+   '</div><div style="margin-top:8px"><button class="act" onclick="finCI()">Mettre à jour le trésor</button></div></div>';
+  /* ----- dépense / revenu sporadique ----- */
+  out+='<div class="card"><h3>Dépense imprévue / revenu sporadique</h3><div class="grid4">'+
+   '<div><label class="f">Nom</label><input id="ex-n" placeholder="Dentiste, contrat voix…"></div>'+
+   '<div><label class="f">Montant $</label><input type="number" step="0.01" id="ex-a"></div>'+
+   '<div><label class="f">Type</label><select id="ex-k">'+
+     '<option value="dep-d">Dépense — Débit (−Desjardins)</option>'+
+     '<option value="dep-c">Dépense — Crédit (→C1)</option>'+
+     '<option value="rev">Revenu (+Desjardins)</option></select></div>'+
+   '<div><label class="f">Date</label><input type="date" id="ex-d" value="'+today()+'"></div></div>'+
+   '<div style="margin-top:8px"><button class="act" onclick="addExtra()">Ajouter & mettre à jour</button></div>'+
+   (C.fin.extras.length?'<table style="margin-top:8px"><tr><th>Date</th><th>Nom</th><th>Montant</th><th>Type</th><th></th></tr>'+
+     C.fin.extras.slice().reverse().slice(0,8).map(function(e){
+       var i=C.fin.extras.indexOf(e);
+       var lbl={"dep-d":"débit","dep-c":"crédit","rev":"revenu"}[e.k];
+       return '<tr><td>'+e.d+'</td><td>'+esc(e.nom)+'</td><td>'+fv(e.amt,2)+'</td><td class="dim">'+lbl+'</td>'+
+         '<td><button class="ghost" onclick="delExtra('+i+')">✕</button></td></tr>';
+     }).join("")+'</table>':'')+
+   '<p class="dim">La paye CUSM ('+fv(C.fin.pay,2)+' aux 2 semaines depuis le '+C.fin.payStart+') est automatique — pas besoin de l\'entrer.</p></div>';
+  var p100=predict(1);
+  out+='<div class="grid3">'+
+   '<div class="stat">Série actuelle<b class="g">'+C.streak+' jours</b><small>record : '+C.best+'</small></div>'+
+   '<div class="stat">Prochain jalon<b class="au">'+nextMilestone()+'</b></div>'+
+   '<div class="stat">Si 100% sobre<b>'+(p100.c1zero?('C1 à 0 le '+dstr(p100.c1zero)):"—")+'</b></div>'+
+  '</div>';
+  return out;
+}
+function nextMilestone(){
+  for(var i=0;i<MILESTONES.length;i++) if(C.streak<MILESTONES[i])
+    return MILESTONES[i]+"j — dans "+(MILESTONES[i]-C.streak)+" jours";
+  return "Légende vivante";
+}
+
+function rCarte(){
+  var svg='<svg viewBox="0 0 700 520" style="width:100%;background:var(--water);border:1px solid var(--line)">';
+  svg+='<text x="20" y="110" class="def">~ Rivière des Prairies ~</text>';
+  svg+='<text x="20" y="455" class="def">~ Fleuve Saint-Laurent ~</text>';
+  for(var k in POLY){
+    var cls="terr "+(C.owned[k]?("owned"+(TERR[k].cap?" cap":"")):"fog")+(TERR[k].prem?" prem":"")+(selTerr===k?" sel":"");
+    svg+='<polygon class="'+cls+'" points="'+POLY[k].p+'" onclick="selT(\''+k+'\')"></polygon>';
+    svg+='<text x="'+POLY[k].t[0]+'" y="'+POLY[k].t[1]+'">'+TERR[k].nom+'</text>';
+    svg+='<text x="'+POLY[k].t[0]+'" y="'+(POLY[k].t[1]+12)+'" class="def">'+
+      (C.owned[k]?(TERR[k].cap?"★ capitale":"contrôlé"):"déf "+TERR[k].def+(TERR[k].prem?" ♦":""))+'</text>';
+  }
+  svg+='</svg>';
+  var panel="";
+  if(selTerr){
+    var t=TERR[selTerr];
+    var bonus=Object.keys(t.bonus).map(function(b){
+      var ic={prod:"⚙",cul:"🎭",soc:"🤝",mil:"⚔"}[b]; return "+"+t.bonus[b]+" "+ic+"/jour"; }).join(", ");
+    var gem=Object.keys(t.gem).map(function(g){
+      var ic={prod:"⚙",cul:"🎭",soc:"🤝",mil:"⚔"}[g]; return "+"+t.gem[g]+" "+ic; }).join(", ");
+    panel='<div class="card"><h3>'+t.nom+(t.cap?' — ★ Capitale (imprenable)':'')+(t.prem?' — ♦ Quartier de prestige':'')+'</h3>'+
+      '<p>🏛 Bâtiment : <b>'+t.bld+'</b> → '+'<b class="au">'+bonus+'</b>'+
+      (gem?'<br>💎 Gemme à la conquête : <b class="au">'+gem+'</b>':'')+
+      (t.cap?'':'<br>Défense '+t.def+' · Coût '+(t.def*2)+' ⚙ + '+Math.ceil(t.def/2)+' troupes perdues')+'</p>'+
+      (C.owned[selTerr]?'<p class="g">Sous contrôle impérial.</p>':
+       '<button class="act" onclick="conquer(\''+selTerr+'\')">⚔ Lancer la conquête</button>')+
+      '</div>';
+  }
+  return '<div class="card"><h2>La carte de l\'empire</h2>'+svg+
+    '<p class="dim">Or = contrôlé · Gris = brouillard · ♦ contour violet = quartier de prestige (défense plus haute, gemme plus riche : le Vieux-Montréal vaut plus qu\'Hochelaga). Rechute ou menace à 100% = le dernier quartier conquis tombe aux barbares.</p></div>'+
+    panel+
+    '<div class="card"><h3>L\'armée</h3><p>Force totale : <b>'+strength()+'</b> = troupes <b>'+C.troops+'</b> (gym) + attaque <b class="au">'+C.attack+'</b> (routine)</p>'+
+    '<button class="act" onclick="recruit()">Recruter (10 ⚔ / troupe)</button>'+
+    '<p class="dim">Les troupes se gagnent au gym et se perdent en conquête. L\'attaque est permanente : chaque jour de routine complète (3+/5) forge +1 — la discipline ne se perd pas.</p></div>';
+}
+
+/* ----- VILLE — vue cartoonish ----- */
+function rVille(){
+  var W=700,H=340, sky="#101b2e";
+  var s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;border:1px solid var(--line);background:'+sky+'">';
+  /* étoiles */
+  var st=[[40,30],[120,55],[230,25],[345,48],[460,30],[560,60],[640,35],[90,80],[600,90],[280,70]];
+  st.forEach(function(p){ s+='<circle cx="'+p[0]+'" cy="'+p[1]+'" r="1.4" fill="#e7dec8" opacity=".7"/>'; });
+  /* lune */
+  s+='<circle cx="650" cy="48" r="16" fill="#e7dec8" opacity=".85"/><circle cx="644" cy="44" r="14" fill="'+sky+'"/>';
+  /* Mont-Royal */
+  if(C.owned.montroyal){
+    s+='<polygon points="0,250 90,160 200,250" fill="#23402a"/>';
+    s+='<rect x="88" y="128" width="4" height="26" fill="#c9a227"/><rect x="78" y="136" width="24" height="4" fill="#c9a227"/>';
+  } else s+='<polygon points="0,250 90,180 200,250" fill="#1a2433"/>';
+  /* sol + fleuve */
+  s+='<rect x="0" y="250" width="'+W+'" height="40" fill="#1c2736"/>';
+  s+='<rect x="0" y="290" width="'+W+'" height="30" fill="#16324a"/>';
+  s+='<rect x="0" y="320" width="'+W+'" height="20" fill="#122637"/>';
+  /* gratte-ciels : un par quartier contrôlé */
+  var keys=Object.keys(TERR).filter(function(k){return C.owned[k];});
+  var x=210;
+  keys.forEach(function(k,i){
+    var hgt=40+((i*37)%90), w=26+((i*13)%18);
+    var col=TERR[k].prem?"#5e4f9c":(TERR[k].cap?"#9a7b1a":"#2a3a52");
+    s+='<rect x="'+x+'" y="'+(250-hgt)+'" width="'+w+'" height="'+hgt+'" fill="'+col+'" stroke="#0d1117"/>';
+    for(var wy=250-hgt+6; wy<242; wy+=12){
+      for(var wx=x+4; wx<x+w-5; wx+=8) s+='<rect x="'+wx+'" y="'+wy+'" width="4" height="5" fill="#c9a227" opacity=".8"/>';
+    }
+    x+=w+8;
+    if(x>620) x=210;
+  });
+  /* merveilles */
+  if(C.built.stade){ /* stade olympique : bol + tour inclinée */
+    s+='<ellipse cx="120" cy="248" rx="46" ry="14" fill="#3a4a63" stroke="#0d1117"/>'+
+       '<path d="M 96 246 Q 70 170 110 150" stroke="#c9a227" stroke-width="7" fill="none"/>';
+  }
+  if(C.built.oratoire){ /* dôme */
+    s+='<rect x="540" y="210" width="56" height="40" fill="#3a4a63" stroke="#0d1117"/>'+
+       '<path d="M 540 210 Q 568 168 596 210 Z" fill="#6fae57" stroke="#0d1117"/>'+
+       '<rect x="566" y="156" width="3" height="14" fill="#c9a227"/>';
+  }
+  if(C.built.banq){ /* pile de livres */
+    s+='<rect x="430" y="232" width="60" height="9" fill="#c0392b"/><rect x="436" y="222" width="50" height="9" fill="#c9a227"/>'+
+       '<rect x="442" y="212" width="40" height="9" fill="#6fae57"/><rect x="448" y="202" width="30" height="9" fill="#5e4f9c"/>';
+  }
+  if(C.built.habitat){ /* cubes empilés */
+    s+='<rect x="350" y="230" width="18" height="18" fill="#8d99ab"/><rect x="364" y="216" width="18" height="18" fill="#e7dec8"/>'+
+       '<rect x="342" y="212" width="18" height="18" fill="#8d99ab"/><rect x="358" y="198" width="18" height="18" fill="#e7dec8"/>';
+  }
+  if(C.built.forum){ s+='<rect x="250" y="226" width="54" height="24" fill="#3a4a63" stroke="#0d1117"/>'+
+    '<rect x="250" y="220" width="54" height="6" fill="#c0392b"/><text x="256" y="242" style="font-size:9px" fill="#e7dec8">FORUM</text>'; }
+  /* grande roue du Vieux-Port */
+  if(C.owned.vieuxmtl){
+    s+='<circle cx="660" cy="222" r="26" fill="none" stroke="#c9a227" stroke-width="2"/>';
+    for(var a=0;a<6;a++){ var ang=a*Math.PI/3;
+      s+='<line x1="660" y1="222" x2="'+(660+26*Math.cos(ang)).toFixed(1)+'" y2="'+(222+26*Math.sin(ang)).toFixed(1)+'" stroke="#c9a227"/>'; }
+    s+='<polygon points="652,250 668,250 660,222" fill="none" stroke="#c9a227"/>';
+  }
+  /* pont Jacques-Cartier */
+  if(C.owned.longueuil){
+    s+='<path d="M 80 300 L 200 300 M 100 300 L 140 278 L 180 300 M 140 278 L 140 300" stroke="#8d99ab" stroke-width="3" fill="none"/>';
+  }
+  /* barbares aux portes si menace haute */
+  if(C.menace>=60){
+    s+='<text x="20" y="282" style="font-size:14px">🔥</text><text x="44" y="282" style="font-size:14px">🔥</text>'+
+       '<text x="14" y="305" class="def" fill="#c0392b">les barbares campent</text>';
+  }
+  s+='</svg>';
+  var pop=5000+C.totalSober*1000;
+  var moral=Math.max(0,100-C.menace);
+  return '<div class="card"><h2>L\'état de la ville</h2>'+s+
+   '<div class="grid4" style="margin-top:10px">'+
+   '<div class="stat">Population<b class="au">'+pop.toLocaleString("fr-CA")+'</b><small>+1 000 / jour sobre</small></div>'+
+   '<div class="stat">Moral<b class="'+(moral>=60?'g':'r')+'">'+moral+'%</b><small>100 − menace</small></div>'+
+   '<div class="stat">Quartiers<b>'+nOwned()+'/14</b></div>'+
+   '<div class="stat">Merveilles<b class="au">'+Object.keys(C.built).length+'/5</b></div>'+
+   '</div><p class="dim">Chaque quartier conquis ajoute une tour au ciel de Montréal. Les merveilles s\'élèvent en silhouettes : le Stade et sa tour, le dôme de l\'Oratoire, les cubes d\'Habitat 67, les livres de la BAnQ. Le Mont-Royal s\'allume quand tu prends la Croix.</p></div>';
+}
+
+function rEmpire(){
+  var out='<div class="grid2">';
+  out+='<div class="card"><h2>Trésorerie de guerre</h2><table>'+
+   '<tr><td>⚙ Production</td><td style="text-align:right"><b class="au">'+fi(C.pts.prod)+'</b></td></tr>'+
+   '<tr><td>🎭 Culture</td><td style="text-align:right"><b>'+fi(C.pts.cul)+'</b></td></tr>'+
+   '<tr><td>🤝 Social</td><td style="text-align:right"><b>'+fi(C.pts.soc)+'</b></td></tr>'+
+   '<tr><td>⚔ Militaire</td><td style="text-align:right"><b>'+fi(C.pts.mil)+'</b></td></tr>'+
+   '<tr><td>Attaque (routine)</td><td style="text-align:right"><b class="au">'+C.attack+'</b></td></tr>'+
+   '<tr><td>Boucliers</td><td style="text-align:right"><b>'+C.shields+'</b>/3</td></tr></table>'+
+   '<p class="dim">1 bouclier par 7 jours sobres consécutifs (max 3). Un bouclier absorbe une rechute.</p></div>';
+  out+='<div class="card"><h2>Butin réel</h2>'+
+   '<p>💳 <b>Tribut de guerre → C1</b> : <b class="au">'+fv(C.fin.extraC1,2)+'</b> '+
+   '<button class="ghost" onclick="transferC1()">Marqué transféré</button></p>'+
+   '<p>🍝 <b>Route de la Soie — Italie (11 sept)</b> : '+fv(C.fin.it,2)+' / '+fv(C.fin.goalIt)+
+   '<span class="bar"><i style="width:'+Math.min(100,C.fin.it/Math.max(1,C.fin.goalIt)*100)+'%"></i></span></p>'+
+   '<p>🍖 <b>Marché des ressources de luxe</b> : <b class="g">'+fv(C.fin.food,2)+'</b> '+
+   '<button class="ghost" onclick="spendFood()">Dépenser</button></p>'+
+   '<p class="dim">Chaque jour sobre, '+fv(C.fin.save,2)+' évités : '+C.fin.split.c1+'% C1 · '+C.fin.split.it+'% Italie · '+C.fin.split.food+'% bouffe.</p></div>';
+  out+='</div>';
+  out+='<div class="card"><h2>Les Merveilles du Québec — version impériale</h2><table><tr><th>Merveille</th><th>Coût</th><th>Condition réelle</th><th></th></tr>';
+  WONDERS.forEach(function(w){
+    var ic={prod:"⚙",cul:"🎭",soc:"🤝",mil:"⚔"}[w.pts];
+    out+='<tr><td>'+(C.built[w.id]?'🏛 ':'')+w.nom+'</td><td>'+w.cout+' '+ic+'</td><td class="dim">'+w.cond+'</td><td>'+
+     (C.built[w.id]?'<span class="g">bâtie '+C.built[w.id]+'</span>':
+      '<button class="ghost" onclick="buildWonder(\''+w.id+'\')">Bâtir</button>')+
+     '</td></tr>';
+  });
+  out+='</table><p class="dim">Points ET accomplissement réel exigés. Le Stade Olympique Enfin Payé (C1 = 0) + la carte complète = <b class="au">Victoire de Domination</b>.</p></div>';
+  /* bâtiments possédés */
+  var blds=Object.keys(TERR).filter(function(k){return C.owned[k];});
+  out+='<div class="card"><h3>Bâtiments de l\'empire</h3><p class="dim">'+
+    blds.map(function(k){return TERR[k].bld;}).join(" · ")+'</p></div>';
+  return out;
+}
+
+function rCal(){
+  var y=calRef.getFullYear(), m=calRef.getMonth();
+  var first=new Date(y,m,1), start=(first.getDay()+6)%7, nd=new Date(y,m+1,0).getDate();
+  var hmap={}; C.hist.forEach(function(h){hmap[h.d]=h;});
+  var emap={}; C.events.forEach(function(e){ (emap[e.d]=emap[e.d]||[]).push(e); });
+  var t0=new Date(); t0.setHours(12,0,0,0);
+  var lastDayShown=new Date(y,m+1,0,12);
+  var horizon=Math.max(0,daysBetween(t0,lastDayShown));
+  var proj=buildProj(Math.min(horizon,370));
+  var out='<div class="card"><div class="flexr" style="justify-content:space-between"><h2 style="border:none;margin:0">'+
+   calRef.toLocaleDateString("fr-CA",{month:"long",year:"numeric"})+'</h2>'+
+   '<div><button class="ghost" onclick="calNav(-1)">◀</button> <button class="ghost" onclick="calNav(1)">▶</button></div></div>';
+  out+='<div class="cal">'+["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"].map(function(d){return '<div class="hd">'+d+'</div>';}).join("");
+  for(var i=0;i<start;i++) out+='<div></div>';
+  for(var d=1; d<=nd; d++){
+    var ds=y+"-"+String(m+1).padStart(2,"0")+"-"+String(d).padStart(2,"0");
+    var h=hmap[ds], p=proj[ds];
+    var cls="d"+(h?(h.s?" sober":" rel"):"")+(ds===today()?" today":"");
+    out+='<div class="'+cls+'"><b>'+d+'</b>'+(h?(h.s?' <span class="g">○</span>':' <span class="r">✕</span>'):'');
+    (emap[ds]||[]).forEach(function(e){ out+='<span class="ev">★'+esc(e.nom)+(e.cout?' '+fi(e.cout)+'$':'')+'</span>'; });
+    if(p){
+      p.items.forEach(function(it){ out+='<span class="'+it.c+'">'+it.t+'</span>'; });
+      out+='<span class="sol '+(p.des>=0?'g':'r')+'">'+fi(p.des)+'$</span>';
+      out+='<span class="c1s">C1 '+fi(p.c1)+'</span>';
+    }
+    out+='</div>';
+  }
+  out+='</div><p class="dim" style="margin-top:6px">Vert 💰 = paye CUSM · Rouge = débits Desjardins · Orange ~ = crédits C1 · Gros chiffre = solde Desjardins projeté en fin de journée · C1 = dette projetée. Projection depuis les soldes actuels, budget '+fi(C.fin.bud)+'$/j ('+fi(C.fin.budSat)+'$ le samedi), paiement C1 '+fv(C.fin.c1pmt)+'/mois moitié-moitié par paye.</p></div>';
+  out+='<div class="card"><h3>Événements à financer (août, septembre…)</h3><table><tr><th>Date</th><th>Événement</th><th>Coût</th><th>Fonds</th><th></th></tr>';
+  C.events.slice().sort(function(a,b){return a.d<b.d?-1:1;}).forEach(function(e){
+    var i=C.events.indexOf(e);
+    out+='<tr><td>'+e.d+'</td><td>'+esc(e.nom)+'</td><td>'+fv(e.cout)+'</td><td>'+esc(e.fonds)+
+     '</td><td><button class="ghost" onclick="delEv('+i+')">✕</button></td></tr>';
+  });
+  out+='</table><div class="grid3" style="margin-top:8px">'+
+   '<div><label class="f">Date</label><input type="date" id="ev-d"></div>'+
+   '<div><label class="f">Nom</label><input id="ev-n" placeholder="Concert, sortie, compétition…"></div>'+
+   '<div><label class="f">Coût $</label><input type="number" id="ev-c"></div></div>'+
+   '<div class="flexr" style="margin-top:8px"><select id="ev-f" style="width:auto">'+
+   '<option value="bouffe">Fonds bouffe</option><option value="italie">Fonds Italie</option><option value="budget">Budget régulier</option></select>'+
+   '<button class="act" onclick="addEv()">Ajouter</button></div></div>';
+  return out;
+}
+
+function rPred(){
+  var r=rate30(), pNow=predict(r), p100=predict(1);
+  var n7=0,s7=0,lim=new Date(); lim.setDate(lim.getDate()-7);
+  C.hist.forEach(function(h){ if(noon(h.d)>=lim){n7++;s7+=h.s;} });
+  var gym=C.hist.filter(function(h){return h.b&&h.b.indexOf("gym")>=0;}).length;
+  var full=C.hist.filter(function(h){return h.b&&h.b.length>=3;}).length;
+  var ecoTot=C.totalSober*C.fin.save;
+  var out='<div class="grid3">'+
+   '<div class="stat">Taux 7 jours<b class="'+(n7&&s7/n7>=0.8?'g':'r')+'">'+(n7?Math.round(s7/n7*100):0)+'%</b></div>'+
+   '<div class="stat">Taux 30 jours<b class="'+(r>=0.8?'g':'r')+'">'+Math.round(r*100)+'%</b></div>'+
+   '<div class="stat">Meilleure série<b class="au">'+C.best+' jours</b></div>'+
+   '<div class="stat">Économie de guerre<b class="g">'+fv(ecoTot)+'</b><small>'+C.totalSober+' j × '+fv(C.fin.save)+'</small></div>'+
+   '<div class="stat">Routines complètes<b>'+full+'</b><small>= attaque forgée</small></div>'+
+   '<div class="stat">Jours d\'entraînement<b>'+gym+'</b></div>'+
+  '</div>';
+  out+='<div class="card"><h2>Les deux trajectoires</h2><table>'+
+   '<tr><th></th><th>Au rythme actuel ('+Math.round(r*100)+'%)</th><th>Empire 100% sobre</th></tr>'+
+   '<tr><td>💳 Capital One à 0$</td><td>'+(pNow.c1zero?dstr(pNow.c1zero)+' ('+pNow.c1months+' mois)':'<span class="r">jamais — intérêts trop forts</span>')+
+     '</td><td class="g">'+(p100.c1zero?dstr(p100.c1zero)+' ('+p100.c1months+' mois)':'—')+'</td></tr>'+
+   '<tr><td>🍝 Fonds Italie au 11 sept</td><td>'+fv(pNow.italy)+'</td><td class="g">'+fv(p100.italy)+'</td></tr>'+
+   '<tr><td>🗺 Carte entièrement conquise</td><td>'+(mapDone()?'<span class="au">faite</span>':pNow.mapDate?dstr(pNow.mapDate):'—')+
+     '</td><td class="g">'+(mapDone()?'—':p100.mapDate?dstr(p100.mapDate):'—')+'</td></tr>'+
+   '</table><p class="dim">L\'écart entre les deux colonnes est le prix exact de chaque rechute. La colonne de droite s\'achète un jour à la fois.</p></div>';
+  out+='<div class="card"><h3>Historique récent</h3><table><tr><th>Date</th><th>Verdict</th><th>Routine</th></tr>'+
+   C.hist.slice(0,14).map(function(h){
+     return '<tr><td>'+h.d+'</td><td>'+(h.s?'<span class="g">○ sobre</span>':'<span class="r">✕ rechute</span>')+
+       '</td><td class="dim">'+(h.b&&h.b.length?h.b.join(", ")+" ("+h.b.length+"/5)":"—")+'</td></tr>'; }).join("")+
+   '</table></div>';
+  return out;
+}
+
+function rParam(){
+  var f=C.fin;
+  var out='<div class="grid2">'+
+  '<div class="card"><h2>Paye & budget</h2>'+
+   '<label class="f">Paye CUSM bi-hebdo $</label><input type="number" step="0.01" value="'+f.pay+'" onchange="uF(\'pay\',this.value)">'+
+   '<label class="f">Première paye (réf.)</label><input type="date" value="'+f.payStart+'" onchange="uF(\'payStart\',this.value)">'+
+   '<label class="f">Budget quotidien $ (sem.)</label><input type="number" value="'+f.bud+'" onchange="uF(\'bud\',this.value)">'+
+   '<label class="f">Budget samedi $</label><input type="number" value="'+f.budSat+'" onchange="uF(\'budSat\',this.value)">'+
+   '<label class="f">APR Capital One %</label><input type="number" step="0.1" value="'+f.apr+'" onchange="uF(\'apr\',this.value)">'+
+   '<label class="f">Paiement C1 mensuel $ (moitié par paye)</label><input type="number" value="'+f.c1pmt+'" onchange="uF(\'c1pmt\',this.value)">'+
+   '<button class="ghost" style="margin-top:10px" onclick="impFin()">↻ Importer soldes depuis FINANCES.PERSO</button></div>'+
+  '<div class="card"><h2>Règles d\'économie sobre</h2>'+
+   '<label class="f">Dépense évitée par jour sobre $</label><input type="number" step="0.01" value="'+f.save+'" onchange="uF(\'save\',this.value)">'+
+   '<label class="f">Objectif fonds Italie $</label><input type="number" value="'+f.goalIt+'" onchange="uF(\'goalIt\',this.value)">'+
+   '<div class="grid3" style="margin-top:6px">'+
+    '<div><label class="f">% → C1</label><input type="number" value="'+f.split.c1+'" onchange="uS(\'c1\',this.value)"></div>'+
+    '<div><label class="f">% → Italie</label><input type="number" value="'+f.split.it+'" onchange="uS(\'it\',this.value)"></div>'+
+    '<div><label class="f">% → Bouffe</label><input type="number" value="'+f.split.food+'" onchange="uS(\'food\',this.value)"></div></div>'+
+   '<label class="f">Ajustement — Fonds Italie $</label><input type="number" step="0.01" value="'+f.it.toFixed(2)+'" onchange="uF(\'it\',this.value)">'+
+   '<label class="f">Ajustement — Fonds bouffe $</label><input type="number" step="0.01" value="'+f.food.toFixed(2)+'" onchange="uF(\'food\',this.value)">'+
+  '</div></div>';
+  /* abonnements */
+  out+='<div class="card"><h2>Charges fixes (abonnements)</h2><table><tr><th>Nom</th><th>$</th><th>Type</th><th>Jour</th><th></th></tr>'+
+   f.subs.map(function(s,i){
+     return '<tr><td><input value="'+esc(s.nom)+'" onchange="uSub('+i+',\'nom\',this.value)"></td>'+
+      '<td style="width:90px"><input type="number" step="0.01" value="'+s.amt+'" onchange="uSub('+i+',\'amt\',this.value)"></td>'+
+      '<td style="width:110px"><select onchange="uSub('+i+',\'type\',this.value)">'+
+        '<option value="d"'+(s.type==="d"?" selected":"")+'>Débit</option>'+
+        '<option value="c"'+(s.type==="c"?" selected":"")+'>Crédit C1</option></select></td>'+
+      '<td style="width:70px"><input type="number" min="1" max="31" value="'+s.day+'" onchange="uSub('+i+',\'day\',this.value)"></td>'+
+      '<td><button class="ghost" onclick="delSub('+i+')">✕</button></td></tr>';
+   }).join("")+
+   '</table><button class="ghost" style="margin-top:8px" onclick="addSub()">+ Ajouter une charge</button></div>';
+  /* dettes secondaires */
+  out+='<div class="card"><h2>Dettes secondaires</h2><table><tr><th>Nom</th><th>Solde $</th><th>Paiement $/mois</th><th>Jour</th><th></th></tr>'+
+   f.debts.map(function(s,i){
+     return '<tr><td><input value="'+esc(s.nom)+'" onchange="uDebt('+i+',\'nom\',this.value)"></td>'+
+      '<td style="width:90px"><input type="number" step="0.01" value="'+s.solde+'" onchange="uDebt('+i+',\'solde\',this.value)"></td>'+
+      '<td style="width:90px"><input type="number" value="'+s.pmt+'" onchange="uDebt('+i+',\'pmt\',this.value)"></td>'+
+      '<td style="width:70px"><input type="number" min="1" max="31" value="'+s.day+'" onchange="uDebt('+i+',\'day\',this.value)"></td>'+
+      '<td><button class="ghost" onclick="delDebt('+i+')">✕</button></td></tr>';
+   }).join("")+
+   '</table><button class="ghost" style="margin-top:8px" onclick="addDebt()">+ Ajouter</button>'+
+   '<p class="dim">Payées via la carte C1 le jour indiqué (comme ton ticket à 40$/mois le 27).</p></div>';
+  /* sync */
+  out+='<div class="card"><h2>Sync GitHub</h2><div class="grid3">'+
+   '<div><label class="f">Owner</label><input value="'+C.gh.owner+'" onchange="uG(\'owner\',this.value)"></div>'+
+   '<div><label class="f">Repo</label><input value="'+C.gh.repo+'" onchange="uG(\'repo\',this.value)"></div>'+
+   '<div><label class="f">Fichier</label><input value="'+C.gh.file+'" onchange="uG(\'file\',this.value)"></div></div>'+
+   '<label class="f">Personal Access Token (stocké localement)</label>'+
+   '<input type="password" value="'+(ghTok()?'••••••••':'')+'" onchange="setTok(this.value)" placeholder="ghp_…">'+
+   '<p class="dim" id="gh-st">Crée d\'abord civ_data.json (contenu : {}) dans le repo. Même patron que fin_data.json.</p>'+
+   '<div class="flexr"><button class="ghost" onclick="expJSON()">Exporter JSON</button>'+
+   '<label class="ghost" style="display:inline-block">Importer JSON <input type="file" accept=".json" style="display:none" onchange="impJSON(event)"></label></div>'+
+  '</div>';
+  return out;
+}
+
+processMissed();
+render();
+ghLoad();
+/* sync quasi temps réel téléphone ↔ PC : recharge au retour sur l'app + toutes les 2 min */
+document.addEventListener("visibilitychange",function(){ if(!document.hidden) ghLoad(); });
+setInterval(ghLoad, 120000);
+})();
+</script>
+</body>
+</html>
