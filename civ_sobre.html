@@ -635,6 +635,8 @@ function rJour(){
       '</p><p class="dim">Routine : '+(h.b.length?h.b.join(", "):"aucune")+' ('+h.b.length+'/5)</p>'+
       '<button class="ghost" onclick="undoToday()">Annuler le check-in du jour</button></div>';
   } else {
+    /* lien GYM.AW : séance complétée aujourd'hui → bonus gym pré-coché */
+    if(localStorage.getItem("gym_done_"+today())==="1" && !togg._gymAuto){ togg.gym=1; togg._gymAuto=1; }
     out+='<div class="card"><h2>Le tribunal quotidien</h2>'+
     '<p class="dim" style="text-align:center">Un seul verdict. Pas de négociation.</p>'+
     '<div class="routine">'+
