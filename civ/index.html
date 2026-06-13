@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CIV.SOBRE — L'Empire du Plateau</title>
-<link rel="manifest" href="manifest.json">
+<link rel="manifest" href="civ_manifest.json">
 <meta name="theme-color" content="#0d1117">
-<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="civ_icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <style>
@@ -300,18 +300,15 @@ window.doCheckin = function(sober){
   var b=[]; ROUTINE.forEach(function(r){ if(togg[r.k]) b.push(r.k); });
   C.hist.unshift({d:today(), s:sober?1:0, b:b});
   C.lastDay=today();
+  var m=mult(), ob=ownedBonus();
   if(sober){
     C.streak++; C.totalSober++;
     if(C.streak>C.best) C.best=C.streak;
     if(C.streak%7===0 && C.shields<3) C.shields++;
-    var m=mult(), ob=ownedBonus();
-    C.pts.prod += Math.round(10*m) + ob.prod + (b.indexOf("bud")>=0?2:0) + (b.indexOf("c1p")>=0?5:0);
-    C.pts.cul  += ob.cul + (b.indexOf("cul")>=0?3:0);
-    C.pts.soc  += ob.soc + (b.indexOf("soc")>=0?3:0);
-    C.pts.mil  += ob.mil + (b.indexOf("gym")>=0?3:0);
-    /* routine complète (3+/5) = discipline → attaque & la menace recule */
-    if(b.length>=3){ C.attack++; C.menace=Math.max(0,C.menace-10); }
-    else C.menace=Math.max(0,C.menace-5);
+    C.pts.prod += Math.round(10*m) + ob.prod;
+    C.pts.cul  += ob.cul;
+    C.pts.soc  += ob.soc;
+    C.pts.mil  += ob.mil;
     var sv=C.fin.save||0, sp=C.fin.split;
     C.fin.extraC1 += sv*sp.c1/100;
     C.fin.it      += sv*sp.it/100;
@@ -321,6 +318,14 @@ window.doCheckin = function(sober){
     relapse();
     checkRaid();
   }
+  /* activités du jour : comptent TOUJOURS, sobre ou non (discipline ≠ sobriété) */
+  C.pts.prod += (b.indexOf("bud")>=0?2:0) + (b.indexOf("c1p")>=0?5:0);
+  C.pts.cul  += (b.indexOf("cul")>=0?3:0);
+  C.pts.soc  += (b.indexOf("soc")>=0?3:0);
+  C.pts.mil  += (b.indexOf("gym")>=0?3:0);
+  /* routine complète (3+/5) = discipline → attaque & la menace recule, même un jour de rechute */
+  if(b.length>=3){ C.attack++; C.menace=Math.max(0,C.menace-10); }
+  else if(b.length>0){ C.menace=Math.max(0,C.menace-5); }
   togg={gym:0,cul:0,soc:0,bud:0,c1p:0};
   save(); render();
 };
@@ -358,6 +363,22 @@ window.undoToday = function(){
   if(!confirm("Annuler le check-in d'aujourd'hui?")) return;
   C.hist=C.hist.filter(function(x){return x.d!==today();});
   if(h.s){ C.streak=Math.max(0,C.streak-1); C.totalSober=Math.max(0,C.totalSober-1); }
+  save(); render();
+};
+window.addActivity = function(k){
+  var h=ciToday(); if(!h || h.b.indexOf(k)>=0) return;
+  var ob=ownedBonus();
+  /* créditer les points de cette activité (mêmes valeurs que le check-in) */
+  if(k==="bud") C.pts.prod+=2;
+  else if(k==="c1p") C.pts.prod+=5;
+  else if(k==="cul") C.pts.cul+=3;
+  else if(k==="soc") C.pts.soc+=3;
+  else if(k==="gym") C.pts.mil+=3;
+  var before=h.b.length;
+  h.b.push(k);
+  /* franchir le seuil de routine complète (3/5) en cours de journée → +attaque & menace */
+  if(before<3 && h.b.length>=3){ C.attack++; C.menace=Math.max(0,C.menace-5); }
+  else if(before===0){ C.menace=Math.max(0,C.menace-5); }
   save(); render();
 };
 window.recruit = function(){
@@ -631,9 +652,19 @@ function rJour(){
   }
   if(h){
     out+='<div class="card"><h2>Le tribunal a siégé</h2><p>Verdict du '+h.d+' : '+
-      (h.s?'<b class="g">○ SOBRE</b> — l\'empire produit.':'<b class="r">✕ RECHUTE</b> — les barbares ont frappé.')+
-      '</p><p class="dim">Routine : '+(h.b.length?h.b.join(", "):"aucune")+' ('+h.b.length+'/5)</p>'+
-      '<button class="ghost" onclick="undoToday()">Annuler le check-in du jour</button></div>';
+      (h.s?'<b class="g">○ SOBRE</b> — l\'empire produit.':'<b class="r">✕ RECHUTE</b> — la sobriété a flanché, mais la discipline continue.')+
+      '</p><p class="dim">Activités du jour : '+(h.b.length?h.b.map(function(k){var r=ROUTINE.filter(function(x){return x.k===k;})[0];return r?r.ic:k;}).join(" "):"aucune")+' ('+h.b.length+'/5)</p>'+
+      '<button class="ghost" onclick="undoToday()">Annuler le verdict du jour</button></div>';
+    /* éditeur d'activités post-verdict : on peut toujours ajouter ce qu'on a accompli */
+    var rest=ROUTINE.filter(function(r){ return h.b.indexOf(r.k)<0; });
+    if(rest.length){
+      out+='<div class="card"><h3>Ajouter une activité accomplie aujourd\'hui</h3>'+
+       '<p class="dim">La sobriété est jugée, mais tes accomplissements comptent toujours — sobre ou non.</p><div class="routine">'+
+       rest.map(function(r){
+         return '<div class="rrow"><span>'+r.ic+' '+r.nom+' <b class="au">'+r.pts+'</b></span>'+
+           '<button class="yes" style="width:auto;padding:6px 14px;background:var(--green-d);border:1px solid var(--green);color:var(--green);font-family:var(--mono);cursor:pointer" onclick="addActivity(\''+r.k+'\')">+ Ajouter</button></div>';
+       }).join("")+'</div></div>';
+    }
   } else {
     /* lien GYM.AW : séance complétée aujourd'hui → bonus gym pré-coché */
     if(localStorage.getItem("gym_done_"+today())==="1" && !togg._gymAuto){ togg.gym=1; togg._gymAuto=1; }
