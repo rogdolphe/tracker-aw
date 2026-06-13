@@ -84,6 +84,24 @@ svg text.def{fill:var(--dim);font-size:9px}
 .msg.warn{border-color:var(--red);background:#240d0a}
 .flexr{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 hr{border:none;border-top:1px solid var(--line);margin:10px 0}
+/* vue quarter (2 mois) */
+.qmonths{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:760px){.qmonths{grid-template-columns:1fr}}
+.qcal{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.qcal .hd{text-align:center;color:var(--dim);font-size:8px;text-transform:uppercase}
+.qcal .d{background:var(--panel2);border:1px solid var(--line);min-height:44px;padding:2px 3px;font-size:8px;position:relative;cursor:pointer;overflow:hidden}
+.qcal .d:hover{border-color:var(--gold-dim)}
+.qcal .d.today{outline:1px solid var(--gold)}
+.qcal .d.edit{outline:2px solid var(--blue);z-index:2}
+.qcal .d .n{font-weight:bold;font-size:9px}
+.qcal .d .pay{color:var(--green);display:block}
+.qcal .d .deb{color:var(--red);display:block}
+.qcal .d .cre{color:var(--orange);display:block}
+.qcal .d .star{color:var(--gold)}
+.qcal .d .sol{display:block;border-top:1px dotted var(--line);font-weight:bold;font-size:8px}
+.qcal .d .c1{display:block;color:var(--dim);font-size:7px}
+.editpop{background:var(--panel2);border:1px solid var(--blue);padding:10px;margin:8px 0}
+.editpop .flexr input,.editpop .flexr select{width:auto}
 </style>
 </head>
 <body>
@@ -175,7 +193,7 @@ var WONDERS = [
    cond:"Capital One à 0$", bonus:{prod:5},
    fail:"Pas assez de production. Le vrai a pris 30 ans à payer — fais mieux."}
 ];
-var PEN = [
+var PEN_DEFAULT = [
   "50 burpees au parc La Fontaine",
   "100 push-ups répartis dans la journée",
   "500 m de nage supplémentaires à la prochaine séance",
@@ -188,8 +206,7 @@ var ROUTINE = [
   {k:"gym", ic:"🏋️", nom:"Entraînement (gym / nage / bras de fer)", pts:"+3 ⚔"},
   {k:"cul", ic:"🎭", nom:"Culture (roman, musique, lecture)", pts:"+3 🎭"},
   {k:"soc", ic:"🤝", nom:"Social (sortie, contact, invitation)", pts:"+3 🤝"},
-  {k:"bud", ic:"💵", nom:"Budget quotidien respecté", pts:"+2 ⚙"},
-  {k:"c1p", ic:"💳", nom:"Paiement C1 effectué", pts:"+5 ⚙"}
+  {k:"bud", ic:"💵", nom:"Budget du jour respecté (pas de dépense de drogue)", pts:"+5 ⚙"}
 ];
 
 /* ============ ÉTAT ============ */
@@ -219,9 +236,12 @@ var DEF_STATE = {
       {nom:"YouTube Premium", amt:14.94, type:"c", day:30}
     ],
     debts:[{nom:"Ticket", solde:135, pmt:40, day:27}],
-    extras:[]
+    extras:[],
+    planPmts:[]   /* paiements C1 planifiés : {d:"2026-06-25", amt:300, note:""} — remplace le paiement auto de cette paye */
   },
   events:[],
+  pen:["50 burpees au parc La Fontaine","100 push-ups répartis dans la journée","500 m de nage supplémentaires à la prochaine séance","Montée des escaliers du Mont-Royal","30 min de cardio à jeun demain matin","5 km de marche rapide, téléphone en mode avion"],
+  quarters:{},  /* {"2026-06": "texte du plan de quarter"} clé = mois de départ du quarter */
   gh:{owner:"rogdolphe",repo:"tracker-aw",file:"civ_data.json"}
 };
 var C;
@@ -230,8 +250,8 @@ if(!C) C = JSON.parse(JSON.stringify(DEF_STATE));
 (function merge(d,c){ for(var k in d){ if(c[k]===undefined) c[k]=d[k];
   else if(d[k]&&typeof d[k]==="object"&&!Array.isArray(d[k])) merge(d[k],c[k]); } })(DEF_STATE,C);
 
-var tab="jour", selTerr=null, calRef=new Date();
-var togg={gym:0,cul:0,soc:0,bud:0,c1p:0};
+var tab="jour", selTerr=null, calRef=new Date(), qRef=new Date(), planEditDay=null;
+var togg={gym:0,cul:0,soc:0,bud:0};
 
 /* ============ OUTILS ============ */
 function $(id){return document.getElementById(id);}
@@ -319,14 +339,14 @@ window.doCheckin = function(sober){
     checkRaid();
   }
   /* activités du jour : comptent TOUJOURS, sobre ou non (discipline ≠ sobriété) */
-  C.pts.prod += (b.indexOf("bud")>=0?2:0) + (b.indexOf("c1p")>=0?5:0);
+  C.pts.prod += (b.indexOf("bud")>=0?5:0);
   C.pts.cul  += (b.indexOf("cul")>=0?3:0);
   C.pts.soc  += (b.indexOf("soc")>=0?3:0);
   C.pts.mil  += (b.indexOf("gym")>=0?3:0);
-  /* routine complète (3+/5) = discipline → attaque & la menace recule, même un jour de rechute */
+  /* routine complète (3+/4) = discipline → attaque & la menace recule, même un jour de rechute */
   if(b.length>=3){ C.attack++; C.menace=Math.max(0,C.menace-10); }
   else if(b.length>0){ C.menace=Math.max(0,C.menace-5); }
-  togg={gym:0,cul:0,soc:0,bud:0,c1p:0};
+  togg={gym:0,cul:0,soc:0,bud:0};
   save(); render();
 };
 function relapse(){
@@ -369,14 +389,13 @@ window.addActivity = function(k){
   var h=ciToday(); if(!h || h.b.indexOf(k)>=0) return;
   var ob=ownedBonus();
   /* créditer les points de cette activité (mêmes valeurs que le check-in) */
-  if(k==="bud") C.pts.prod+=2;
-  else if(k==="c1p") C.pts.prod+=5;
+  if(k==="bud") C.pts.prod+=5;
   else if(k==="cul") C.pts.cul+=3;
   else if(k==="soc") C.pts.soc+=3;
   else if(k==="gym") C.pts.mil+=3;
   var before=h.b.length;
   h.b.push(k);
-  /* franchir le seuil de routine complète (3/5) en cours de journée → +attaque & menace */
+  /* franchir le seuil de routine complète (3/4) en cours de journée → +attaque & menace */
   if(before<3 && h.b.length>=3){ C.attack++; C.menace=Math.max(0,C.menace-5); }
   else if(before===0){ C.menace=Math.max(0,C.menace-5); }
   save(); render();
@@ -454,6 +473,41 @@ window.delSub = function(i){ C.fin.subs.splice(i,1); save(); render(); };
 window.uDebt = function(i,k,v){ C.fin.debts[i][k]=(k==="nom")?v:(parseFloat(v)||0); save(); };
 window.addDebt = function(){ C.fin.debts.push({nom:"Dette",solde:0,pmt:0,day:1}); save(); render(); };
 window.delDebt = function(i){ C.fin.debts.splice(i,1); save(); render(); };
+window.addPlanPmt = function(){
+  var d=$("pp-d").value, a=parseFloat($("pp-a").value)||0, n=$("pp-n").value||"";
+  if(!d||a<=0){ alert("Choisis une date et un montant."); return; }
+  C.fin.planPmts=C.fin.planPmts||[];
+  /* remplacer si déjà un plan à cette date */
+  C.fin.planPmts=C.fin.planPmts.filter(function(p){return p.d!==d;});
+  C.fin.planPmts.push({d:d,amt:a,note:n});
+  save(); render();
+};
+window.delPlanPmt = function(i){ C.fin.planPmts.splice(i,1); save(); render(); };
+window.addPen = function(){
+  var v=$("pen-new").value; if(!v||!v.trim()) return;
+  C.pen=C.pen||[]; C.pen.push(v.trim()); save(); render();
+};
+window.delPen = function(i){ C.pen.splice(i,1); save(); render(); };
+window.uPen = function(i,v){ C.pen[i]=v; save(); };
+window.uQuarter = function(key,v){ C.quarters=C.quarters||{}; C.quarters[key]=v; save(); };
+window.qNav = function(n){ qRef=new Date(qRef.getFullYear(), qRef.getMonth()+n*2, 1); render(); };
+/* édition rapide d'un montant directement dans le calendrier du plan */
+window.editCalDay = function(ds){
+  planEditDay=(planEditDay===ds?null:ds); render();
+};
+window.quickAdd = function(ds, kind){
+  var a=parseFloat($("qa-amt").value)||0; if(a<=0){ alert("Entre un montant."); return; }
+  var n=$("qa-nom").value||(kind==="pp"?"Paiement C1":kind==="rev"?"Revenu":kind==="dep-c"?"Dépense crédit":"Dépense");
+  if(kind==="pp"){
+    C.fin.planPmts=C.fin.planPmts||[];
+    C.fin.planPmts=C.fin.planPmts.filter(function(p){return p.d!==ds;});
+    C.fin.planPmts.push({d:ds,amt:a,note:n});
+  } else {
+    C.fin.extras.push({d:ds,nom:n,amt:a,k:kind});
+    if(ds<=today()){ if(kind==="dep-d") C.fin.des-=a; else if(kind==="dep-c") C.fin.c1+=a; else C.fin.des+=a; }
+  }
+  planEditDay=null; save(); render();
+};
 window.addEv = function(){
   var d=$("ev-d").value, n=$("ev-n").value, c=parseFloat($("ev-c").value)||0, f=$("ev-f").value;
   if(!d||!n) return;
@@ -552,6 +606,7 @@ function buildProj(nDays){
   var des=C.fin.des, c1=C.fin.c1;
   var debts=C.fin.debts.map(function(x){return {nom:x.nom,solde:x.solde,pmt:x.pmt,day:x.day};});
   var exmap={}; C.fin.extras.forEach(function(e){ (exmap[e.d]=exmap[e.d]||[]).push(e); });
+  var planmap={}; (C.fin.planPmts||[]).forEach(function(p){ planmap[p.d]=p; });
   var t0=new Date(); t0.setHours(12,0,0,0);
   var out={};
   for(var i=0;i<=nDays;i++){
@@ -561,8 +616,12 @@ function buildProj(nDays){
       if(d.getDate()===1){ c1=c1*(1+C.fin.apr/1200); items.push({c:"cre",t:"~intérêts C1"}); }
       if(isPayday(d)){
         des+=C.fin.pay; items.push({c:"pay",t:"💰+"+fi(C.fin.pay)});
-        var half=C.fin.c1pmt/2;
-        if(half>0){ des-=half; c1-=half; items.push({c:"deb",t:"💳C1 −"+fi(half)}); }
+        /* paiement C1 : override planifié si présent ce jour-là, sinon la moitié du mensuel */
+        var pay = planmap[ds]? planmap[ds].amt : C.fin.c1pmt/2;
+        if(pay>0){ des-=pay; c1-=pay; items.push({c:"deb",t:"💳C1 −"+fi(pay)+(planmap[ds]?" ★":"")}); }
+      } else if(planmap[ds]){
+        /* paiement C1 planifié hors paye (ponctuel) */
+        var p2=planmap[ds].amt; des-=p2; c1-=p2; items.push({c:"deb",t:"💳C1 −"+fi(p2)+" ★"});
       }
       C.fin.subs.forEach(function(s){
         if(subDay(s,d)){
@@ -590,6 +649,37 @@ function buildProj(nDays){
   }
   return out;
 }
+/* date du prochain payday à partir d'aujourd'hui (inclus) */
+function nextPaydays(n){
+  var out=[], d=new Date(); d.setHours(12,0,0,0);
+  var guard=0;
+  while(out.length<n && guard<400){ if(isPayday(d)) out.push(dstr(d)); d.setDate(d.getDate()+1); guard++; }
+  return out;
+}
+
+/* simulation précise C1 : avance paye par paye (aux 14 j), intérêt mensuel le 1er,
+   ajout des abonnements crédit, soustraction du paiement (planifié ou défaut), + tribut sobriété.
+   extraPerPayday = tribut additionnel par paye (économie sobre accumulée sur 14 j). */
+function simC1(extraPerPayday){
+  var c1=C.fin.c1, d=new Date(); d.setHours(12,0,0,0);
+  var planmap={}; (C.fin.planPmts||[]).forEach(function(p){ planmap[p.d]=p; });
+  var guard=0, lastMonth=d.getMonth();
+  while(c1>0.5 && guard<1500){
+    d.setDate(d.getDate()+1); guard++;
+    if(d.getMonth()!==lastMonth){ lastMonth=d.getMonth(); c1=c1*(1+C.fin.apr/1200); }
+    /* abonnements crédit qui gonflent C1 */
+    C.fin.subs.forEach(function(s){ if(s.type==="c" && subDay(s,d)) c1+=s.amt; });
+    C.fin.debts.forEach(function(dt){ /* dettes payées via C1 — ignorées ici pour rester sur le solde C1 principal */ });
+    if(isPayday(d)){
+      var ds=dstr(d);
+      var pay = planmap[ds]? planmap[ds].amt : (C.fin.c1pmt/2 + extraPerPayday);
+      c1-=pay;
+    } else if(planmap[dstr(d)]){
+      c1-=planmap[dstr(d)].amt;
+    }
+  }
+  return c1<=0.5? d : null;
+}
 
 /* ============ PRÉDICTIONS ============ */
 function predict(rate){
@@ -615,7 +705,7 @@ function predict(rate){
 
 /* ============ RENDUS ============ */
 var TABS=[["jour","⚔ Aujourd'hui"],["carte","🗺 Carte"],["ville","🏙 Ville"],["empire","🏛 Empire"],
-          ["cal","📅 Calendrier"],["pred","📈 Analyses"],["param","⚙ Paramètres"]];
+          ["cal","📅 Calendrier"],["plan","💰 Plan financier"],["pred","📈 Analyses"],["param","⚙ Paramètres"]];
 
 function render(){
   $("tabs").innerHTML = TABS.map(function(t){
@@ -627,7 +717,7 @@ function render(){
     ' · Quartiers '+nOwned()+'/14 · Série <b class="g">'+C.streak+'j</b></small>';
   var era = C.totalSober>=90?"III — L'Âge d'Or":C.totalSober>=30?"II — L'Expansion":"I — La Fondation";
   $("era-line").textContent="L'Empire du Plateau — Ère "+era+" · "+C.totalSober+" jours sobres · Desjardins "+fv(C.fin.des,2)+" · C1 "+fv(C.fin.c1,2);
-  var R={jour:rJour,carte:rCarte,ville:rVille,empire:rEmpire,cal:rCal,pred:rPred,param:rParam};
+  var R={jour:rJour,carte:rCarte,ville:rVille,empire:rEmpire,cal:rCal,plan:rPlan,pred:rPred,param:rParam};
   $("app").innerHTML = R[tab]();
 }
 
@@ -636,7 +726,7 @@ function menaceBar(){
   return '<div class="card"><div class="flexr" style="justify-content:space-between">'+
    '<h3 style="margin:0">⚑ Menace barbare</h3><b class="'+lvl+'">'+fi(C.menace)+'%</b></div>'+
    '<div class="bar menace"><i style="width:'+C.menace+'%"></i></div>'+
-   '<small class="dim">Jour sans tribunal : +15 · Rechute : +20 · Routine complète (3+/5) : −10 et +1 attaque · Routine partielle : −5. À 100%, les barbares pillent ton dernier quartier conquis.</small></div>';
+   '<small class="dim">Jour sans tribunal : +15 · Rechute : +20 · Routine complète (3+/4) : −10 et +1 attaque · Routine partielle : −5. À 100%, les barbares pillent ton dernier quartier conquis.</small></div>';
 }
 
 function rJour(){
@@ -647,13 +737,13 @@ function rJour(){
     '<p>Rechute enregistrée'+(C.pendExp.lost.terr?(' — <b>'+TERR[C.pendExp.lost.terr].nom+'</b> s\'est soulevé et a quitté l\'empire'):'')+
     '. Pertes : '+C.pendExp.lost.prod+' ⚙, '+C.pendExp.lost.mil+' ⚔, '+C.pendExp.lost.troops+' troupes.</p>'+
     '<p><b>Expiation</b> — une pénitence d\'athlète, accomplie dans les 48h, restaure la moitié des pertes :</p>'+
-    '<select id="pen-sel">'+PEN.map(function(p){return '<option>'+p+'</option>';}).join("")+'</select>'+
+    '<select id="pen-sel">'+(C.pen||[]).map(function(p){return '<option>'+esc(p)+'</option>';}).join("")+'</select>'+
     '<div style="margin-top:8px"><button class="act" onclick="doExpiation()">Pénitence accomplie — restaurer l\'honneur</button></div></div>';
   }
   if(h){
     out+='<div class="card"><h2>Le tribunal a siégé</h2><p>Verdict du '+h.d+' : '+
       (h.s?'<b class="g">○ SOBRE</b> — l\'empire produit.':'<b class="r">✕ RECHUTE</b> — la sobriété a flanché, mais la discipline continue.')+
-      '</p><p class="dim">Activités du jour : '+(h.b.length?h.b.map(function(k){var r=ROUTINE.filter(function(x){return x.k===k;})[0];return r?r.ic:k;}).join(" "):"aucune")+' ('+h.b.length+'/5)</p>'+
+      '</p><p class="dim">Activités du jour : '+(h.b.length?h.b.map(function(k){var r=ROUTINE.filter(function(x){return x.k===k;})[0];return r?r.ic:k;}).join(" "):"aucune")+' ('+h.b.length+'/4)</p>'+
       '<button class="ghost" onclick="undoToday()">Annuler le verdict du jour</button></div>';
     /* éditeur d'activités post-verdict : on peut toujours ajouter ce qu'on a accompli */
     var rest=ROUTINE.filter(function(r){ return h.b.indexOf(r.k)<0; });
@@ -683,7 +773,7 @@ function rJour(){
     '<button class="oui" onclick="doCheckin(true)">○<span>SOBRE</span></button>'+
     '<button class="non" onclick="doCheckin(false)">✕<span>RECHUTE</span></button>'+
     '</div>'+
-    '<p class="dim" style="text-align:center">Jour sobre : +'+fi(10*mult())+' ⚙ (×'+mult()+') + bonus de quartiers. Routine 3+/5 : +1 attaque.<br>'+
+    '<p class="dim" style="text-align:center">Jour sobre : +'+fi(10*mult())+' ⚙ (×'+mult()+') + bonus de quartiers. Routine 3+/4 : +1 attaque.<br>'+
     'Économie réelle : +'+fv(C.fin.save,2)+' répartis C1 / Italie / Bouffe.</p></div>';
   }
   out+=menaceBar();
@@ -757,7 +847,7 @@ function rCarte(){
     panel+
     '<div class="card"><h3>L\'armée</h3><p>Force totale : <b>'+strength()+'</b> = troupes <b>'+C.troops+'</b> (gym) + attaque <b class="au">'+C.attack+'</b> (routine)</p>'+
     '<button class="act" onclick="recruit()">Recruter (10 ⚔ / troupe)</button>'+
-    '<p class="dim">Les troupes se gagnent au gym et se perdent en conquête. L\'attaque est permanente : chaque jour de routine complète (3+/5) forge +1 — la discipline ne se perd pas.</p></div>';
+    '<p class="dim">Les troupes se gagnent au gym et se perdent en conquête. L\'attaque est permanente : chaque jour de routine complète (3+/4) forge +1 — la discipline ne se perd pas.</p></div>';
 }
 
 /* ----- VILLE — vue cartoonish ----- */
@@ -918,6 +1008,144 @@ function rCal(){
   return out;
 }
 
+function monthKey(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"); }
+function rPlan(){
+  var r=rate30();
+  var extraPay = C.fin.save*r*14*(C.fin.split.c1/100);
+  var dCur = simC1(extraPay), d100 = simC1(C.fin.save*14*(C.fin.split.c1/100)), dMin = simC1(0);
+  /* fenêtre du quarter = 2 mois à partir de qRef (1er du mois) */
+  var qStart=new Date(qRef.getFullYear(), qRef.getMonth(), 1, 12);
+  var qEnd=new Date(qRef.getFullYear(), qRef.getMonth()+2, 0, 12); /* dernier jour du 2e mois */
+  var qKey=monthKey(qStart);
+  /* projection assez longue pour couvrir la fin du quarter + le graphique */
+  var t0=new Date(); t0.setHours(12,0,0,0);
+  var horizonEnd=Math.max(daysBetween(t0,qEnd), 0)+2;
+  var proj=buildProj(Math.min(horizonEnd,400));
+  var allKeys=Object.keys(proj).sort();
+
+  /* ---- en-tête quarter ---- */
+  var qLabel=qStart.toLocaleDateString("fr-CA",{month:"long"})+" – "+qEnd.toLocaleDateString("fr-CA",{month:"long",year:"numeric"});
+  var out='<div class="card"><div class="flexr" style="justify-content:space-between"><h2 style="border:none;margin:0">💰 Quarter : '+qLabel+'</h2>'+
+   '<div><button class="ghost" onclick="qNav(-1)">◀ quarter</button> <button class="ghost" onclick="qNav(1)">quarter ▶</button></div></div>'+
+   '<p class="dim">Un quarter = 2 mois (le tien, pas celui des comptables). Tape un jour du calendrier pour y planifier un paiement, une dépense ou un revenu, et regarde le solde et la dette bouger sur tout le reste de la fenêtre.</p></div>';
+
+  /* ---- cartes résumé ---- */
+  out+='<div class="grid3">'+
+   '<div class="stat">Desjardins<b class="'+(C.fin.des>=0?'g':'r')+'">'+fv(C.fin.des,2)+'</b></div>'+
+   '<div class="stat">Capital One<b class="r">'+fv(C.fin.c1,2)+'</b><small>APR '+C.fin.apr+'%</small></div>'+
+   '<div class="stat">Intérêts C1 / mois<b class="r">≈ '+fv(C.fin.c1*C.fin.apr/1200,2)+'</b></div>'+
+  '</div>';
+
+  /* ---- plan du quarter (texte libre) ---- */
+  var qText=(C.quarters&&C.quarters[qKey])||"";
+  out+='<div class="card"><h3>🎯 Plan du quarter ('+qLabel+')</h3>'+
+   '<textarea id="q-plan" rows="3" style="width:100%;resize:vertical" placeholder="Objectifs des 2 mois : pousser C1 sous 4000$, financer l\'Italie à 100%, prendre Mile End et Outremont, 2 sorties sociales/semaine…" onchange="uQuarter(\''+qKey+'\',this.value)">'+esc(qText)+'</textarea></div>';
+
+  /* ---- calendrier 2 mois éditable ---- */
+  out+='<div class="card"><h3>Calendrier du quarter — éditable</h3><div class="qmonths">';
+  [0,1].forEach(function(off){
+    var mref=new Date(qStart.getFullYear(), qStart.getMonth()+off, 1, 12);
+    out+=qMonth(mref, proj);
+  });
+  out+='</div>';
+  /* popup d'édition d'un jour */
+  if(planEditDay){
+    var pd=proj[planEditDay];
+    out+='<div class="editpop"><b>'+noon(planEditDay).toLocaleDateString("fr-CA",{weekday:"long",day:"numeric",month:"long"})+'</b>'+
+     (pd?' · solde projeté '+fi(pd.des)+'$ · C1 '+fi(pd.c1)+'$':'')+
+     '<div class="flexr" style="margin-top:8px">'+
+      '<input id="qa-nom" placeholder="Nom (optionnel)" style="flex:1;min-width:140px">'+
+      '<input id="qa-amt" type="number" step="0.01" placeholder="Montant $" style="width:120px">'+
+     '</div>'+
+     '<div class="flexr" style="margin-top:8px">'+
+      '<button class="act" style="width:auto" onclick="quickAdd(\''+planEditDay+'\',\'pp\')">💳 Paiement C1</button>'+
+      '<button class="ghost" onclick="quickAdd(\''+planEditDay+'\',\'rev\')">+ Revenu</button>'+
+      '<button class="ghost" onclick="quickAdd(\''+planEditDay+'\',\'dep-d\')">− Dépense (Desjardins)</button>'+
+      '<button class="ghost" onclick="quickAdd(\''+planEditDay+'\',\'dep-c\')">− Dépense (C1)</button>'+
+      '<button class="ghost" onclick="editCalDay(null)">Fermer</button>'+
+     '</div></div>';
+  }
+  out+='<p class="dim">Vert 💰 paye · Rouge débit · Orange ~ crédit C1 · ★ paiement planifié · gros chiffre = solde Desjardins fin de journée · petit = dette C1.</p></div>';
+
+  /* ---- graphique de la fenêtre ---- */
+  var winKeys=allKeys.filter(function(k){ var d=noon(k); return d>=t0 && d<=qEnd; });
+  out+='<div class="card"><h3>Trajectoire du quarter</h3>'+planChart(proj,winKeys)+
+   '<p class="dim">Or = dette C1 · Vert = solde Desjardins. Les ★ = paiements planifiés. Modifie un jour ci-dessus et la courbe se redessine.</p></div>';
+
+  /* ---- scénarios C1=0 ---- */
+  out+='<div class="card"><h2>Quand Capital One tombe à 0</h2><table>'+
+   '<tr><th>Scénario</th><th>Paiement / paye</th><th>Date C1 = 0</th></tr>'+
+   '<tr><td>Minimum seul</td><td>'+fv(C.fin.c1pmt/2)+'</td><td>'+(dMin?dstr(dMin):'<span class="r">jamais</span>')+'</td></tr>'+
+   '<tr><td>Rythme actuel ('+Math.round(r*100)+'% sobre)</td><td>'+fv(C.fin.c1pmt/2+extraPay)+'</td><td class="au">'+(dCur?dstr(dCur):'<span class="r">jamais</span>')+'</td></tr>'+
+   '<tr><td>Empire 100% sobre</td><td>'+fv(C.fin.c1pmt/2+C.fin.save*14*(C.fin.split.c1/100))+'</td><td class="g">'+(d100?dstr(d100):'—')+'</td></tr>'+
+   '</table><p class="dim">Inclut tes paiements planifiés, les intérêts et les abonnements crédit. L\'écart = le prix de la sobriété en semaines.</p></div>';
+
+  /* ---- liste des paiements planifiés ---- */
+  if((C.fin.planPmts||[]).length){
+    out+='<div class="card"><h3>Paiements C1 planifiés</h3><table><tr><th>Date</th><th>Montant</th><th>Note</th><th></th></tr>'+
+     C.fin.planPmts.slice().sort(function(a,b){return a.d<b.d?-1:1;}).map(function(p){
+       var i=C.fin.planPmts.indexOf(p);
+       return '<tr><td>★ '+p.d+'</td><td><b class="au">'+fv(p.amt,2)+'</b></td><td class="dim">'+esc(p.note||"")+'</td>'+
+        '<td><button class="ghost" onclick="delPlanPmt('+i+')">✕</button></td></tr>';
+     }).join("")+'</table></div>';
+  }
+  return out;
+}
+/* un mois compact pour la vue quarter */
+function qMonth(mref, proj){
+  var y=mref.getFullYear(), m=mref.getMonth();
+  var first=new Date(y,m,1), start=(first.getDay()+6)%7, nd=new Date(y,m+1,0).getDate();
+  var planmap={}; (C.fin.planPmts||[]).forEach(function(p){planmap[p.d]=p;});
+  var s='<div><div style="text-align:center;color:var(--gold);font-variant:small-caps;letter-spacing:.1em;margin-bottom:4px">'+
+   mref.toLocaleDateString("fr-CA",{month:"long",year:"numeric"})+'</div><div class="qcal">'+
+   ["L","M","M","J","V","S","D"].map(function(d){return '<div class="hd">'+d+'</div>';}).join("");
+  for(var i=0;i<start;i++) s+='<div></div>';
+  for(var d=1; d<=nd; d++){
+    var ds=y+"-"+String(m+1).padStart(2,"0")+"-"+String(d).padStart(2,"0");
+    var p=proj[ds];
+    var cls="d"+(ds===today()?" today":"")+(planEditDay===ds?" edit":"");
+    s+='<div class="'+cls+'" onclick="editCalDay(\''+ds+'\')"><span class="n">'+d+(planmap[ds]?' <span class="star">★</span>':'')+'</span>';
+    if(p){
+      p.items.forEach(function(it){
+        if(it.c==="pay") s+='<span class="pay">'+it.t.replace("💰","").trim()+'</span>';
+        else if(it.c==="deb"&&(it.t.indexOf("C1")>=0||it.t.indexOf("💳")>=0)) s+='<span class="deb">'+it.t.replace("💳","").trim()+'</span>';
+      });
+      s+='<span class="sol '+(p.des>=0?'g':'r')+'">'+fi(p.des)+'</span>';
+      s+='<span class="c1">C1 '+fi(p.c1)+'</span>';
+    }
+    s+='</div>';
+  }
+  s+='</div></div>';
+  return s;
+}
+/* graphique double : dette C1 + solde Desjardins sur la fenêtre donnée */
+function planChart(proj,keys){
+  if(keys.length<2) return '<p class="dim">Fenêtre trop courte.</p>';
+  var w=680,h=200,padL=40,padR=10,padB=22,padT=10;
+  var c1s=keys.map(function(k){return proj[k].c1;});
+  var dess=keys.map(function(k){return proj[k].des;});
+  var maxV=Math.max.apply(null,c1s.concat(dess).concat([1]));
+  var minV=Math.min.apply(null,dess.concat([0]));
+  var n=keys.length;
+  function X(i){ return padL+i/(n-1||1)*(w-padL-padR); }
+  function Y(v){ return padT+(maxV-v)/((maxV-minV)||1)*(h-padT-padB); }
+  function path(arr){ return arr.map(function(v,i){return (i?"L":"M")+X(i).toFixed(1)+","+Y(v).toFixed(1);}).join(" "); }
+  var s='<svg viewBox="0 0 '+w+' '+h+'" style="width:100%;background:var(--ink);border:1px solid var(--line)">';
+  s+='<line x1="'+padL+'" y1="'+Y(0).toFixed(1)+'" x2="'+(w-padR)+'" y2="'+Y(0).toFixed(1)+'" stroke="#2a3344" stroke-dasharray="3 3"/>';
+  s+='<text x="2" y="'+(Y(maxV)+4)+'" fill="#8d99ab" font-size="9">'+fi(maxV)+'</text>';
+  s+='<text x="2" y="'+(Y(0)+4)+'" fill="#8d99ab" font-size="9">0</text>';
+  (C.fin.planPmts||[]).forEach(function(p){
+    var idx=keys.indexOf(p.d); if(idx>=0) s+='<line x1="'+X(idx).toFixed(1)+'" y1="'+padT+'" x2="'+X(idx).toFixed(1)+'" y2="'+(h-padB)+'" stroke="#c9a227" stroke-width="1" opacity=".4"/><text x="'+X(idx).toFixed(1)+'" y="'+(padT+8)+'" fill="#c9a227" font-size="10" text-anchor="middle">★</text>';
+  });
+  s+='<path d="'+path(dess)+'" stroke="#6fae57" stroke-width="2" fill="none"/>';
+  s+='<path d="'+path(c1s)+'" stroke="#c9a227" stroke-width="2" fill="none"/>';
+  var lastM=-1;
+  keys.forEach(function(k,i){ var mo=noon(k).getMonth(); if(mo!==lastM){ lastM=mo;
+    s+='<text x="'+X(i).toFixed(1)+'" y="'+(h-6)+'" fill="#8d99ab" font-size="8" text-anchor="middle">'+noon(k).toLocaleDateString("fr-CA",{month:"short"})+'</text>'; } });
+  s+='</svg>';
+  return s;
+}
+
 function rPred(){
   var r=rate30(), pNow=predict(r), p100=predict(1);
   var n7=0,s7=0,lim=new Date(); lim.setDate(lim.getDate()-7);
@@ -944,7 +1172,7 @@ function rPred(){
   out+='<div class="card"><h3>Historique récent</h3><table><tr><th>Date</th><th>Verdict</th><th>Routine</th></tr>'+
    C.hist.slice(0,14).map(function(h){
      return '<tr><td>'+h.d+'</td><td>'+(h.s?'<span class="g">○ sobre</span>':'<span class="r">✕ rechute</span>')+
-       '</td><td class="dim">'+(h.b&&h.b.length?h.b.join(", ")+" ("+h.b.length+"/5)":"—")+'</td></tr>'; }).join("")+
+       '</td><td class="dim">'+(h.b&&h.b.length?h.b.join(", ")+" ("+h.b.length+"/4)":"—")+'</td></tr>'; }).join("")+
    '</table></div>';
   return out;
 }
@@ -1004,6 +1232,15 @@ function rParam(){
    '<div class="flexr"><button class="ghost" onclick="expJSON()">Exporter JSON</button>'+
    '<label class="ghost" style="display:inline-block">Importer JSON <input type="file" accept=".json" style="display:none" onchange="impJSON(event)"></label></div>'+
   '</div>';
+  /* punitions / pénitences éditables */
+  out+='<div class="card"><h2>Pénitences (expiation après rechute)</h2>'+
+   '<p class="dim">La liste proposée quand tu dois racheter une rechute. Édite, supprime, ajoute les tiennes — celles que les équipes sportives s\'infligent et que tu peux faire à Montréal.</p>'+
+   (C.pen||[]).map(function(p,i){
+     return '<div class="flexr" style="margin-bottom:5px"><input value="'+esc(p)+'" onchange="uPen('+i+',this.value)" style="flex:1">'+
+      '<button class="ghost" onclick="delPen('+i+')">✕</button></div>';
+   }).join("")+
+   '<div class="flexr" style="margin-top:8px"><input id="pen-new" placeholder="Nouvelle pénitence (ex. 200 jumping jacks, sprint côte Berri…)" style="flex:1">'+
+   '<button class="act" style="width:auto" onclick="addPen()">+ Ajouter</button></div></div>';
   return out;
 }
 
