@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GYM.AW — Entraînement</title>
-<link rel="manifest" href="manifest.json">
+<link rel="manifest" href="gym_manifest.json">
 <meta name="theme-color" content="#0d1117">
-<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="gym_icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <style>
@@ -206,7 +206,22 @@ function suggest(ex){
 }
 
 /* ============ ACTIONS — séance ============ */
-window.uIn=function(id,k,v){ form[id]=form[id]||{}; form[id][k]=parseFloat(v)||0; };
+function parseWeights(v){
+  /* "95 115 135" ou "95,115,135" → [95,115,135] ; "135" → [135] */
+  var arr=String(v).split(/[\s,]+/).map(function(s){return parseFloat(s);}).filter(function(n){return !isNaN(n);});
+  return arr;
+}
+window.uIn=function(id,k,v){
+  form[id]=form[id]||{};
+  if(k==="poids"){
+    var arr=parseWeights(v);
+    form[id].wts=arr;                  /* tableau de poids par série */
+    form[id].poids=arr.length?arr[arr.length-1]:0;  /* poids "top" = max pour PR/progression */
+    if(arr.length>1) form[id].sets=arr.length;       /* multi-poids → nb de séries = nb de poids */
+  } else {
+    form[id][k]=parseFloat(v)||0;
+  }
+};
 window.uRpe=function(id,v){ form[id]=form[id]||{}; form[id].rpe=(form[id].rpe===v?0:v); render(); };
 window.uSkip=function(id){ form[id]=form[id]||{}; form[id].skip=!form[id].skip; render(); };
 window.setKind=function(k){ logKind=k; render(); };
@@ -217,9 +232,14 @@ window.finishGym=function(dk){
     var f=form[x.id]||{};
     if(f.skip) return;
     var sg=suggest(x);
+    var wts=(f.wts&&f.wts.length)?f.wts:null;
+    var topW=(f.poids!==undefined&&!isNaN(f.poids)&&(f.wts?f.wts.length:true))?
+      (wts?Math.max.apply(null,wts):f.poids):sg.poids;
     var en={id:x.id, nom:x.nom,
-      poids:(f.poids!==undefined&&!isNaN(f.poids))?f.poids:sg.poids,
-      sets:f.sets||x.sets, reps:f.reps||sg.reps, rpe:f.rpe||0};
+      poids:topW,                       /* poids max de la séance (PR & progression) */
+      wts:wts,                          /* détail par série si multi-poids, sinon null */
+      sets:(wts&&wts.length>1)?wts.length:(f.sets||x.sets),
+      reps:f.reps||sg.reps, rpe:f.rpe||0};
     entries.push(en);
     /* PR? */
     var hist=lastEntries(x.id,99), max=0;
@@ -267,10 +287,13 @@ function civFlag(){
   try{
     localStorage.setItem("gym_done_"+today(),"1");
     var civ=JSON.parse(localStorage.getItem("civ_sobre_data")||"null");
-    if(civ && civ.hist && civ.hist.length && civ.hist[0].d===today() && civ.hist[0].s===1){
+    /* crédite le bonus gym du jour, que le verdict soit sobre OU rechute (discipline ≠ sobriété) */
+    if(civ && civ.hist && civ.hist.length && civ.hist[0].d===today()){
       if(civ.hist[0].b.indexOf("gym")<0){
+        var before=civ.hist[0].b.length;
         civ.hist[0].b.push("gym");
         if(civ.pts) civ.pts.mil=(civ.pts.mil||0)+3;
+        if(before<3 && civ.hist[0].b.length>=3){ civ.attack=(civ.attack||0)+1; civ.menace=Math.max(0,(civ.menace||0)-5); }
         civ.ts=Date.now();
         localStorage.setItem("civ_sobre_data", JSON.stringify(civ));
       }
@@ -400,17 +423,40 @@ function rSeance(){
    '<input type="number" step="0.1" id="bw-p" placeholder="'+(G.body.length?G.body[0].poids:"230")+'"></div>'+
    '<div style="flex:1"><label class="f">Tour de taille cm (optionnel)</label><input type="number" step="0.1" id="bw-t"></div>'+
    '<div style="align-self:flex-end"><button class="ghost" onclick="saveBody()" style="height:40px">Noter</button></div></div></div>';
-  /* séances déjà loggées aujourd'hui */
+  /* séances déjà loggées aujourd'hui — avec résumé détaillé */
   if(logs.length){
-    out+='<div class="card"><h3>✓ Fait aujourd\'hui</h3>'+logs.map(function(l){
-      var i=G.logs.indexOf(l), txt=l.kind==="gym"?("Séance "+(G.days[l.day]?G.days[l.day].nom:l.day)+" — "+l.entries.length+" exercices"):
-        l.kind==="nage"?("Natation — "+(l.dist?l.dist+" m, ":"")+l.min+" min"):
-        l.kind==="aw"?("Pratique tir au poignet — "+l.min+" min, "+l.rounds+" rounds"):
-        (esc(l.nom)+" — "+l.min+" min");
-      return '<p class="g">○ '+txt+' '+(pendingDel==="log:"+i?
+    out+='<div class="card"><h3>✓ Fait aujourd\'hui</h3>';
+    logs.forEach(function(l){
+      var i=G.logs.indexOf(l);
+      var delBtn=(pendingDel==="log:"+i?
         '<button class="ghost" style="color:var(--red);border-color:var(--red)" onclick="delLog('+i+')">sûr?</button>':
-        '<button class="ghost" onclick="delLog('+i+')">✕</button>')+'</p>';
-    }).join("")+'</div>';
+        '<button class="ghost" onclick="delLog('+i+')">✕</button>');
+      if(l.kind==="gym"){
+        var vol=0;
+        l.entries.forEach(function(en){
+          var x=exById(en.id);
+          if(x&&x.unit==="lbs"){
+            if(en.wts&&en.wts.length) en.wts.forEach(function(w){ vol+=w*en.reps; });
+            else vol+=en.poids*en.sets*en.reps;
+          }
+        });
+        out+='<div style="border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:8px">'+
+         '<p class="g" style="margin:0 0 6px">○ Séance '+(G.days[l.day]?G.days[l.day].nom:l.day)+' '+delBtn+'</p>'+
+         '<table><tr><th>Exercice</th><th>Charge</th><th>Séries×reps</th><th>RPE</th></tr>'+
+         l.entries.map(function(en){
+           var chg = (en.wts&&en.wts.length>1)? '<span class="bl">'+en.wts.join(" → ")+' lb</span>' : (en.poids>0? en.poids+' lb':'PdC');
+           var sr = (en.wts&&en.wts.length>1)? en.wts.length+'×'+en.reps : en.sets+'×'+en.reps;
+           return '<tr><td>'+esc(en.nom)+'</td><td>'+chg+'</td><td>'+sr+'</td><td class="dim">'+(en.rpe||"—")+'</td></tr>';
+         }).join("")+'</table>'+
+         (vol>0?'<p class="dim" style="margin:5px 0 0">Volume : <b class="au">'+fmtVol(vol)+'</b></p>':'')+'</div>';
+      } else {
+        var txt=l.kind==="nage"?("🏊 Natation — "+(l.dist?l.dist+" m, ":"")+(l.min||0)+" min"):
+          l.kind==="aw"?("⚔ Pratique tir au poignet — "+(l.min||0)+" min, "+(l.rounds||0)+" rounds"):
+          ("🌳 "+esc(l.nom||"Activité")+" — "+(l.min||0)+" min");
+        out+='<p class="g">○ '+txt+(l.notes?' <span class="dim">'+esc(l.notes)+'</span>':'')+' '+delBtn+'</p>';
+      }
+    });
+    out+='</div>';
   }
   /* choix de ce qu'on logge */
   if(!logKind){
@@ -440,14 +486,17 @@ function rSeance(){
     exs.forEach(function(x){
       var f=form[x.id]||{}, sg=suggest(x);
       var ss=x.ssg>0;
+      var wVal = (f.wts&&f.wts.length)? f.wts.join(" ") : (f.poids!==undefined? String(f.poids) : String(sg.poids));
+      var multi = f.wts && f.wts.length>1;
       out+='<div class="exrow'+(ss?' ss':'')+'">'+(ss?'<span class="sstag">SS'+x.ssg+'</span>':'')+
        '<div class="exname">'+esc(x.nom)+(x.aw?' <span class="bl">⚔</span>':'')+
        (f.skip?' <span class="r">— sauté</span>':'')+'</div>'+
-       '<div class="exsugg">sugg : <b class="au">'+sg.poids+(x.unit==="s"?" lb":" lb")+'</b> · '+
-        (f.sets||x.sets)+'×'+(f.reps||sg.reps)+(x.unit==="s"?" s":"")+' <span class="dim">('+sg.why+')</span></div>'+
+       '<div class="exsugg">sugg : <b class="au">'+sg.poids+' lb</b> · '+
+        (f.sets||x.sets)+'×'+(f.reps||sg.reps)+(x.unit==="s"?" s":"")+' <span class="dim">('+sg.why+')</span>'+
+        (multi?' · <span class="bl">montant : '+f.wts.join(" → ")+' lb ('+f.wts.length+" séries)</span>":'')+'</div>'+
        (f.skip?'':'<div class="exin">'+
-        '<input class="w" type="number" step="2.5" value="'+(f.poids!==undefined?f.poids:sg.poids)+'" onchange="uIn(\''+x.id+'\',\'poids\',this.value)">'+
-        '<input class="s" type="number" value="'+(f.sets||x.sets)+'" onchange="uIn(\''+x.id+'\',\'sets\',this.value)">'+
+        '<input class="w" type="text" inputmode="decimal" value="'+wVal+'" onchange="uIn(\''+x.id+'\',\'poids\',this.value)" title="un poids, ou plusieurs séparés par un espace pour une série montante">'+
+        '<input class="s" type="number" value="'+(multi?f.wts.length:(f.sets||x.sets))+'" onchange="uIn(\''+x.id+'\',\'sets\',this.value)"'+(multi?' disabled title="défini par les poids"':'')+'>'+
         '<span class="x">×</span>'+
         '<input class="s" type="number" value="'+(f.reps||sg.reps)+'" onchange="uIn(\''+x.id+'\',\'reps\',this.value)">'+
         (x.unit==="s"?'<span class="x">s</span>':'')+
@@ -458,6 +507,7 @@ function rSeance(){
        (f.skip?'<div class="exin"><span class="skip"><button class="off" onclick="uSkip(\''+x.id+'\')">↺</button></span></div>':'')+
       '</div>';
     });
+    out+='<p class="dim" style="margin-top:8px">💡 Poids montant : tape plusieurs poids séparés par un espace (ex. <b>95 115 135</b>) — chaque poids devient une série. Le reps s\'applique à chacune. Pour un seul poids, tape juste le nombre.</p>';
     out+='<div style="margin-top:12px"><button class="act" onclick="finishGym(\''+gdk+'\')">✓ Terminer la séance</button></div>'+
      '<button class="ghost" style="margin-top:8px" onclick="setKind(null)">Annuler</button></div>';
     return out;
@@ -561,7 +611,9 @@ function rCal(){
         if(l.kind==="gym"&&l.entries){
           out+='<p class="dim">Séance '+(G.days[l.day]?G.days[l.day].nom:l.day)+'</p><table><tr><th>Exercice</th><th>Charge</th><th>Séries</th><th>RPE</th></tr>'+
            l.entries.map(function(en){
-             return '<tr><td>'+esc(en.nom)+'</td><td><b>'+en.poids+' lb</b></td><td>'+en.sets+'×'+en.reps+'</td><td class="dim">'+(en.rpe||"—")+'</td></tr>';
+             var chg=(en.wts&&en.wts.length>1)?'<span class="bl">'+en.wts.join(" → ")+' lb</span>':'<b>'+en.poids+' lb</b>';
+             var sr=(en.wts&&en.wts.length>1)?en.wts.length+'×'+en.reps:en.sets+'×'+en.reps;
+             return '<tr><td>'+esc(en.nom)+'</td><td>'+chg+'</td><td>'+sr+'</td><td class="dim">'+(en.rpe||"—")+'</td></tr>';
            }).join("")+'</table>';
         } else if(l.kind==="nage") out+='<p class="g">🏊 Natation — '+(l.dist?l.dist+' m, ':'')+(l.min||0)+' min'+(l.notes?' <span class="dim">'+esc(l.notes)+'</span>':'')+'</p>';
         else if(l.kind==="aw") out+='<p class="g">⚔ Pratique tir au poignet — '+(l.min||0)+' min, '+(l.rounds||0)+' rounds'+(l.notes?' <span class="dim">'+esc(l.notes)+'</span>':'')+'</p>';
@@ -677,8 +729,9 @@ function weekVol(back){
     var d=noon(l.d);
     if(d>=monday&&d<=sunday) (l.entries||[]).forEach(function(en){
       var x=exById(en.id);
-      if(!x||x.unit!=="lbs"||en.poids<=0) return;
-      v+=en.poids*en.sets*en.reps;
+      if(!x||x.unit!=="lbs") return;
+      if(en.wts&&en.wts.length) en.wts.forEach(function(w){ v+=w*en.reps; });
+      else if(en.poids>0) v+=en.poids*en.sets*en.reps;
     });
   });
   return v;
