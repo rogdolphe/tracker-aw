@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GYM.AW — Entraînement</title>
-<link rel="manifest" href="gym_manifest.json">
+<link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0d1117">
-<link rel="apple-touch-icon" href="gym_icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <style>
@@ -85,6 +85,10 @@ hr{border:none;border-top:1px solid var(--line);margin:10px 0}
   <div><h1>🏋️ GYM.AW</h1><div class="dim" style="font-size:10px;letter-spacing:.15em" id="sub"></div></div>
   <div style="text-align:right;font-size:11px" id="top-stats"></div>
 </header>
+<div id="sync-bar" style="display:flex;align-items:center;justify-content:space-between;padding:5px 12px;background:var(--panel);border-bottom:1px solid var(--line);font-size:11px">
+  <span id="sync-dot" style="display:inline-flex;align-items:center;gap:6px"><span id="sync-led" style="width:8px;height:8px;border-radius:50%;background:var(--dim);display:inline-block"></span><span id="sync-txt">Sync : en attente…</span></span>
+  <button onclick="forceSyncGym()" style="background:transparent;border:1px solid var(--line);color:var(--dim);font-family:var(--mono);font-size:10px;padding:3px 8px;cursor:pointer">↻ Sync</button>
+</div>
 <nav class="tabs" id="tabs"></nav>
 <div id="app"></div>
 <div style="margin-top:16px;font-size:10px;color:var(--dim);text-align:center">GYM.AW — la discipline forge l'attaque.</div>
@@ -354,12 +358,21 @@ window.impJSON=function(ev){
 
 /* ============ SYNC GITHUB (token partagé avec CIV.SOBRE) ============ */
 var ghTimer=null, ghSha=null;
+function setSyncStatus(st, msg){
+  var led=$("sync-led"), txt=$("sync-txt");
+  if(!led||!txt) return;
+  var col={ok:"#6fae57", err:"#c0392b", pend:"#c9a227", off:"#8d99ab"}[st]||"#8d99ab";
+  led.style.background=col;
+  txt.textContent="Sync : "+msg;
+}
+window.forceSyncGym = function(){ setSyncStatus("pend","envoi…"); ghSave(false); ghLoad(); };
 function ghTok(){ return localStorage.getItem("civ_gh_token")||""; }
 window.setTok=function(v){ localStorage.setItem("civ_gh_token", v.trim()); };
 function ghURL(){ return "https://api.github.com/repos/"+G.gh.owner+"/"+G.gh.repo+"/contents/"+G.gh.file; }
 function ghQueue(){ if(!ghTok()) return; clearTimeout(ghTimer); ghTimer=setTimeout(function(){ghSave(false);},1500); }
 function ghSave(retry){
-  var t=ghTok(); if(!t) return;
+  var t=ghTok(); if(!t){ setSyncStatus("off","pas de token — colle-le dans Réglages"); return; }
+  setSyncStatus("pend","envoi…");
   var body={message:"gym sync "+new Date().toISOString(),
     content:btoa(unescape(encodeURIComponent(JSON.stringify(G))))};
   if(ghSha) body.sha=ghSha;
@@ -368,17 +381,18 @@ function ghSave(retry){
   .then(function(r){return r.json();})
   .then(function(j){
     if(j.content&&j.content.sha){ ghSha=j.content.sha;
-      var el=$("gh-st"); if(el) el.textContent="✓ synchronisé "+new Date().toLocaleTimeString("fr-CA");
+      setSyncStatus("ok","✓ synchronisé "+new Date().toLocaleTimeString("fr-CA"));
     } else if(!retry){
       fetch(ghURL(),{headers:{Authorization:"token "+t}})
       .then(function(r){return r.json();})
       .then(function(m){ if(m.sha){ ghSha=m.sha; ghSave(true); } });
-    } else { var el2=$("gh-st"); if(el2) el2.textContent="✗ conflit de sync"; }
+    } else { setSyncStatus("err","✗ conflit — réessaie"); }
   })
-  .catch(function(){ var el=$("gh-st"); if(el) el.textContent="✗ erreur de sync"; });
+  .catch(function(e){ setSyncStatus("err","✗ erreur réseau"); });
 }
 function ghLoad(){
-  var t=ghTok(); if(!t) return;
+  var t=ghTok(); if(!t){ setSyncStatus("off","pas de token — colle-le dans Réglages"); return; }
+  setSyncStatus("pend","chargement…");
   fetch(ghURL(),{headers:{Authorization:"token "+t}})
   .then(function(r){return r.json();})
   .then(function(j){
@@ -391,10 +405,11 @@ function ghLoad(){
         (function merge(d,c){ for(var k in d){ if(c[k]===undefined) c[k]=d[k];
           else if(d[k]&&typeof d[k]==="object"&&!Array.isArray(d[k])) merge(d[k],c[k]); } })(DEF_STATE,G);
         localStorage.setItem("gym_aw_data", JSON.stringify(G));
+        setSyncStatus("ok","✓ chargé "+new Date().toLocaleTimeString("fr-CA"));
         render();
       }
     }
-  }).catch(function(){});
+  }).catch(function(){ setSyncStatus("err","✗ erreur réseau"); });
 }
 
 /* ============ RENDUS ============ */
