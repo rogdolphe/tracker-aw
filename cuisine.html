@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Cuisine & Macros</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f7f6f3;--surface:#fff;--surface2:#f0efe9;--border:rgba(0,0,0,.09);--border2:rgba(0,0,0,.18);--text:#1a1917;--text2:#6b6a65;--text3:#a09e98;--green:#1d9e75;--r:14px;--rs:10px;--pill:99px;--nav:64px}
+@media(prefers-color-scheme:dark){:root{--bg:#131211;--surface:#1e1d1b;--surface2:#282724;--border:rgba(255,255,255,.09);--border2:rgba(255,255,255,.18);--text:#f0ede8;--text2:#9a9892;--text3:#635f5a}}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+/* App bar */
+.app-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 16px;position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between}
+.app-bar h1{font-size:15px;font-weight:600}.app-bar p{font-size:10px;color:var(--text2);margin-top:1px}
+/* Content */
+.content{max-width:680px;margin:0 auto;padding:16px 16px calc(var(--nav) + 20px)}
+.tab-panel{display:none}.tab-panel.active{display:block}
+/* Tab bar */
+.tab-bar{position:fixed;bottom:0;left:0;right:0;height:var(--nav);background:var(--surface);border-top:1px solid var(--border);display:flex;z-index:90;padding-bottom:env(safe-area-inset-bottom,0px)}
+.tb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:none;background:none;color:var(--text3);font-family:'DM Sans',sans-serif;font-size:10px;font-weight:500;cursor:pointer;padding:6px 0 4px}
+.tb.active{color:var(--text)}.tb-ic{font-size:22px;line-height:1}
+/* Macro summary bar */
+.macro-bar{background:var(--surface2);border-radius:var(--r);padding:11px 14px;margin-bottom:1rem;display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.mb-val{font-size:16px;font-weight:600;text-align:center}.mb-lbl{font-size:10px;color:var(--text2);text-align:center;margin-top:1px}.mb-sub{font-size:9px;color:var(--text3);text-align:center}
+/* Section labels */
+.sec-hd{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin:16px 0 8px;display:flex;align-items:center;justify-content:space-between}
+/* Inventory */
+.inv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:6px}
+.inv-item{background:var(--surface);border-radius:var(--rs);padding:8px 10px;display:flex;justify-content:space-between;align-items:center;border:1px solid var(--border)}
+.inv-item.low{border-color:#f4b74a;background:#FFF8E6}.inv-name{font-size:11px;color:var(--text);font-weight:500}.inv-qty{font-size:10px;color:var(--text3)}
+.inv-item.low .inv-qty{color:#92600A;font-weight:600}
+.cat-lbl{font-size:10px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin:12px 0 5px;padding-top:10px;border-top:1px solid var(--border);grid-column:1/-1}
+/* Setup box */
+.setup-box{background:var(--surface2);border-radius:var(--r);padding:16px;margin-bottom:1rem;border:1px dashed var(--border2)}
+.setup-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px}.setup-text{font-size:11px;color:var(--text3);line-height:1.6;margin-bottom:10px}
+/* Search */
+.search-wrap{display:flex;gap:8px;margin-bottom:12px}
+.s-inp{flex:1;padding:10px 14px;border-radius:var(--r);border:1px solid var(--border2);background:var(--surface);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none}
+.s-inp:focus{border-color:var(--text2)}
+.s-btn{padding:10px 16px;border-radius:var(--r);border:none;background:var(--text);color:var(--bg);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
+/* Food soundboard cards */
+.food-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+.fc{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:11px;cursor:pointer;transition:all .15s;display:flex;flex-direction:column;gap:4px}
+.fc:hover{background:var(--surface2);border-color:var(--border2)}.fc:active{transform:scale(.97)}
+.fc-name{font-size:11px;font-weight:500;color:var(--text);line-height:1.3}.fc-brand{font-size:10px;color:var(--text3);margin-top:1px}
+.fc-macros{display:flex;gap:3px;margin-top:5px;flex-wrap:wrap}
+.fc-m{font-size:9px;font-weight:600;padding:1px 5px;border-radius:4px}
+.fc-m.k{background:#F1EFE8;color:#444441}.fc-m.p{background:#EAF3DE;color:#27500A}.fc-m.c{background:#E6F1FB;color:#0C447C}.fc-m.f{background:#FBEAEF;color:#72243E}
+/* Search results list */
+.result-list{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
+.ri{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;display:flex;align-items:center;gap:10px}
+.ri-info{flex:1}.ri-name{font-size:12px;font-weight:500;color:var(--text);line-height:1.3}
+.ri-brand{font-size:10px;color:var(--text3);margin-top:1px}.ri-mac{font-size:10px;color:var(--text2);margin-top:3px}
+.ri-add{padding:6px 12px;border-radius:var(--pill);border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.ri-add:hover{background:var(--text);color:var(--bg)}.ri-add.done{background:#EAF3DE;color:#27500A;border-color:transparent}
+/* Recipe cards */
+.rb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(138px,1fr));gap:8px}
+.rb{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:11px;cursor:pointer;transition:all .15s;display:flex;flex-direction:column;gap:4px;position:relative}
+.rb:hover{background:var(--surface2);border-color:var(--border2)}.rb:active{transform:scale(.97)}.rb.hidden{display:none}.rb.weekend{border:1.5px solid #ef9f27}
+.rb-ic{font-size:20px;line-height:1}.rb-name{font-size:11px;font-weight:500;color:var(--text);line-height:1.3}
+.rb-prot{font-size:10px;color:#27500A;font-weight:600;background:#EAF3DE;padding:1px 5px;border-radius:4px;display:inline-block;margin-top:1px}
+.rb-tag{font-size:9px;font-weight:500;padding:1px 5px;border-radius:var(--pill);display:inline-block;margin-top:2px}
+.rb-af{position:absolute;top:7px;right:7px;font-size:9px;background:#FAEEDA;color:#633806;border-radius:4px;padding:1px 4px;font-weight:600}
+.tag-fr{background:#E6F1FB;color:#0C447C}.tag-es{background:#FAEEDA;color:#633806}.tag-it{background:#FBEAF0;color:#72243E}
+.tag-qc{background:#EAF3DE;color:#27500A}.tag-af,.tag-rapide{background:#F1EFE8;color:#444441}
+.tag-batch{background:#EEEDFE;color:#3C3489}.tag-wknd{background:#FFF8E6;color:#92600A}
+/* Filter row */
+.filter-row{display:flex;gap:6px;flex-wrap:nowrap;padding:.4rem 0 .8rem;overflow-x:auto;scrollbar-width:none}
+.filter-row::-webkit-scrollbar{display:none}
+.fbtn{flex-shrink:0;padding:5px 11px;border-radius:var(--pill);border:1px solid var(--border2);background:var(--surface);color:var(--text2);font-size:11px;font-weight:500;cursor:pointer;transition:all .15s;white-space:nowrap}
+.fbtn.active{background:var(--text);color:var(--bg);border-color:transparent}
+.meal-hd{display:flex;align-items:center;gap:10px;margin-bottom:.8rem;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.meal-ic{font-size:20px}.meal-title{font-size:14px;font-weight:600}.meal-time{font-size:11px;color:var(--text3);margin-left:auto}
+.meal-sec{margin-bottom:1.8rem}
+/* Daily log */
+.day-total{background:var(--surface);border-radius:var(--r);padding:14px;border:1px solid var(--border);margin-bottom:1rem}
+.day-prog{margin:7px 0}
+.day-bar-wrap{height:7px;border-radius:4px;background:var(--border2);overflow:hidden;margin-top:3px}
+.day-bar-fill{height:100%;border-radius:4px;transition:width .3s}
+.bar-k{background:#e07640}.bar-p{background:#1d9e75}.bar-c{background:#3b82f6}.bar-l{background:#ec4899}
+.dli{display:flex;align-items:center;padding:9px 12px;background:var(--surface);border-radius:var(--rs);margin-bottom:4px;border:1px solid var(--border);gap:10px}
+.dli-name{flex:1;font-size:12px;font-weight:500}.dli-qty{font-size:11px;color:var(--text2);white-space:nowrap}
+.dli-del{font-size:13px;color:var(--text3);background:none;border:none;cursor:pointer;padding:0 2px}
+/* Empty state */
+.empty{text-align:center;padding:36px 16px;color:var(--text3)}
+.empty-ic{font-size:32px;margin-bottom:8px}.empty-t{font-size:13px;font-weight:600;color:var(--text2);margin-bottom:4px}.empty-s{font-size:11px;line-height:1.5}
+/* Loading */
+.loading{display:flex;align-items:center;justify-content:center;padding:20px;color:var(--text3);font-size:13px;gap:8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{width:16px;height:16px;border:2px solid var(--border2);border-top-color:var(--text2);border-radius:50%;animation:spin .6s linear infinite}
+/* Toast */
+.toast{position:fixed;bottom:calc(var(--nav) + 12px);left:50%;transform:translateX(-50%) translateY(16px);background:var(--text);color:var(--bg);padding:9px 16px;border-radius:var(--pill);font-size:12px;font-weight:500;z-index:400;opacity:0;transition:all .22s;white-space:nowrap;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+/* Modal */
+.modal-bd{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:flex-end;justify-content:center}
+.modal-bd.show{display:flex}
+.modal-box{background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-width:600px;max-height:88vh;overflow-y:auto;padding:0 0 32px}
+.modal-pill{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:12px auto 14px}
+.modal-hd{padding:0 20px 12px;border-bottom:1px solid var(--border)}
+.modal-title{font-size:17px;font-weight:600}.modal-sub{font-size:12px;color:var(--text2);margin-top:3px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.modal-badge{font-size:10px;font-weight:500;padding:2px 7px;border-radius:var(--pill);background:var(--surface2);color:var(--text2)}
+.modal-body{padding:14px 20px}
+.m-sect{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin:14px 0 7px}
+.m-sect:first-child{margin-top:0}
+.macro-row{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:4px}
+.macro-card{background:var(--surface2);border-radius:var(--rs);padding:8px;text-align:center}
+.macro-val{font-size:15px;font-weight:600}.macro-lbl{font-size:10px;color:var(--text2);margin-top:1px}
+.prot-bar{height:5px;border-radius:3px;background:var(--border2);margin-top:8px;overflow:hidden}
+.prot-fill{height:100%;background:var(--green);border-radius:3px}
+.prot-label{font-size:10px;color:#27500A;margin-top:3px;font-weight:500}
+.ing-row{display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:var(--surface2);border-radius:var(--rs);margin-bottom:4px}
+.ing-name{font-size:13px}.ing-qty{font-size:12px;font-weight:500;color:var(--text2)}
+.step-row{display:flex;gap:10px;margin-bottom:9px;align-items:flex-start}
+.step-num{width:24px;height:24px;border-radius:50%;background:var(--text);color:var(--bg);font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.step-text{font-size:13px;color:var(--text2);line-height:1.55;flex:1}
+.tip-box{background:#EAF3DE;border-radius:var(--rs);padding:10px 14px;font-size:12px;color:#27500A;line-height:1.5;margin-top:10px}
+.batch-box{background:#EEEDFE;border-radius:var(--rs);padding:10px 14px;font-size:12px;color:#3C3489;line-height:1.5;margin-top:8px}
+.price-box{background:#FAEEDA;border-radius:var(--rs);padding:10px 14px;font-size:12px;color:#633806;line-height:1.5;margin-top:8px}
+.wknd-box{background:#FFF8E6;border-radius:var(--rs);padding:10px 14px;font-size:12px;color:#92600A;line-height:1.5;margin-top:8px}
+/* Qty control */
+.qty-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;background:var(--surface2);border-radius:var(--rs);padding:10px 12px}
+.qty-lbl{font-size:12px;color:var(--text2);flex:1}
+.qty-ctrl{display:flex;align-items:center;gap:8px}
+.qty-btn{width:30px;height:30px;border-radius:50%;border:1px solid var(--border2);background:var(--surface);color:var(--text);font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;line-height:1}
+.qty-val{font-size:15px;font-weight:600;min-width:55px;text-align:center}
+/* Buttons */
+.btn-prim{padding:10px 18px;border-radius:var(--r);border:none;background:var(--text);color:var(--bg);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer}
+.btn-sec{padding:10px 18px;border-radius:var(--r);border:1px solid var(--border2);background:var(--surface);color:var(--text2);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer}
+.btn-green{width:100%;padding:13px;background:var(--green);color:#fff;border:none;border-radius:var(--r);font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:10px}
+.btn-close{width:100%;padding:13px;background:var(--text);color:var(--bg);border:none;border-radius:var(--r);font-size:14px;font-weight:600;cursor:pointer;margin-top:16px;font-family:'DM Sans',sans-serif}
+.btn-danger{padding:10px 18px;border-radius:var(--r);border:1px solid #a03030;background:var(--surface);color:#a03030;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;width:100%;margin-top:8px}
+.icon-btn{font-size:11px;padding:6px 12px;border-radius:var(--pill);border:1px solid var(--border2);background:var(--surface2);color:var(--text);cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:500}
+</style>
+</head>
+<body>
+<div class="app-bar">
+  <div><h1>🥗 Cuisine & Macros</h1><p id="app-sub">Inventaire · Aliments · Recettes · Journal</p></div>
+  <button class="icon-btn" onclick="openSettings()">⚙️</button>
+</div>
+
+<div class="content">
+  <!-- TAB 1 — INVENTAIRE -->
+  <div class="tab-panel active" id="tab-inv">
+    <div class="macro-bar">
+      <div><div class="mb-val" id="g-kcal">2100</div><div class="mb-lbl">kcal/jour</div><div class="mb-sub">objectif</div></div>
+      <div><div class="mb-val" id="g-prot">155g</div><div class="mb-lbl">protéines</div><div class="mb-sub">objectif</div></div>
+      <div><div class="mb-val" id="g-carb">200g</div><div class="mb-lbl">glucides</div><div class="mb-sub">énergie gym</div></div>
+      <div><div class="mb-val" id="g-fat">65g</div><div class="mb-lbl">lipides</div><div class="mb-sub">hormones</div></div>
+    </div>
+    <div id="inv-container"></div>
+  </div>
+
+  <!-- TAB 2 — ALIMENTS -->
+  <div class="tab-panel" id="tab-food">
+    <div class="sec-hd">Recherche Open Food Facts</div>
+    <div class="search-wrap">
+      <input type="text" class="s-inp" id="foodSearch" placeholder="Ex : yogourt grec, poulet, riz…" onkeydown="if(event.key==='Enter')searchFood()">
+      <button class="s-btn" onclick="searchFood()">🔍</button>
+    </div>
+    <div id="searchResults"></div>
+    <div class="sec-hd"><span>Ma bibliothèque <span id="lib-count" style="font-weight:400;text-transform:none;letter-spacing:0"></span></span></div>
+    <div class="food-grid" id="foodGrid"></div>
+  </div>
+
+  <!-- TAB 3 — RECETTES -->
+  <div class="tab-panel" id="tab-rec">
+    <div class="filter-row" id="recFilters"></div>
+    <div id="recContainer"></div>
+  </div>
+
+  <!-- TAB 4 — JOURNÉE -->
+  <div class="tab-panel" id="tab-day">
+    <div class="day-total" id="dayTotal"></div>
+    <div class="sec-hd">
+      <span>Journal — <span id="dayDate"></span></span>
+      <button class="icon-btn" onclick="clearDay()">Effacer</button>
+    </div>
+    <div id="dayLog"></div>
+    <div class="sec-hd" style="margin-top:16px">Ajouter depuis ma bibliothèque</div>
+    <div class="food-grid" id="logFoodGrid"></div>
+  </div>
+</div>
+
+<!-- TAB BAR -->
+<div class="tab-bar">
+  <button class="tb active" onclick="switchTab('inv',this)"><span class="tb-ic">📦</span>Inventaire</button>
+  <button class="tb" onclick="switchTab('food',this)"><span class="tb-ic">🔍</span>Aliments</button>
+  <button class="tb" onclick="switchTab('rec',this)"><span class="tb-ic">🍽️</span>Recettes</button>
+  <button class="tb" onclick="switchTab('day',this)"><span class="tb-ic">📊</span>Journée</button>
+</div>
+
+<!-- MODAL — ALIMENT -->
+<div class="modal-bd" id="foodModal" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="modal-box">
+    <div class="modal-pill"></div>
+    <div class="modal-hd"><div class="modal-title" id="fm-title"></div><div class="modal-sub" id="fm-sub"></div></div>
+    <div class="modal-body" id="fm-body"></div>
+  </div>
+</div>
+
+<!-- MODAL — RECETTE -->
+<div class="modal-bd" id="recModal" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="modal-box">
+    <div class="modal-pill"></div>
+    <div class="modal-hd"><div class="modal-title" id="rm-title"></div><div class="modal-sub" id="rm-sub"></div></div>
+    <div class="modal-body" id="rm-body"></div>
+  </div>
+</div>
+
+<!-- MODAL — SETTINGS -->
+<div class="modal-bd" id="settingsModal" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="modal-box">
+    <div class="modal-pill"></div>
+    <div class="modal-hd"><div class="modal-title">⚙️ Configuration</div></div>
+    <div class="modal-body">
+      <div class="m-sect">Google Sheets — Inventaire</div>
+      <p style="font-size:12px;color:var(--text2);line-height:1.55;margin-bottom:10px">
+        Dans ton Sheet : <b>Fichier → Partager → Publier sur le web</b><br>
+        Format : <b>Comma-separated values (.csv)</b><br>
+        Colonnes : <b>Aliment | Catégorie | Quantité | Faible</b><br>
+        (dans la colonne Faible, écris <b>oui</b> si le stock est bas)
+      </p>
+      <input type="text" class="s-inp" id="sheetUrl" placeholder="https://docs.google.com/spreadsheets/d/…/pub?output=csv" style="width:100%;margin-bottom:8px">
+      <div style="display:flex;gap:8px">
+        <button class="btn-prim" onclick="saveSheetUrl()">Enregistrer</button>
+        <button class="btn-sec" onclick="loadInventory(true)">Tester</button>
+      </div>
+      <div class="m-sect" style="margin-top:20px">Objectifs nutritionnels</div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">
+        <div><div style="font-size:11px;color:var(--text2);margin-bottom:4px">Calories (kcal)</div><input type="number" class="s-inp" id="g-inp-kcal" placeholder="2100" style="width:100%"></div>
+        <div><div style="font-size:11px;color:var(--text2);margin-bottom:4px">Protéines (g)</div><input type="number" class="s-inp" id="g-inp-prot" placeholder="155" style="width:100%"></div>
+        <div><div style="font-size:11px;color:var(--text2);margin-bottom:4px">Glucides (g)</div><input type="number" class="s-inp" id="g-inp-carb" placeholder="200" style="width:100%"></div>
+        <div><div style="font-size:11px;color:var(--text2);margin-bottom:4px">Lipides (g)</div><input type="number" class="s-inp" id="g-inp-fat" placeholder="65" style="width:100%"></div>
+      </div>
+      <button class="btn-prim" style="margin-top:10px" onclick="saveGoals()">Enregistrer objectifs</button>
+      <div class="m-sect" style="margin-top:20px;color:#a03030">Zone de danger</div>
+      <button class="btn-danger" onclick="if(confirm('Effacer toute la bibliothèque d\'aliments ?')){FOOD_LIB=[];saveFoodLib();renderFoodGrids();toast('Bibliothèque effacée')}">🗑️ Effacer ma bibliothèque d'aliments</button>
+      <button class="btn-close" onclick="document.getElementById('settingsModal').classList.remove('show')">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────────────────────────
+let GOALS = JSON.parse(localStorage.getItem('cm_goals')||'null')||{kcal:2100,prot:155,carb:200,fat:65};
+let FOOD_LIB = JSON.parse(localStorage.getItem('cm_foodlib')||'[]');
+let DAY_LOG = [];
+let INVENTORY = [];
+let activeRecFilter = 'Tout';
+let modalFood = null;
+let modalFoodQty = 100;
+let _searchCache = [];
+let _searchBusy = false;
+
+// Daily log — auto-reset each day
+const TODAY = new Date().toISOString().slice(0,10);
+if (localStorage.getItem('cm_logdate') === TODAY) {
+  DAY_LOG = JSON.parse(localStorage.getItem('cm_daylog')||'[]');
+} else {
+  localStorage.setItem('cm_logdate', TODAY);
+  localStorage.setItem('cm_daylog', '[]');
+}
+
+// ─────────────────────────────────────────────────────────────────
+// UTILS
+// ─────────────────────────────────────────────────────────────────
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') }
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2200) }
+function saveFoodLib(){ localStorage.setItem('cm_foodlib', JSON.stringify(FOOD_LIB)) }
+function saveDayLog(){ localStorage.setItem('cm_daylog', JSON.stringify(DAY_LOG)) }
+
+// ─────────────────────────────────────────────────────────────────
+// TABS
+// ─────────────────────────────────────────────────────────────────
+function switchTab(id, btn){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tb').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  btn.classList.add('active');
+  if(id==='day') renderDayLog();
+  if(id==='food') renderFoodGrids();
+}
+
+// ─────────────────────────────────────────────────────────────────
+// SETTINGS
+// ─────────────────────────────────────────────────────────────────
+function openSettings(){
+  document.getElementById('sheetUrl').value = localStorage.getItem('cm_sheeturl')||'';
+  document.getElementById('g-inp-kcal').value = GOALS.kcal;
+  document.getElementById('g-inp-prot').value = GOALS.prot;
+  document.getElementById('g-inp-carb').value = GOALS.carb;
+  document.getElementById('g-inp-fat').value  = GOALS.fat;
+  document.getElementById('settingsModal').classList.add('show');
+}
+function saveSheetUrl(){
+  const url = document.getElementById('sheetUrl').value.trim();
+  localStorage.setItem('cm_sheeturl', url);
+  toast('✓ URL enregistrée');
+  loadInventory(true);
+  document.getElementById('settingsModal').classList.remove('show');
+}
+function saveGoals(){
+  GOALS = {
+    kcal: parseInt(document.getElementById('g-inp-kcal').value)||2100,
+    prot: parseInt(document.getElementById('g-inp-prot').value)||155,
+    carb: parseInt(document.getElementById('g-inp-carb').value)||200,
+    fat:  parseInt(document.getElementById('g-inp-fat').value)||65
+  };
+  localStorage.setItem('cm_goals', JSON.stringify(GOALS));
+  updateGoalBar();
+  toast('✓ Objectifs enregistrés');
+}
+function updateGoalBar(){
+  document.getElementById('g-kcal').textContent = GOALS.kcal;
+  document.getElementById('g-prot').textContent = GOALS.prot+'g';
+  document.getElementById('g-carb').textContent = GOALS.carb+'g';
+  document.getElementById('g-fat').textContent  = GOALS.fat+'g';
+}
+
+// ─────────────────────────────────────────────────────────────────
+// INVENTORY (Google Sheets CSV)
+// ─────────────────────────────────────────────────────────────────
+async function loadInventory(showFeedback=false){
+  const url = localStorage.getItem('cm_sheeturl');
+  const el = document.getElementById('inv-container');
+  if(!url){
+    el.innerHTML = `<div class="setup-box">
+      <div class="setup-title">📊 Connecter Google Sheets</div>
+      <div class="setup-text">
+        1. Crée un Sheet avec les colonnes : <b>Aliment</b> | <b>Catégorie</b> | <b>Quantité</b> | <b>Faible</b><br>
+        2. <b>Fichier → Partager → Publier sur le web</b> → Format CSV<br>
+        3. Colle l'URL dans ⚙️ Configuration<br><br>
+        Exemple de données dans la colonne Faible : écrire <b>oui</b> si le stock est bas.
+      </div>
+      <button class="btn-prim" onclick="openSettings()">⚙️ Configurer maintenant</button>
+    </div>`;
+    return;
+  }
+  el.innerHTML = '<div class="loading"><div class="spinner"></div>Chargement de l\'inventaire…</div>';
+  try {
+    const bust = url+(url.includes('?')?'&':'?')+'_t='+Date.now();
+    const res = await fetch(bust);
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const csv = await res.text();
+    INVENTORY = parseCSV(csv);
+    renderInventory();
+    if(showFeedback) toast('✓ Inventaire chargé — '+INVENTORY.length+' articles');
+  } catch(e){
+    el.innerHTML = `<div class="setup-box">
+      <div class="setup-title">⚠️ Erreur de connexion</div>
+      <div class="setup-text">Impossible de charger la feuille.<br>Vérifie que le Sheet est bien publié (format CSV) et que l'URL est exacte.<br><br><small>${esc(e.message)}</small></div>
+      <button class="btn-prim" onclick="openSettings()">⚙️ Reconfigurer</button>
+    </div>`;
+  }
+}
+
+function parseCSV(text){
+  const rows = text.trim().split('\n').map(row=>{
+    const res=[]; let inQ=false, cur='';
+    for(const ch of row){
+      if(ch==='"'){ inQ=!inQ; }
+      else if(ch===','&&!inQ){ res.push(cur.trim()); cur=''; }
+      else { cur+=ch; }
+    }
+    res.push(cur.trim()); return res;
+  });
+  return rows.slice(1).filter(r=>r[0]&&r[0].trim()).map(r=>({
+    n:  (r[0]||'').trim(),
+    cat:(r[1]||'Autre').trim(),
+    q:  (r[2]||'—').trim(),
+    low:(r[3]||'').trim().toLowerCase()==='oui'
+  }));
+}
+
+function renderInventory(){
+  const el = document.getElementById('inv-container');
+  if(!INVENTORY.length){
+    el.innerHTML='<div class="empty"><div class="empty-ic">📭</div><div class="empty-t">Inventaire vide</div><div class="empty-s">Ajoute des aliments dans ton Google Sheet</div></div>'; return;
+  }
+  const low = INVENTORY.filter(i=>i.low);
+  let html='';
+  if(low.length){
+    html+=`<div style="background:#FFF8E6;border-radius:var(--r);padding:10px 12px;margin-bottom:10px;border:1px solid #f4b74a">
+      <div style="font-size:11px;font-weight:600;color:#92600A;margin-bottom:6px">⚠️ Stock bas (${low.length})</div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap">${low.map(i=>`<span style="font-size:11px;background:#fff;border-radius:var(--pill);padding:2px 8px;color:#633806">${esc(i.n)}</span>`).join('')}</div>
+    </div>`;
+  }
+  html+='<div class="inv-grid">';
+  let lastCat='';
+  INVENTORY.forEach(item=>{
+    if(item.cat!==lastCat){ html+=`<div class="cat-lbl">${esc(item.cat)}</div>`; lastCat=item.cat; }
+    html+=`<div class="inv-item${item.low?' low':''}"><span class="inv-name">${esc(item.n)}</span><span class="inv-qty">${item.low?'⚠️ ':''}${esc(item.q)}</span></div>`;
+  });
+  html+='</div>';
+  html+=`<div style="text-align:center;margin-top:14px">
+    <button class="btn-sec" style="font-size:11px" onclick="loadInventory(true)">🔄 Rafraîchir</button>
+    <div style="font-size:10px;color:var(--text3);margin-top:5px">${INVENTORY.length} articles</div>
+  </div>`;
+  el.innerHTML=html;
+}
+
+// ─────────────────────────────────────────────────────────────────
+// OPEN FOOD FACTS SEARCH
+// ─────────────────────────────────────────────────────────────────
+async function searchFood(){
+  if(_searchBusy) return;
+  const q = document.getElementById('foodSearch').value.trim();
+  if(!q) return;
+  _searchBusy=true;
+  const el=document.getElementById('searchResults');
+  el.innerHTML='<div class="loading"><div class="spinner"></div>Recherche sur Open Food Facts…</div>';
+  try {
+    const url=`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&json=1&action=process&page_size=12&fields=product_name,product_name_fr,brands,nutriments,code&lc=fr&cc=ca`;
+    const res=await fetch(url);
+    const data=await res.json();
+    _searchCache=data.products||[];
+    const valid=_searchCache.filter(p=>getName(p)&&getKcal(p)>0);
+    if(!valid.length){
+      el.innerHTML='<div class="empty"><div class="empty-ic">🔍</div><div class="empty-t">Aucun résultat</div><div class="empty-s">Essaie un autre terme ou une marque</div></div>'; return;
+    }
+    const libNames=FOOD_LIB.map(f=>f.name.toLowerCase());
+    el.innerHTML='<div class="result-list">'+valid.map((p,i)=>{
+      const nm=esc(getName(p)), br=esc(getBrand(p)), k=getKcal(p), pr=getProt(p), ca=getCarb(p), fa=getFat(p);
+      const inLib=libNames.includes(getName(p).toLowerCase());
+      return `<div class="ri">
+        <div class="ri-info">
+          <div class="ri-name">${nm}</div>
+          ${br?`<div class="ri-brand">${br}</div>`:''}
+          <div class="ri-mac">${k} kcal · ${pr}g prot · ${ca}g gluc · ${fa}g lip — pour 100g</div>
+        </div>
+        <button class="ri-add${inLib?' done':''}" onclick="addToLibByIdx(${i})" id="ri-btn-${i}">${inLib?'✓ Ajouté':'＋ Ajouter'}</button>
+      </div>`;
+    }).join('')+'</div>';
+  } catch(e){
+    el.innerHTML='<div class="empty"><div class="empty-ic">⚠️</div><div class="empty-t">Erreur réseau</div><div class="empty-s">Vérifie ta connexion internet</div></div>';
+  } finally { _searchBusy=false; }
+}
+
+function getName(p){ return (p.product_name_fr||p.product_name||'').trim() }
+function getBrand(p){ return (p.brands||'').split(',')[0].trim() }
+function getKcal(p){ const n=p.nutriments||{}; return Math.round(n['energy-kcal_100g']||((n['energy_100g']||0)/4.184)) }
+function getProt(p){ return Math.round(((p.nutriments||{})['proteins_100g']||0)*10)/10 }
+function getCarb(p){ return Math.round(((p.nutriments||{})['carbohydrates_100g']||0)*10)/10 }
+function getFat(p){  return Math.round(((p.nutriments||{})['fat_100g']||0)*10)/10 }
+
+function addToLibByIdx(i){
+  const p=_searchCache[i]; if(!p) return;
+  const name=getName(p);
+  if(FOOD_LIB.some(f=>f.name.toLowerCase()===name.toLowerCase())){
+    toast('Déjà dans ta bibliothèque'); return;
+  }
+  const food={id:Date.now()+i,name,brand:getBrand(p),kcal:getKcal(p),prot:getProt(p),carb:getCarb(p),fat:getFat(p),code:p.code||''};
+  FOOD_LIB.push(food);
+  saveFoodLib();
+  renderFoodGrids();
+  const btn=document.getElementById('ri-btn-'+i);
+  if(btn){ btn.textContent='✓ Ajouté'; btn.classList.add('done'); }
+  toast('✓ '+name+' ajouté à ta bibliothèque');
+}
+
+// ─────────────────────────────────────────────────────────────────
+// FOOD LIBRARY (soundboard)
+// ─────────────────────────────────────────────────────────────────
+function renderFoodGrids(){
+  const countEl=document.getElementById('lib-count');
+  if(countEl) countEl.textContent=FOOD_LIB.length?'('+FOOD_LIB.length+')':'';
+  const cards = FOOD_LIB.length
+    ? FOOD_LIB.map(f=>`<div class="fc" onclick="openFoodModal(${f.id})">
+        <div class="fc-name">${esc(f.name)}</div>
+        ${f.brand?`<div class="fc-brand">${esc(f.brand)}</div>`:''}
+        <div class="fc-macros">
+          <span class="fc-m k">${f.kcal}</span>
+          <span class="fc-m p">${f.prot}g P</span>
+          <span class="fc-m c">${f.carb}g C</span>
+          <span class="fc-m f">${f.fat}g L</span>
+        </div>
+      </div>`).join('')
+    : '<div class="empty" style="grid-column:1/-1"><div class="empty-ic">🥦</div><div class="empty-t">Bibliothèque vide</div><div class="empty-s">Recherche des aliments ci-dessus pour les ajouter</div></div>';
+  const g1=document.getElementById('foodGrid');
+  const g2=document.getElementById('logFoodGrid');
+  if(g1) g1.innerHTML=cards;
+  if(g2) g2.innerHTML=cards.replace(/onclick="openFoodModal\((\d+)\)"/g,'onclick="openFoodModal($1,true)"');
+}
+
+// ─────────────────────────────────────────────────────────────────
+// FOOD MODAL
+// ─────────────────────────────────────────────────────────────────
+function openFoodModal(id, fromLog=false){
+  const food=FOOD_LIB.find(f=>f.id==id); if(!food) return;
+  modalFood=food; modalFoodQty=100;
+  document.getElementById('fm-title').textContent=food.name;
+  document.getElementById('fm-sub').innerHTML=(food.brand?`<span>${esc(food.brand)}</span>`:'')+`<span>Valeurs pour 100g</span>`;
+  renderFoodModalBody(fromLog);
+  document.getElementById('foodModal').classList.add('show');
+}
+function renderFoodModalBody(fromLog){
+  const f=modalFood, q=modalFoodQty, r=q/100;
+  document.getElementById('fm-body').innerHTML=`
+    <div class="m-sect">Portion</div>
+    <div class="qty-row">
+      <span class="qty-lbl">Quantité</span>
+      <div class="qty-ctrl">
+        <button class="qty-btn" onclick="adjQty(-25,${fromLog})">−</button>
+        <span class="qty-val">${q}g</span>
+        <button class="qty-btn" onclick="adjQty(25,${fromLog})">+</button>
+      </div>
+    </div>
+    <div class="macro-row">
+      <div class="macro-card"><div class="macro-val">${Math.round(f.kcal*r)}</div><div class="macro-lbl">kcal</div></div>
+      <div class="macro-card"><div class="macro-val">${(f.prot*r).toFixed(1)}g</div><div class="macro-lbl">protéines</div></div>
+      <div class="macro-card"><div class="macro-val">${(f.carb*r).toFixed(1)}g</div><div class="macro-lbl">glucides</div></div>
+      <div class="macro-card"><div class="macro-val">${(f.fat*r).toFixed(1)}g</div><div class="macro-lbl">lipides</div></div>
+    </div>
+    <div style="font-size:10px;color:var(--text3);margin-top:6px">Base 100g : ${f.kcal} kcal · ${f.prot}g P · ${f.carb}g C · ${f.fat}g L</div>
+    <button class="btn-green" onclick="addToLog()">＋ Ajouter au journal du jour</button>
+    <button class="btn-danger" onclick="removeFromLib(${f.id})">🗑️ Supprimer de la bibliothèque</button>
+    <button class="btn-close" onclick="document.getElementById('foodModal').classList.remove('show')">Fermer</button>`;
+}
+function adjQty(delta, fromLog){
+  modalFoodQty=Math.max(25,Math.min(2000,modalFoodQty+delta));
+  renderFoodModalBody(fromLog);
+}
+function addToLog(){
+  const f=modalFood, q=modalFoodQty, r=q/100;
+  DAY_LOG.push({id:Date.now(),name:f.name,qty:q,kcal:Math.round(f.kcal*r),prot:parseFloat((f.prot*r).toFixed(1)),carb:parseFloat((f.carb*r).toFixed(1)),fat:parseFloat((f.fat*r).toFixed(1))});
+  saveDayLog();
+  document.getElementById('foodModal').classList.remove('show');
+  toast('✓ '+f.name+' ('+q+'g) ajouté au journal');
+}
+function removeFromLib(id){
+  if(!confirm('Supprimer cet aliment de ta bibliothèque ?')) return;
+  FOOD_LIB=FOOD_LIB.filter(f=>f.id!=id);
+  saveFoodLib(); renderFoodGrids();
+  document.getElementById('foodModal').classList.remove('show');
+  toast('Aliment supprimé');
+}
+
+// ─────────────────────────────────────────────────────────────────
+// DAILY LOG
+// ─────────────────────────────────────────────────────────────────
+function renderDayLog(){
+  document.getElementById('dayDate').textContent = new Date().toLocaleDateString('fr-CA',{weekday:'long',day:'numeric',month:'long'});
+  const tot=DAY_LOG.reduce((a,i)=>({kcal:a.kcal+i.kcal,prot:a.prot+i.prot,carb:a.carb+i.carb,fat:a.fat+i.fat}),{kcal:0,prot:0,carb:0,fat:0});
+  document.getElementById('dayTotal').innerHTML=`
+    <div style="font-size:12px;font-weight:600;margin-bottom:6px">Totaux du jour</div>
+    ${barRow('Calories',Math.round(tot.kcal),GOALS.kcal,'bar-k','kcal')}
+    ${barRow('Protéines',parseFloat(tot.prot.toFixed(1)),GOALS.prot,'bar-p','g')}
+    ${barRow('Glucides',parseFloat(tot.carb.toFixed(1)),GOALS.carb,'bar-c','g')}
+    ${barRow('Lipides',parseFloat(tot.fat.toFixed(1)),GOALS.fat,'bar-l','g')}`;
+  const logEl=document.getElementById('dayLog');
+  logEl.innerHTML=DAY_LOG.length
+    ? DAY_LOG.map(i=>`<div class="dli">
+        <span class="dli-name">${esc(i.name)}</span>
+        <span class="dli-qty">${i.qty}g · ${i.kcal} kcal · ${i.prot}g P</span>
+        <button class="dli-del" onclick="removeFromLog(${i.id})">✕</button>
+      </div>`).join('')
+    : '<div class="empty" style="padding:20px 0"><div class="empty-ic">🍽️</div><div class="empty-t">Rien enregistré</div><div class="empty-s">Ajoute depuis ta bibliothèque ci-dessous</div></div>';
+  renderFoodGrids();
+}
+function barRow(lbl,val,goal,cls,unit){
+  const pct=Math.min(Math.round(val/goal*100),100), over=val>goal;
+  return `<div class="day-prog">
+    <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text2)">
+      <span>${lbl}</span>
+      <span style="font-weight:600;color:${over?'#c0392b':'var(--text)'}">${val} / ${goal}${unit}</span>
+    </div>
+    <div class="day-bar-wrap"><div class="day-bar-fill ${cls}" style="width:${pct}%;${over?'background:#c0392b':''}"></div></div>
+  </div>`;
+}
+function removeFromLog(id){ DAY_LOG=DAY_LOG.filter(i=>i.id!==id); saveDayLog(); renderDayLog() }
+function clearDay(){ if(!confirm('Effacer tout le journal du jour ?')) return; DAY_LOG=[]; saveDayLog(); renderDayLog() }
+
+// ─────────────────────────────────────────────────────────────────
+// RECIPE DATA
+// ─────────────────────────────────────────────────────────────────
+const MEALS=[
+{key:'dejeuner',icon:'🌅',title:'Déjeuner',time:'7h00',recipes:[
+  {id:'oikos_chia',icon:'🥛',name:'Oikos 19g + chia & framboises',tag:'rapide',tagLabel:'Rapide',kcal:380,prot:36,carb:32,fat:8,ing:[['Yogourt Oikos 19g','150g'],['Graines de chia','20g'],['Framboises fraîches','100g'],['Miel','1 c.t.'],['Céréales muslix','20g']],steps:['Verser le yogourt dans un bol.','Ajouter chia, framboises et miel.','Terminer avec les céréales pour le croquant.'],tip:'Oikos 19g = 19g de protéines pour 150g. Meilleur ratio protéines/calorie des yogourts en épicerie québécoise.'},
+  {id:'crepes_prot',icon:'🥞',name:'Crêpes protéinées + œufs',tag:'fr',flag:'🇫🇷',tagLabel:'Français',kcal:520,prot:34,carb:48,fat:18,weekend:true,badges:['Weekend'],ing:[['Farine tout usage','150g'],['Œufs','5 total (2 pâte + 3 brouillés)'],['Lait 2%','300ml'],['Margarine','15g fondu'],['Sucre','1 c.s.'],['Worcestershire','1 c.t.'],['Sirop d\'érable','au goût']],steps:['Mélanger farine + sel. Puits avec 2 œufs + moitié du lait, fouetter.','Ajouter reste lait + margarine fondue. Reposer 30 min.','Cuire dans poêle chaude, 1 min par côté.','Brouiller 3 œufs avec worcestershire à feu doux.','Servir ensemble.'],tip:'Les 3 œufs brouillés sont non-négociables — les crêpes seules font 14g de protéines seulement.',wknd:'Recette de weekend — prends le temps de la faire bien le samedi ou dimanche matin.'},
+  {id:'oeufs_avocat',icon:'🥑',name:'Œufs AF + toast avocat',tag:'rapide',tagLabel:'Rapide',kcal:420,prot:26,carb:22,fat:24,ing:[['Œufs','3'],['Avocat','½'],['Huile d\'olive','1 c.t.'],['Sel, poivre','au goût'],['Pain ou ramen grillé','1 portion']],steps:['Casser 3 œufs dans ramequin huilé. Air fryer 150°C 10-12 min.','Écraser l\'avocat avec huile d\'olive, sel, poivre.','Griller le pain ou ramen à sec 2 min.','Étendre l\'avocat, poser les œufs par-dessus.'],tip:'L\'avocat est dense en bons lipides — parfait pour la santé hormonale. Limiter à 1-2x/semaine pour le budget calories.'},
+  {id:'gruau_double',icon:'🥣',name:'Gruau overnight double protéines',tag:'batch',tagLabel:'Batch',kcal:420,prot:30,carb:42,fat:10,ing:[['Gruau','80g'],['Yogourt Oikos 19g','150g'],['Framboises','100g'],['Graines de chia','20g'],['Miel','1 c.s.'],['Céréales muslix','25g']],steps:['Mélanger gruau + yogourt + chia + miel dans pot Mason.','Ajouter framboises par-dessus. Frigo toute la nuit.','Matin : ajouter céréales pour le croquant.'],tip:'Préparer 5 pots le dimanche = 5 déjeuners sans effort.',batch:'Se conserve 5 jours au frigo hermétique.'},
+  {id:'oeufs_poulet',icon:'🍳',name:'Œufs brouillés + poulet effiloché',tag:'rapide',tagLabel:'Rapide',kcal:490,prot:48,carb:5,fat:22,ing:[['Œufs','3'],['Poulet effiloché (reste)','80g'],['Worcestershire','1 c.s.'],['Margarine','½ c.t.'],['Tomates cerises','80g']],steps:['Battre œufs avec worcestershire.','Margarine à feu doux. Ajouter œufs + poulet effiloché.','Brasser lentement jusqu\'à crémeux.','Servir avec tomates.'],tip:'48g de protéines en 5 min — meilleur déjeuner post-gym.'},
+  {id:'toast_pb',icon:'🥜',name:'Toast beurre d\'arachide protéiné',tag:'rapide',tagLabel:'Rapide',kcal:340,prot:16,carb:30,fat:16,ing:[['Pain ou ramen grillé','2 tranches'],['Beurre d\'arachide','2 c.s. (30g)'],['Framboises','80g'],['Oikos 19g (côté)','100g']],steps:['Griller le pain. Étendre beurre d\'arachide.','Ajouter framboises par-dessus.','Servir avec le yogourt Oikos côté.'],tip:'Le toast PB seul = 16g protéines — trop peu. Le yogourt Oikos côté monte à 29g total. Ne jamais faire le toast sans le yogourt.'},
+]},
+{key:'snack_matin',icon:'🍎',title:'Snack matin',time:'10h00',recipes:[
+  {id:'oikos_nature',icon:'🥛',name:'Oikos pur + miel',tag:'rapide',tagLabel:'Rapide',kcal:200,prot:22,carb:18,fat:3,ing:[['Yogourt Oikos 19g','150g'],['Miel','1 c.t.'],['Framboises (si disponible)','50g']],steps:['Verser yogourt dans un bol.','Ajouter miel et framboises.','Manger tel quel.'],tip:'22g de protéines, 200 kcal. Snack le plus efficace en terme de ratio protéines/calories.'},
+  {id:'thon_toast_matin',icon:'🐟',name:'Toast thon-moutarde express',tag:'rapide',tagLabel:'Rapide',kcal:250,prot:28,carb:18,fat:6,ing:[['Thon en canne (ton solide)','120g égoutté'],['Moutarde de Dijon','1 c.s.'],['Vinaigre de riz','½ c.t.'],['Ramen grillé','1 bloc'],['Tomate rouge','½ en tranches']],steps:['Égoutter et émietter le thon.','Mélanger avec moutarde et vinaigre.','Griller ramen à sec 2 min chaque côté.','Étendre thon, garnir tomates.'],tip:'Ton solide en canne = meilleure texture que le thon haché. 28g de protéines en 5 min.'},
+  {id:'biscuit_oikos',icon:'🍪',name:'Biscuits vital + Oikos',tag:'rapide',tagLabel:'Rapide',kcal:310,prot:28,carb:28,fat:10,ing:[['Biscuits vital organic choco','2-3 biscuits (50g)'],['Yogourt Oikos 19g','150g']],steps:['Manger yogourt + biscuits ensemble comme snack.'],tip:'Snack satisfaisant et rapide. Les biscuits vital sont denses — pas plus de 3 à la fois.'},
+  {id:'quinoa_bowl_snack',icon:'🌾',name:'Bol quinoa chaud (snack protéiné)',tag:'batch',tagLabel:'Batch',kcal:280,prot:12,carb:44,fat:6,ing:[['Quinoa','80g sec'],['Bouillon poulet poudre','½ c.t.'],['Sauce soya','1 c.t.'],['Huile d\'olive','1 c.t.']],steps:['Cuire quinoa dans eau + bouillon 15 min.','Assaisonner sauce soya + huile olive.','Manger chaud comme snack énergétique.'],tip:'Quinoa = protéine complète avec tous les acides aminés essentiels. Bon pré-gym.',batch:'Cuire 300g en batch — se garde 5 jours au frigo.'},
+]},
+{key:'diner',icon:'☀️',title:'Dîner',time:'12h00',recipes:[
+  {id:'poulet_moutarde',icon:'🍗',name:'Poulet à la moutarde bistro',tag:'fr',flag:'🇫🇷',tagLabel:'Français',kcal:520,prot:48,carb:12,fat:22,ing:[['Poitrine de poulet','200g'],['Moutarde de Dijon','2 c.s.'],['Crème à cuisson','3 c.s.'],['Ail','3 gousses'],['Bouillon poulet poudre','1 c.t.'],['Worcestershire','1 c.t.'],['Huile d\'arachide','1 c.s.'],['Thym séché','½ c.t.']],steps:['Couper poitrine en 2 dans l\'épaisseur. Saler, poivrer.','Dorer dans huile à feu vif, 3-4 min chaque côté. Retirer.','Dans même poêle, revenir ail 1 min.','Ajouter moutarde, crème, bouillon, worcestershire, thym. Mijoter 3 min.','Remettre poulet dans sauce, cuire 5 min. Napper.'],tip:'La sauce se fait dans la même poêle — tout le fond caramélisé y passe.',price:'~3-4$/portion quand poulet en spécial.'},
+  {id:'poulet_paprika',icon:'🍗',name:'Poulet paprika espagnol AF',tag:'es',flag:'🇪🇸',tagLabel:'Espagnol',airfryer:true,kcal:500,prot:46,carb:20,fat:20,ing:[['Poitrine de poulet','200g'],['Paprika fumé','2 c.t.'],['Ail','4 gousses'],['Huile d\'olive','2 c.s.'],['Vinaigre de riz','1 c.s.'],['Miel','1 c.t.'],['Sauce soya','1 c.s.'],['Pois chiches','½ canne'],['Tomate rouge','1 en dés']],steps:['Mélanger paprika, ail râpé, huile olive, vinaigre, miel, sauce soya.','Mariner poulet 30 min.','Air fryer 190°C 18-20 min, retourner à mi-cuisson.','Rôtir pois chiches + tomates 200°C 15 min.','Servir poulet tranché avec pois chiches et tomates.'],tip:'Mariner la veille — prêt à cuire le matin.',price:'~3$/portion.'},
+  {id:'crevettes_riz',icon:'🦐',name:'Crevettes pacifique AF ail-miel',tag:'af',tagLabel:'Air Fryer',airfryer:true,kcal:420,prot:42,carb:44,fat:10,ing:[['Crevettes pacifique dégelées','200g'],['Sauce soya','2 c.s.'],['Miel','1 c.s.'],['Ail','3 gousses râpées'],['Huile de sésame','1 c.t.'],['Sriracha','½ c.t.'],['Riz blanc','100g sec'],['Chou vert','100g émincé']],steps:['Mariner crevettes 15 min dans sauce soya, miel, ail, huile sésame, sriracha.','Cuire riz. Faire sauter chou vert 3 min.','Air fryer crevettes 200°C 6-8 min.','Servir sur riz avec chou sauté.'],tip:'Le chou vert remplace le kale ici — moins cher, plus croustillant.'},
+  {id:'spaghetti_bolognaise',icon:'🍝',name:'Spaghetti bolognaise légère',tag:'it',flag:'🇮🇹',tagLabel:'Italien',kcal:580,prot:42,carb:60,fat:16,ing:[['Bœuf haché maigre','150g'],['Spaghetti Barilla','100g sec'],['Coulis tomate Aurora','150g'],['Pâte de tomate','1 c.s.'],['Ail','3 gousses'],['Oignon','½'],['Bouillon bœuf poudre','1 c.t.'],['Thym, origan','½ c.t. chacun']],steps:['Cuire spaghetti al dente, garder 100ml eau de cuisson.','Revenir oignon + ail 3 min. Ajouter bœuf, dorer.','Ajouter pâte de tomate 2 min, puis coulis Aurora, bouillon, herbes + eau. Mijoter 15 min.','Incorporer pâtes + eau de cuisson.'],tip:'Le coulis Aurora est vraiment bon — juste tomates, sel, basilic.',batch:'Cuire 400g bœuf, portionner et congeler.'},
+  {id:'thon_poke',icon:'🐟',name:'Bol thon poke maison',tag:'rapide',tagLabel:'Rapide',kcal:480,prot:40,carb:50,fat:10,ing:[['Ton solide en canne','120g égoutté'],['Riz blanc','100g sec'],['Sauce soya','2 c.s.'],['Huile de sésame','1 c.t.'],['Vinaigre de riz','1 c.s.'],['Miel','1 c.t.'],['Tomate rouge','1 en dés'],['Graines de chia','10g'],['Chou vert cru émincé','50g']],steps:['Cuire riz.','Mélanger sauce soya + huile sésame + vinaigre + miel.','Assembler : riz, thon, tomate, chou vert cru, chia.','Sauce par-dessus.'],tip:'Le chou vert cru remplace le kale — croquant et frais. Style poke estival.'},
+  {id:'soupe_poulet_chou',icon:'🥣',name:'Soupe poulet & chou vert',tag:'batch',tagLabel:'Batch',kcal:380,prot:36,carb:30,fat:10,ing:[['Poitrine de poulet','150g'],['Chou vert','200g émincé'],['Carottes','100g'],['Bouillon poulet poudre','2 c.s.'],['Ail','3 gousses'],['Sauce soya','1 c.s.'],['Gingembre en poudre','½ c.t.']],steps:['Porter 800ml eau à ébullition avec bouillon, ail, sauce soya.','Ajouter poulet entier, cuire 18 min. Retirer et effilocher.','Ajouter chou et carottes, cuire 10 min.','Remettre poulet effiloché + gingembre. Mijoter 5 min.'],tip:'Le chou vert donne une texture légèrement croquante même cuit.',batch:'4-5 portions. Se congèle parfaitement.'},
+  {id:'lentilles_diner',icon:'🍲',name:'Soupe lentilles brunes batch',tag:'batch',tagLabel:'Batch',kcal:380,prot:22,carb:50,fat:7,ing:[['Lentilles brunes','150g'],['Macédoine','200g'],['Carottes','80g'],['Bouillon poulet poudre','1 c.s.'],['Sauce soya','2 c.s.'],['Ail','3 gousses'],['Cumin','1 c.t.']],steps:['Revenir ail 1 min.','Ajouter carottes + macédoine 3 min.','Ajouter lentilles + 900ml eau + bouillon + cumin. Mijoter 25 min.','Ajouter sauce soya.'],tip:'Compléter avec sardines ou poulet effiloché pour atteindre l\'objectif en protéines.',batch:'4-5 portions. Congèle parfaitement.'},
+  {id:'minestrone',icon:'🍵',name:'Minestrone poulet & haricots',tag:'it',flag:'🇮🇹',tagLabel:'Italien',kcal:440,prot:38,carb:44,fat:10,ing:[['Poitrine de poulet','150g en dés'],['Haricots de soisson','150g'],['Macédoine','200g'],['Pappardelle cassées','40g'],['Coulis tomate Aurora','100g'],['Bouillon poulet poudre','1 c.s.'],['Ail','3 gousses'],['Thym séché','½ c.t.']],steps:['Revenir oignon + ail 2 min. Ajouter poulet, dorer 3 min.','Ajouter macédoine + coulis tomate, cuire 2 min.','Ajouter bouillon, thym et 800ml eau.','Ajouter haricots, mijoter 15 min.','Ajouter pappardelle cassées, cuire 8 min.'],batch:'Cuire sans pâtes pour congeler.',price:'~3-4$/portion.'},
+]},
+{key:'apero',icon:'🍷',title:'Apéro / Collation',time:'17h00',recipes:[
+  {id:'pois_apero',icon:'🫛',name:'Pois chiches croustillants AF',tag:'es',flag:'🇪🇸',tagLabel:'Espagnol',airfryer:true,kcal:200,prot:10,carb:24,fat:7,ing:[['Pois chiches en canne','1 canne égouttée'],['Huile d\'olive','1 c.s.'],['Paprika fumé','1 c.t.'],['Cumin','½ c.t.'],['Moutarde de Dijon','½ c.t.']],steps:['Bien sécher les pois chiches.','Mélanger avec huile et épices.','Air fryer 200°C 15-18 min en secouant à mi-cuisson.'],tip:'Style tapas — parfait pour l\'apéro de 17h. Se conserve 3 jours à température ambiante.'},
+  {id:'collation_gym',icon:'💪',name:'Collation post-gym',tag:'rapide',tagLabel:'Rapide',kcal:300,prot:34,carb:28,fat:5,ing:[['Yogourt Oikos 19g','150g'],['Framboises','80g'],['Miel','1 c.t.'],['Céréales muslix','15g']],steps:['Décongeler framboises si gelées. Mélanger yogourt + miel.','Ajouter framboises + céréales.','Consommer dans les 45 min post-gym.'],tip:'34g de protéines — optimal pour la récupération musculaire.'},
+  {id:'tomates_olives',icon:'🍅',name:'Tomates & mozza à l\'italienne',tag:'it',flag:'🇮🇹',tagLabel:'Italien',kcal:220,prot:12,carb:6,fat:16,ing:[['Tomate rouge','1 en tranches'],['Mozzarella sélection','60g tranché'],['Huile d\'olive','1 c.s.'],['Vinaigre de vin rouge','1 c.t.'],['Sel, poivre','au goût']],steps:['Trancher tomates et mozzarella en alternance.','Arroser huile olive + vinaigre.','Saler, poivrer. Servir à température ambiante.'],tip:'Caprese minimaliste — le style européen dans toute sa simplicité.'},
+  {id:'chou_salade',icon:'🥗',name:'Salade de chou asiatique',tag:'rapide',tagLabel:'Rapide',kcal:180,prot:4,carb:18,fat:10,ing:[['Chou vert','150g émincé fin'],['Carottes','80g râpées'],['Sauce soya','1 c.s.'],['Vinaigre de riz','1 c.s.'],['Huile de sésame','1 c.t.'],['Miel','½ c.t.'],['Sriracha','½ c.t.']],steps:['Émincer le chou très fin à la mandoline ou couteau.','Râper les carottes.','Mélanger la sauce : soya, vinaigre de riz, huile sésame, miel, sriracha.','Mélanger avec légumes. Laisser mariner 15 min.'],tip:'Le chou légèrement mariné est meilleur — le faire 15 min avant l\'apéro.'},
+]},
+{key:'souper',icon:'🌙',title:'Souper',time:'19h30',recipes:[
+  {id:'pizza_maison',icon:'🍕',name:'Pizza maison mozza-coulis',tag:'it',flag:'🇮🇹',tagLabel:'Italien',weekend:true,kcal:620,prot:36,carb:65,fat:24,badges:['Weekend'],ing:[['Farine tout usage','200g'],['Levure sèche','1 sachet'],['Eau tiède','130ml'],['Sel','1 c.t.'],['Huile d\'olive','2 c.s.'],['Coulis tomate Aurora','100g'],['Mozzarella sélection','120g'],['Oignon','½'],['Ail','2 gousses'],['Origan séché','1 c.t.']],steps:['Dissoudre levure dans eau tiède 5 min. Mélanger farine + sel + levure.','Pétrir 8 min. Laisser reposer 1h couvert.','Étaler en cercle sur plaque huilée.','Étendre coulis Aurora, couvrir de mozzarella, oignon, ail, origan.','Four à 230°C pendant 12-15 min jusqu\'à bords dorés.'],tip:'Le coulis Aurora non dilué = sauce pizza parfaite.',wknd:'Recette de weekend — prends le temps de faire la pâte.'},
+  {id:'boeuf_chou',icon:'🥘',name:'Bœuf haché & chou sauté',tag:'qc',flag:'🍁',tagLabel:'Québécois',kcal:480,prot:40,carb:22,fat:22,ing:[['Bœuf haché maigre','180g'],['Chou vert','250g émincé'],['Carottes','100g en julienne'],['Ail','3 gousses'],['Sauce soya','2 c.s.'],['Worcestershire','1 c.s.'],['Moutarde de Dijon','1 c.t.'],['Huile d\'arachide','1 c.s.']],steps:['Faire revenir ail dans huile 1 min. Ajouter bœuf, cuire jusqu\'à doré.','Retirer bœuf. Dans même poêle, sauter chou + carottes à feu vif 4 min.','Remettre bœuf. Ajouter sauce soya, worcestershire, moutarde.','Mélanger à feu vif 2 min.'],tip:'Le chou vert en quantité généreuse apporte beaucoup de volume pour peu de calories.'},
+  {id:'poulet_provencal',icon:'🍗',name:'Poulet provençal ail & herbes AF',tag:'fr',flag:'🇫🇷',tagLabel:'Français',airfryer:true,kcal:480,prot:46,carb:8,fat:22,ing:[['Poitrine de poulet','200g'],['Ail','4 gousses entières'],['Huile d\'olive','2 c.s.'],['Vinaigre de vin rouge','1 c.s.'],['Moutarde de Dijon','1 c.s.'],['Thym, romarin','½ c.t. chacun'],['Paprika','½ c.t.'],['Tomate rouge','1 en dés']],steps:['Mélanger huile, vinaigre, moutarde, thym, romarin, paprika.','Badigeonner poulet. Laisser 30 min.','Air fryer 190°C 18 min, retourner à mi-cuisson.','Ajouter tomates + ail entier les 5 dernières minutes.','Servir avec ail confit écrasé sur le poulet.'],tip:'L\'ail confit dans l\'air fryer devient doux et crémeux — le presser sur le poulet est extraordinaire.',batch:'Cuire 3-4 poitrines, effilocher pour la semaine.'},
+  {id:'hachis',icon:'🥘',name:'Hachis parmentier québécois',tag:'fr',flag:'🇫🇷',tagLabel:'Français',kcal:540,prot:38,carb:50,fat:18,ing:[['Bœuf haché maigre','150g'],['Pommes de terre','300g'],['Lait 2%','3 c.s.'],['Margarine','1 c.s.'],['Ail','3 gousses'],['Worcestershire','1 c.s.'],['Moutarde de Dijon','1 c.t.'],['Ketchup','1 c.s.']],steps:['Cuire pommes de terre 15 min. Écraser avec lait + margarine.','Revenir ail + bœuf jusqu\'à doré.','Ajouter worcestershire, moutarde, ketchup, bouillon + 100ml eau. Mijoter 5 min.','Plat : viande, purée par-dessus. Air fryer 180°C 10 min pour gratiner.'],tip:'La moutarde dans la viande est le secret de ce classique.',batch:'Se congèle parfaitement.'},
+  {id:'boulettes_sauce',icon:'🍖',name:'Boulettes bœuf sauce worcestershire AF',tag:'fr',flag:'🇫🇷',tagLabel:'Français',airfryer:true,kcal:500,prot:40,carb:22,fat:22,ing:[['Bœuf haché maigre','180g'],['Œuf','1'],['Worcestershire','2 c.s.'],['Moutarde de Dijon','1 c.s.'],['Ail en poudre','½ c.t.'],['Farine','2 c.s.'],['Lait évaporé','2 c.s.'],['Riz blanc','80g sec']],steps:['Mélanger bœuf, œuf, 1 c.s. worcestershire, moutarde, ail, farine. Former 8 boulettes.','Air fryer 180°C 12 min, secouer à mi-cuisson.','Sauce : bouillon + 200ml eau + worcestershire + lait évaporé. Mijoter 5 min.','Servir sur riz avec sauce.'],tip:'Le lait évaporé remplace parfaitement la crème — même onctuosité, plus économique.',batch:'Congeler crues — cuire directement congelées +5 min.'},
+  {id:'tofu_af',icon:'🫘',name:'Tofu croustillant AF + chou sauté',tag:'af',tagLabel:'Air Fryer',airfryer:true,kcal:440,prot:28,carb:32,fat:20,ing:[['Tofu','200g'],['Fécule de maïs','1 c.s.'],['Sauce soya','2 c.s.'],['Miel','1 c.t.'],['Ail en poudre','½ c.t.'],['Chou vert','150g'],['Carottes','80g'],['Riz blanc','80g sec']],steps:['Presser tofu 20 min. Cuber. Enrober sauce soya + miel + ail. Saupoudrer fécule.','Air fryer 200°C 18 min en secouant à mi-cuisson.','Sauter chou + carottes dans huile 4 min.','Assembler riz + légumes + tofu croustillant.'],tip:'La fécule de maïs = secret du tofu ultra-croustillant.',batch:'Tofu se congèle cuit. Réchauffer 5 min à l\'air fryer.'},
+  {id:'ramen_crevettes',icon:'🍜',name:'Ramen bouillon & crevettes AF',tag:'rapide',tagLabel:'Rapide',kcal:440,prot:36,carb:44,fat:12,ing:[['Ramen','1 bloc'],['Crevettes pacifique dégelées','150g'],['Bouillon poulet poudre','1 c.s.'],['Sauce soya','2 c.s.'],['Huile de sésame','1 c.t.'],['Sriracha','1 c.t.'],['Chou vert','80g'],['Ail','2 gousses']],steps:['Porter 400ml eau à ébullition avec bouillon, sauce soya, sriracha, huile sésame.','Ajouter ramen + ail + chou vert, cuire 3 min.','Air fryer crevettes 200°C 6 min pendant ce temps.','Verser ramen dans bol, ajouter crevettes AF par-dessus.'],tip:'Les crevettes AF restent croustillantes — servir immédiatement.'},
+  {id:'quinoa_poulet',icon:'🌾',name:'Quinoa poulet & légumes rôtis',tag:'rapide',tagLabel:'Rapide',kcal:500,prot:46,carb:48,fat:14,ing:[['Quinoa','100g sec'],['Poitrine de poulet','180g'],['Carottes','100g en dés'],['Chou vert','100g'],['Huile d\'olive','2 c.s.'],['Paprika','1 c.t.'],['Ail','3 gousses'],['Sauce soya','1 c.s.']],steps:['Cuire quinoa dans bouillon + eau 15 min.','Mariner poulet : huile olive, paprika, ail, sauce soya.','Air fryer poulet 190°C 18 min. Air fryer légumes 200°C 15 min.','Assembler quinoa + légumes + poulet tranché.'],tip:'Le quinoa cuit dans le bouillon absorbe toute la saveur — ne jamais cuire dans l\'eau plate.'},
+  {id:'pasta_poulet_mozza',icon:'🍝',name:'Pasta poulet & mozza fondue',tag:'it',flag:'🇮🇹',tagLabel:'Italien',kcal:600,prot:48,carb:58,fat:20,ing:[['Pappardelle','100g sec'],['Poitrine de poulet','150g en dés'],['Mozzarella sélection','60g'],['Coulis tomate Aurora','150g'],['Ail','3 gousses'],['Oignon','½'],['Huile d\'olive','1 c.s.'],['Origan','½ c.t.']],steps:['Cuire pappardelle, garder 100ml eau de cuisson.','Revenir oignon + ail 2 min. Ajouter poulet en dés, dorer 4 min.','Ajouter coulis Aurora, origan + eau cuisson. Mijoter 8 min.','Incorporer pâtes. Hors du feu, ajouter mozza en morceaux, laisser fondre 2 min.'],tip:'La mozza fondue hors du feu crée une sauce soyeuse sans cuire le fromage.'},
+  {id:'burger_maison',icon:'🍔',name:'Burger bœuf maison',tag:'qc',flag:'🍁',tagLabel:'Québécois',weekend:true,kcal:580,prot:42,carb:38,fat:26,badges:['Weekend'],ing:[['Bœuf haché maigre','180g'],['Mozzarella sélection','40g'],['Tomate rouge','½ en tranches'],['Oignon','¼ grillé'],['Moutarde de Dijon','1 c.s.'],['Ketchup','1 c.s.'],['Farine (pain burger)','150g'],['Lait 2%','80ml'],['Levure','½ c.t.'],['Œuf','1']],steps:['Pain : mélanger farine, levure, lait, œuf, sel. Pétrir 5 min. Reposer 45 min. Former 2 buns, four 200°C 15 min.','Former 2 galettes de bœuf avec sel, poivre.','Poêle très chaude — cuire 3-4 min chaque côté. Ajouter mozza 1 min avant de retirer.','Assembler : pain, moutarde, ketchup, burger mozza, tomate, oignon.'],tip:'Faire le pain maison prend 1h mais c\'est incomparable.',wknd:'Recette de plaisir weekend — comptabilisée dans les macros semaine.'},
+]},
+];
+
+const REC_FILTERS=['Tout','🇫🇷 Français','🇪🇸 Espagnol','🇮🇹 Italien','🍁 Québécois','Air Fryer','Batch','Rapide','🎉 Weekend'];
+
+// ─────────────────────────────────────────────────────────────────
+// RECIPE RENDERING
+// ─────────────────────────────────────────────────────────────────
+function renderRecipes(){
+  const cont=document.getElementById('recContainer');
+  cont.innerHTML='';
+  MEALS.forEach(meal=>{
+    const sec=document.createElement('div'); sec.className='meal-sec';
+    sec.innerHTML=`<div class="meal-hd"><span class="meal-ic">${meal.icon}</span><span class="meal-title">${meal.title}</span><span class="meal-time">${meal.time}</span></div><div class="rb-grid" id="rg_${meal.key}"></div>`;
+    cont.appendChild(sec);
+    const grid=sec.querySelector('#rg_'+meal.key);
+    meal.recipes.forEach(r=>{
+      const card=document.createElement('div');
+      card.className='rb'+(r.weekend?' weekend':'');
+      card.dataset.tag=r.tag; card.dataset.af=r.airfryer?'1':'0'; card.dataset.wk=r.weekend?'1':'0';
+      card.innerHTML=`${r.airfryer?'<div class="rb-af">AF</div>':''}
+        <div class="rb-ic">${r.icon}</div>
+        <div class="rb-name">${esc(r.name)}</div>
+        <div class="rb-prot">${r.prot}g prot</div>
+        <div style="display:flex;gap:4px;align-items:center;margin-top:2px">
+          ${r.flag?`<span style="font-size:12px">${r.flag}</span>`:''}
+          <span class="rb-tag tag-${r.weekend?'wknd':r.tag}">${r.weekend?'🎉 Weekend':r.tagLabel}</span>
+        </div>`;
+      card.onclick=()=>openRecipe(meal,r);
+      grid.appendChild(card);
+    });
+  });
+}
+
+function renderRecFilters(){
+  document.getElementById('recFilters').innerHTML=REC_FILTERS.map(f=>
+    `<button class="fbtn${f===activeRecFilter?' active':''}" onclick="setRecFilter('${esc(f)}')">${esc(f)}</button>`
+  ).join('');
+}
+function setRecFilter(f){
+  activeRecFilter=f; renderRecFilters();
+  document.querySelectorAll('.rb').forEach(c=>{
+    const tag=c.dataset.tag, af=c.dataset.af, wk=c.dataset.wk;
+    let show=true;
+    if(f==='🇫🇷 Français') show=tag==='fr';
+    else if(f==='🇪🇸 Espagnol') show=tag==='es';
+    else if(f==='🇮🇹 Italien') show=tag==='it';
+    else if(f==='🍁 Québécois') show=tag==='qc';
+    else if(f==='Air Fryer') show=af==='1';
+    else if(f==='Batch') show=tag==='batch';
+    else if(f==='Rapide') show=tag==='rapide';
+    else if(f==='🎉 Weekend') show=wk==='1';
+    c.classList.toggle('hidden',!show);
+  });
+  document.querySelectorAll('.meal-sec').forEach(s=>{
+    s.style.display=[...s.querySelectorAll('.rb')].some(c=>!c.classList.contains('hidden'))?'':'none';
+  });
+}
+
+function openRecipe(meal,r){
+  const pct=Math.min(Math.round(r.prot/GOALS.prot*100),100);
+  const badges=(r.badges||[]).concat(r.airfryer?['Air Fryer']:[]).concat(r.tag==='batch'?['Batch cook']:[]);
+  document.getElementById('rm-title').textContent=r.icon+' '+r.name;
+  document.getElementById('rm-sub').innerHTML=
+    `<span>${meal.icon} ${meal.title}</span><span>${r.kcal} kcal · ${r.prot}g prot</span>`+
+    (r.flag?`<span>${r.flag}</span>`:'')+
+    badges.map(b=>`<span class="modal-badge">${esc(b)}</span>`).join('');
+  let body=`<div class="macro-row">
+    <div class="macro-card"><div class="macro-val">${r.kcal}</div><div class="macro-lbl">kcal</div></div>
+    <div class="macro-card"><div class="macro-val">${r.prot}g</div><div class="macro-lbl">protéines</div></div>
+    <div class="macro-card"><div class="macro-val">${r.carb}g</div><div class="macro-lbl">glucides</div></div>
+    <div class="macro-card"><div class="macro-val">${r.fat}g</div><div class="macro-lbl">lipides</div></div>
+  </div>
+  <div class="prot-bar"><div class="prot-fill" style="width:${pct}%"></div></div>
+  <div class="prot-label">${pct}% de l'objectif quotidien (${GOALS.prot}g protéines)</div>
+  <div class="m-sect">Ingrédients — 1 portion</div>
+  ${r.ing.map(([n,q])=>`<div class="ing-row"><span class="ing-name">${esc(n)}</span><span class="ing-qty">${esc(q)}</span></div>`).join('')}
+  <div class="m-sect">Préparation</div>
+  ${r.steps.map((s,i)=>`<div class="step-row"><div class="step-num">${i+1}</div><div class="step-text">${esc(s)}</div></div>`).join('')}`;
+  if(r.tip)  body+=`<div class="tip-box">💡 ${esc(r.tip)}</div>`;
+  if(r.batch)body+=`<div class="batch-box">🫙 Batch cook : ${esc(r.batch)}</div>`;
+  if(r.price)body+=`<div class="price-box">💰 ${esc(r.price)}</div>`;
+  if(r.wknd) body+=`<div class="wknd-box">🎉 Weekend : ${esc(r.wknd)}</div>`;
+  body+=`<button class="btn-close" onclick="document.getElementById('recModal').classList.remove('show')">Fermer</button>`;
+  document.getElementById('rm-body').innerHTML=body;
+  document.getElementById('recModal').classList.add('show');
+}
+
+// ─────────────────────────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────────────────────────
+updateGoalBar();
+loadInventory();
+renderRecipes();
+renderRecFilters();
+renderFoodGrids();
+</script>
+</body>
+</html>
