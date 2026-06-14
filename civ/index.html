@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CIV.SOBRE — L'Empire du Plateau</title>
-<link rel="manifest" href="civ_manifest.json">
+<link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0d1117">
-<link rel="apple-touch-icon" href="civ_icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <style>
@@ -113,6 +113,10 @@ hr{border:none;border-top:1px solid var(--line);margin:10px 0}
   </div>
   <div style="text-align:right;font-size:11px" id="top-stats"></div>
 </header>
+<div id="sync-bar" style="display:flex;align-items:center;justify-content:space-between;padding:5px 12px;background:var(--panel);border-bottom:1px solid var(--line);font-size:11px">
+  <span id="sync-dot" style="display:inline-flex;align-items:center;gap:6px"><span id="sync-led" style="width:8px;height:8px;border-radius:50%;background:var(--dim);display:inline-block"></span><span id="sync-txt">Sync : en attente…</span></span>
+  <button onclick="forceSyncCiv()" style="background:transparent;border:1px solid var(--line);color:var(--dim);font-family:var(--mono);font-size:10px;padding:3px 8px;cursor:pointer">↻ Sync</button>
+</div>
 <nav class="tabs" id="tabs"></nav>
 <div id="app"></div>
 <div style="margin-top:18px;font-size:10px;color:var(--dim);text-align:center">
@@ -548,11 +552,20 @@ window.impFin = function(){
 /* ============ SYNC GITHUB ============ */
 var ghTimer=null, ghSha=null;
 function ghTok(){ return localStorage.getItem("civ_gh_token")||""; }
-window.setTok = function(v){ localStorage.setItem("civ_gh_token", v.trim()); };
+window.setTok = function(v){ localStorage.setItem("civ_gh_token", v.trim()); setSyncStatus("pend","token enregistré — test en cours…"); ghLoad(); };
 function ghURL(){ return "https://api.github.com/repos/"+C.gh.owner+"/"+C.gh.repo+"/contents/"+C.gh.file; }
-function ghQueue(){ if(!ghTok()) return; clearTimeout(ghTimer); ghTimer=setTimeout(ghSave,1500); }
+function ghQueue(){ if(!ghTok()) return; clearTimeout(ghTimer); ghTimer=setTimeout(function(){ghSave(false);},1500); }
+function setSyncStatus(st, msg){
+  var led=$("sync-led"), txt=$("sync-txt");
+  if(!led||!txt) return;
+  var col={ok:"#6fae57", err:"#c0392b", pend:"#c9a227", off:"#8d99ab"}[st]||"#8d99ab";
+  led.style.background=col;
+  txt.textContent="Sync : "+msg;
+}
+window.forceSyncCiv = function(){ setSyncStatus("pend","envoi…"); ghSave(false); };
 function ghSave(retry){
-  var t=ghTok(); if(!t) return;
+  var t=ghTok(); if(!t){ setSyncStatus("off","pas de token — colle-le dans Paramètres"); return; }
+  setSyncStatus("pend","envoi…");
   var body={message:"civ sync "+new Date().toISOString(),
     content:btoa(unescape(encodeURIComponent(JSON.stringify(C))))};
   if(ghSha) body.sha=ghSha;
@@ -561,18 +574,19 @@ function ghSave(retry){
   .then(function(r){return r.json();})
   .then(function(j){
     if(j.content&&j.content.sha){ ghSha=j.content.sha;
+      setSyncStatus("ok","✓ synchronisé "+new Date().toLocaleTimeString("fr-CA"));
       var el=$("gh-st"); if(el) el.textContent="✓ synchronisé "+new Date().toLocaleTimeString("fr-CA");
     } else if(!retry){
-      /* conflit de sha (modifié depuis un autre appareil) : récupérer le sha et retenter */
       fetch(ghURL(),{headers:{Authorization:"token "+t}})
       .then(function(r){return r.json();})
       .then(function(m){ if(m.sha){ ghSha=m.sha; ghSave(true); } });
-    } else { var el2=$("gh-st"); if(el2) el2.textContent="✗ conflit de sync"; }
+    } else { setSyncStatus("err","✗ conflit — réessaie dans ↻"); var el2=$("gh-st"); if(el2) el2.textContent="✗ conflit de sync"; }
   })
-  .catch(function(){ var el=$("gh-st"); if(el) el.textContent="✗ erreur de sync"; });
+  .catch(function(){ setSyncStatus("err","✗ erreur réseau — vérifie ta connexion"); });
 }
 function ghLoad(){
-  var t=ghTok(); if(!t) return;
+  var t=ghTok(); if(!t){ setSyncStatus("off","pas de token — colle-le dans Paramètres"); return; }
+  setSyncStatus("pend","chargement…");
   fetch(ghURL(),{headers:{Authorization:"token "+t}})
   .then(function(r){return r.json();})
   .then(function(j){
@@ -585,10 +599,17 @@ function ghLoad(){
         (function merge(d,c){ for(var k in d){ if(c[k]===undefined) c[k]=d[k];
           else if(d[k]&&typeof d[k]==="object"&&!Array.isArray(d[k])) merge(d[k],c[k]); } })(DEF_STATE,C);
         localStorage.setItem("civ_sobre_data", JSON.stringify(C));
+        setSyncStatus("ok","✓ données reçues "+new Date().toLocaleTimeString("fr-CA"));
         processMissed(); render();
+      } else {
+        setSyncStatus("ok","✓ à jour "+new Date().toLocaleTimeString("fr-CA"));
       }
+    } else if(j.message&&j.message.indexOf("Not Found")>=0){
+      setSyncStatus("err","✗ fichier civ_data.json introuvable — crée-le dans GitHub");
+    } else if(j.message&&j.message.indexOf("Bad credentials")>=0){
+      setSyncStatus("err","✗ token invalide — recolle-le dans Paramètres");
     }
-  }).catch(function(){});
+  }).catch(function(){ setSyncStatus("err","✗ erreur réseau — vérifie ta connexion"); });
 }
 
 /* ============ MOTEUR FINANCIER — projection quotidienne ============ */
