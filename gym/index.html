@@ -443,10 +443,10 @@ function ghLoad(){
   fetch(ghURL(),{headers:{Authorization:"token "+t}})
   .then(function(r){return r.json();})
   .then(function(j){
-    if(j.sha) ghSha=j.sha;
-    if(j.content){
+    if(j && j.sha) ghSha=j.sha;
+    if(j && j.content){
       var txt=decodeURIComponent(escape(atob(j.content.replace(/\n/g,"")))).trim()||"{}";
-      var remote=JSON.parse(txt);
+      var remote={}; try{ remote=JSON.parse(txt); }catch(e){ remote={}; }
       if(remote && remote.logs && (remote.ts||0) > (G.ts||0)){
         G=remote;
         (function merge(d,c){ for(var k in d){ if(c[k]===undefined) c[k]=d[k];
@@ -455,9 +455,16 @@ function ghLoad(){
         localStorage.setItem("gym_aw_data", JSON.stringify(G));
         setSyncStatus("ok","✓ chargé "+new Date().toLocaleTimeString("fr-CA"));
         render();
+      } else {
+        setSyncStatus("ok","✓ à jour "+new Date().toLocaleTimeString("fr-CA"));
       }
+    } else {
+      /* fichier absent dans le repo → on le crée avec les données locales */
+      setSyncStatus("pend","création de gym_data.json…");
+      ghSha=null;
+      ghSave(false);
     }
-  }).catch(function(){ setSyncStatus("err","✗ erreur réseau"); });
+  }).catch(function(){ setSyncStatus("err","✗ erreur réseau — token / permissions?"); });
 }
 
 /* ============ RENDUS ============ */
