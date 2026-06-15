@@ -137,7 +137,7 @@ body{font-family:"DM Sans",system-ui,sans-serif;background:var(--bg);color:var(-
 </head>
 <body>
 <div class="app-bar">
-  <div><div class="app-title">&#x1F957; Cuisine &amp; Macros</div><div class="app-sub" id="app-sub">0 aliments</div></div>
+  <div><div class="app-title">&#x1F957; Cuisine &amp; Macros</div><div class="app-sub" id="app-sub">0 aliments</div><div class="app-sub" id="sync-status" style="color:var(--tx3)"></div></div>
   <button class="icon-btn" onclick="openSettings()">&#9881;</button>
 </div>
 <div class="content">
@@ -256,6 +256,20 @@ body{font-family:"DM Sans",system-ui,sans-serif;background:var(--bg);color:var(-
       <p style="font-size:12px;color:var(--tx2);margin-bottom:10px">Sélectionne les cuisines que tu apprécies. Claude privilégiera ces styles dans tes recettes.</p>
       <div id="style-chips" style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px"></div>
       <button class="btn-prim" onclick="saveStyles()">&#10003; Enregistrer les styles</button>
+      <div class="msect" style="margin-top:20px">Synchronisation GitHub</div>
+      <p style="font-size:12px;color:var(--tx2);line-height:1.6;margin-bottom:8px">
+        Sync ton inventaire entre tous tes appareils via GitHub.<br>
+        Token : <b>github.com &rarr; Settings &rarr; Developer settings &rarr; Personal access tokens &rarr; Tokens (classic)</b><br>
+        Permissions requises : <b>repo</b> (lecture + écriture)
+      </p>
+      <input type="password" class="s-inp" id="gh-token-inp" placeholder="ghp_..." style="margin-bottom:8px">
+      <div class="form-label" style="margin-bottom:4px">Dépôt GitHub (owner/repo)</div>
+      <input type="text" class="s-inp" id="gh-repo-inp" placeholder="rogdolphe/tracker-aw" style="margin-bottom:8px">
+      <div style="display:flex;gap:8px">
+        <button class="btn-prim" onclick="saveGHToken()">Enregistrer</button>
+        <button class="btn-sec" onclick="ghPull(true)">&#8595; Charger</button>
+        <button class="btn-sec" onclick="ghPush(true)">&#8593; Sauvegarder</button>
+      </div>
       <div class="msect" style="margin-top:18px;color:#a03030">Zone danger</div>
       <button class="btn-danger" onclick="if(confirm('Supprimer tout l\'inventaire?')){INV=[];saveINV();renderInventory();toast('Inventaire effac\u00e9')}">Effacer l&apos;inventaire</button>
       <button class="btn-danger" onclick="if(confirm('Effacer le plan?')){PLAN=null;localStorage.removeItem('km_plan');localStorage.removeItem('km_plan_date');renderPlan();toast('Plan effac\u00e9')}">Effacer le plan</button>
@@ -807,7 +821,7 @@ function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").
 function toast(m){const t=document.getElementById("toast");t.textContent=m;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2500)}
 function closeM(id){document.getElementById(id).classList.remove("show")}
 function openM(id){document.getElementById(id).classList.add("show")}
-function saveINV(){localStorage.setItem("km_inv",JSON.stringify(INV))}
+function saveINV(){localStorage.setItem("km_inv",JSON.stringify(INV));schedulePush();}
 function saveDayLog(){localStorage.setItem("km_daylog",JSON.stringify(DAY_LOG))}
 
 // TABS
@@ -827,6 +841,9 @@ function openSettings(){
   document.getElementById("g-carb").value=GOALS.carb;document.getElementById("g-fat").value=GOALS.fat;
   renderApplianceChips();
   renderStyleChips();
+  const ghTok=localStorage.getItem("km_gh_token")||"";
+  document.getElementById("gh-token-inp").value=ghTok?"ghp_•••":"";
+  document.getElementById("gh-repo-inp").value=localStorage.getItem("km_gh_repo")||"rogdolphe/tracker-aw";
   openM("settingsModal");
 }
 function saveApiKey(){
@@ -1106,11 +1123,13 @@ function buildPrompt(){
   return "Inventaire: "+inv+"\nObjectifs: "+GOALS.kcal+"kcal "+GOALS.prot+"g prot\n\nGénère "+n+" recettes par catégorie.\nJSON: {\"dejeuner\":[],\"collation_am\":[],\"diner\":[],\"apero\":[],\"souper\":[],\"collation_soir\":[]}\nChaque recette: {\"name\":\"Nom\",\"emoji\":\"X\",\"kcal\":0,\"prot\":0,\"carb\":0,\"fat\":0,\"time\":\"Xmin\",\"ingredients\":[{\"name\":\"NomExact\",\"qty\":0,\"unit\":\"g\"}],\"steps\":[\"etape1\",\"etape2\"],\"tip\":\"conseil\"}\nRègles: noms EXACTS inventaire · recettes connues · max 4 ingrédients · max 3 étapes courtes · tip=1 phrase";
 }
 function tryParseJSON(txt){
-  txt=txt.trim().replace(/^```json\n?/,"").replace(/\n?```$/,"").trim();
-  try{return JSON.parse(txt);}catch(e){
-    const fixes=[txt+'"]}',txt+']}]',txt+']}]}',txt+']}}'];
-    for(const f of fixes){try{return JSON.parse(f);}catch(e2){}}
-    throw new Error("Réponse tronquée. Ajoute plus d’aliments et réessaie.");
+  txt=txt.trim();
+  var s=txt.indexOf("{"),e=txt.lastIndexOf("}");
+  if(s>0&&e>s)txt=txt.slice(s,e+1);
+  try{return JSON.parse(txt);}catch(err){
+    var f=[txt+'"]}',txt+']}]',txt+']}]}',txt+'}'];
+    for(var i=0;i<f.length;i++){try{return JSON.parse(f[i]);}catch(e2){}}
+    throw new Error("R\u00e9ponse tronqu\u00e9e. R\u00e9essaie.");
   }
 }
 async function generatePlan(){
@@ -1200,7 +1219,86 @@ function barRow(lbl,val,goal,cls,unit){
 function removeLog(id){DAY_LOG=DAY_LOG.filter(i=>i.id!==id);saveDayLog();renderToday();}
 function clearDay(){if(!confirm("Vider le log?"))return;DAY_LOG=[];saveDayLog();renderToday();}
 
+// GITHUB SYNC
+let _ghPushTimer=null;
+
+function saveGHToken(){
+  const tok=document.getElementById("gh-token-inp").value.trim();
+  const repo=document.getElementById("gh-repo-inp").value.trim()||"rogdolphe/tracker-aw";
+  if(tok&&!tok.includes("•")){localStorage.setItem("km_gh_token",tok);}
+  localStorage.setItem("km_gh_repo",repo);
+  toast("✓ GitHub configuré");
+  closeM("settingsModal");
+  ghPull(true);
+}
+
+function setSyncStatus(msg,color){
+  const el=document.getElementById("sync-status");
+  if(el){el.textContent=msg;el.style.color=color||"var(--tx3)";}
+}
+
+async function ghPull(feedback){
+  const token=localStorage.getItem("km_gh_token");
+  if(!token)return;
+  const repo=localStorage.getItem("km_gh_repo")||"rogdolphe/tracker-aw";
+  setSyncStatus("Synchronisation…","var(--tx3)");
+  try{
+    const res=await fetch("https://api.github.com/repos/"+repo+"/contents/cuisine-data.json",{
+      headers:{"Authorization":"token "+token,"Accept":"application/vnd.github.v3+json"}
+    });
+    if(res.status===404){setSyncStatus("Pas encore syncé","var(--tx3)");return;}
+    if(!res.ok)throw new Error("HTTP "+res.status);
+    const data=await res.json();
+    const b64=data.content.split("\n").join("");const json=JSON.parse(decodeURIComponent(escape(atob(b64))));
+    localStorage.setItem("km_gh_sha",data.sha);
+    if(json.inventory){INV=json.inventory;saveINV();renderInventory();}
+    if(json.goals){GOALS=json.goals;localStorage.setItem("km_goals",JSON.stringify(GOALS));updateSub();}
+    if(json.appliances){APPLIANCES=json.appliances;localStorage.setItem("km_appliances",JSON.stringify(APPLIANCES));}
+    if(json.styles){STYLES=json.styles;localStorage.setItem("km_styles",JSON.stringify(STYLES));}
+    const d=new Date();
+    setSyncStatus("✓ Syncé "+d.getHours()+":"+String(d.getMinutes()).padStart(2,"0"),"var(--gn)");
+    if(feedback)toast("✓ Inventaire chargé depuis GitHub");
+  }catch(e){
+    setSyncStatus("⚠️ Erreur sync","#c0392b");
+    if(feedback)toast("Erreur GitHub: "+e.message);
+  }
+}
+
+async function ghPush(feedback){
+  const token=localStorage.getItem("km_gh_token");
+  if(!token)return;
+  const repo=localStorage.getItem("km_gh_repo")||"rogdolphe/tracker-aw";
+  setSyncStatus("Sauvegarde…","var(--tx3)");
+  try{
+    const payload={inventory:INV,goals:GOALS,appliances:APPLIANCES,styles:STYLES,updated:new Date().toISOString()};
+    const b64=btoa(unescape(encodeURIComponent(JSON.stringify(payload,null,2))));
+    const sha=localStorage.getItem("km_gh_sha");
+    const body={message:"Sync Cuisine & Macros "+new Date().toISOString().slice(0,10),content:b64};
+    if(sha)body.sha=sha;
+    const res=await fetch("https://api.github.com/repos/"+repo+"/contents/cuisine-data.json",{
+      method:"PUT",
+      headers:{"Authorization":"token "+token,"Content-Type":"application/json","Accept":"application/vnd.github.v3+json"},
+      body:JSON.stringify(body)
+    });
+    if(!res.ok){const e=await res.json();throw new Error(e.message||"HTTP "+res.status);}
+    const data=await res.json();
+    localStorage.setItem("km_gh_sha",data.content.sha);
+    const d=new Date();
+    setSyncStatus("✓ Syncé "+d.getHours()+":"+String(d.getMinutes()).padStart(2,"0"),"var(--gn)");
+    if(feedback)toast("✓ Sauvegardé sur GitHub");
+  }catch(e){
+    setSyncStatus("⚠️ Erreur sync","#c0392b");
+    if(feedback)toast("Erreur GitHub: "+e.message);
+  }
+}
+
+function schedulePush(){
+  clearTimeout(_ghPushTimer);
+  _ghPushTimer=setTimeout(()=>ghPush(false),3000);
+}
+
 // INIT
+ghPull(false);
 renderInventory();
 renderPlan();
 if(needsRegen())setTimeout(()=>generatePlan(),1500);
