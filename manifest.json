@@ -1,24 +1,22 @@
 {
-  "name": "FINANCES.PERSO",
-  "short_name": "Finances",
-  "description": "Planificateur financier personnel — budgets, dettes, projections",
-  "start_url": "./finances_perso.html",
-  "scope": "./",
+  "name": "Cuisine & Macros",
+  "short_name": "Cuisine",
+  "description": "Inventaire alimentaire et plan de repas hebdomadaire",
+  "start_url": "/tracker-aw/cuisine",
   "display": "standalone",
-  "background_color": "#f8fafc",
-  "theme_color": "#d97706",
-  "orientation": "portrait-primary",
-  "lang": "fr",
+  "background_color": "#1e1d1b",
+  "theme_color": "#1e1d1b",
+  "orientation": "portrait",
   "icons": [
-    {
-      "src": "icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any"
-    },
     {
       "src": "icon-192.png",
       "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
     }
