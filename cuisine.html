@@ -19,7 +19,7 @@
 body{font-family:"DM Sans",system-ui,sans-serif;background:var(--bg);color:var(--tx);min-height:100vh}
 .app-bar{background:var(--sf);border-bottom:1px solid var(--bd);padding:12px 16px;position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between}
 .app-title{font-size:15px;font-weight:600}.app-sub{font-size:10px;color:var(--tx2);margin-top:1px}
-.content{max-width:680px;margin:0 auto;padding:16px 16px calc(var(--nav)+20px)}
+.content{max-width:680px;margin:0 auto;padding:16px 16px calc(var(--nav)+40px)}
 .panel{display:none}.panel.active{display:block}
 .tab-bar{position:fixed;bottom:0;left:0;right:0;height:var(--nav);background:var(--sf);border-top:1px solid var(--bd);display:flex;z-index:90;padding-bottom:env(safe-area-inset-bottom,0)}
 .tb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:none;background:none;color:var(--tx3);font-family:"DM Sans",sans-serif;font-size:10px;font-weight:500;cursor:pointer}
@@ -131,6 +131,8 @@ body{font-family:"DM Sans",system-ui,sans-serif;background:var(--bg);color:var(-
 .btn-danger{padding:10px 18px;border-radius:var(--r);border:1px solid #a03030;background:var(--sf);color:#a03030;font-family:"DM Sans",sans-serif;font-size:12px;font-weight:500;cursor:pointer;width:100%;margin-top:8px}
 .icon-btn{font-size:11px;padding:6px 12px;border-radius:var(--pill);border:1px solid var(--bd2);background:var(--sf2);color:var(--tx);cursor:pointer;font-family:"DM Sans",sans-serif;font-weight:500}
 .regen-btn{display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:var(--pill);border:1px solid var(--bd2);background:var(--sf);color:var(--tx2);font-family:"DM Sans",sans-serif;font-size:11px;font-weight:500;cursor:pointer}
+.app-chip{padding:7px 13px;border-radius:var(--pill);border:1px solid var(--bd2);background:var(--sf);color:var(--tx2);font-family:"DM Sans",sans-serif;font-size:12px;font-weight:500;cursor:pointer;transition:all .15s}
+.app-chip.on{background:var(--tx);color:var(--bg);border-color:transparent}
 </style>
 </head>
 <body>
@@ -246,6 +248,10 @@ body{font-family:"DM Sans",system-ui,sans-serif;background:var(--bg);color:var(-
         <div><div class="form-label">Lipides (g)</div><input type="number" class="s-inp" id="g-fat"></div>
       </div>
       <button class="btn-prim" onclick="saveGoals()">Enregistrer</button>
+      <div class="msect" style="margin-top:20px">Mes appareils</div>
+      <p style="font-size:12px;color:var(--tx2);margin-bottom:10px">Sélectionne les appareils que tu possèdes. Claude en tiendra compte pour générer tes recettes.</p>
+      <div id="appliance-chips" style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px"></div>
+      <button class="btn-prim" onclick="saveAppliances()">✓ Enregistrer les appareils</button>
       <div class="msect" style="margin-top:18px;color:#a03030">Zone danger</div>
       <button class="btn-danger" onclick="if(confirm('Supprimer tout l\'inventaire?')){INV=[];saveINV();renderInventory();toast('Inventaire effac\u00e9')}">Effacer l&apos;inventaire</button>
       <button class="btn-danger" onclick="if(confirm('Effacer le plan?')){PLAN=null;localStorage.removeItem('km_plan');localStorage.removeItem('km_plan_date');renderPlan();toast('Plan effac\u00e9')}">Effacer le plan</button>
@@ -275,6 +281,24 @@ const CATS=[
 ];
 let activeCat="dejeuner";
 let _busy=false;
+let APPLIANCES=JSON.parse(localStorage.getItem('km_appliances')||'["four","plaques","micro_ondes"]');
+const APPLIANCE_LIST=[
+  {key:'four',label:'Four'},
+  {key:'plaques',label:'Plaques de cuisson'},
+  {key:'micro_ondes',label:'Micro-ondes'},
+  {key:'air_fryer',label:'Air fryer'},
+  {key:'mijoteuse',label:'Mijoteuse'},
+  {key:'instant_pot',label:'Instant Pot / autocuiseur'},
+  {key:'barbecue',label:'Barbecue'},
+  {key:'gril_elec',label:'Gril électrique'},
+  {key:'blender',label:'Mélangeur / blender'},
+  {key:'robot',label:'Robot culinaire'},
+  {key:'cuiseur_riz',label:'Cuiseur à riz'},
+  {key:'batteur',label:'Batteur sur socle'},
+  {key:'wok',label:'Wok'},
+  {key:'friteuse',label:'Friteuse'},
+  {key:'raclette',label:'Raclette / fondue'},
+];
 
 // LOCAL_DB — inventaire type Métro Québec + influences françaises et italiennes
 const LOCAL_DB=[
@@ -725,6 +749,7 @@ function openSettings(){
   document.getElementById("api-key-inp").value=k?"sk-ant-\u2022\u2022\u2022":"";
   document.getElementById("g-kcal").value=GOALS.kcal;document.getElementById("g-prot").value=GOALS.prot;
   document.getElementById("g-carb").value=GOALS.carb;document.getElementById("g-fat").value=GOALS.fat;
+  renderApplianceChips();
   openM("settingsModal");
 }
 function saveApiKey(){
@@ -737,6 +762,29 @@ function saveGoals(){
   localStorage.setItem("km_goals",JSON.stringify(GOALS));updateSub();toast("\u2713 Objectifs enregistr\u00e9s");
 }
 
+// APPLIANCES
+function renderApplianceChips(){
+  const el=document.getElementById("appliance-chips");
+  if(!el)return;
+  el.innerHTML=APPLIANCE_LIST.map(function(a){
+    var on=APPLIANCES.includes(a.key)?" on":"";
+    return "<button class=\"app-chip"+on+"\" data-key=\""+a.key+"\" onclick=\"toggleApp(this)\">"+esc(a.label)+"</button>";
+  }).join("");
+}
+function toggleApp(btn){
+  var key=btn.dataset.key;
+  if(APPLIANCES.includes(key)){
+    APPLIANCES=APPLIANCES.filter(function(k){return k!==key;});
+    btn.classList.remove("on");
+  }else{
+    APPLIANCES.push(key);
+    btn.classList.add("on");
+  }
+}
+function saveAppliances(){
+  localStorage.setItem("km_appliances",JSON.stringify(APPLIANCES));
+  toast("✓ Appareils enregistrés");
+}
 // INVENTORY
 function renderInventory(){
   const el=document.getElementById("inv-list");
@@ -943,6 +991,7 @@ function recipeCount(){return INV.length<8?2:INV.length<15?3:INV.length<25?4:5;}
 function buildPrompt(){
   const n=recipeCount();
   const inv=INV.map(i=>{const u=i.unit==="units"?"u":i.unit;return i.name+"("+i.qty+u+")";}).join(", ");
+  const appNames=APPLIANCE_LIST.filter(a=>APPLIANCES.includes(a.key)).map(a=>a.label).join(', ');
   return "Inventaire: "+inv+"\nObjectifs: "+GOALS.kcal+"kcal "+GOALS.prot+"g prot\n\nGénère "+n+" recettes par catégorie.\nJSON: {\"dejeuner\":[],\"collation_am\":[],\"diner\":[],\"apero\":[],\"souper\":[],\"collation_soir\":[]}\nChaque recette: {\"name\":\"Nom\",\"emoji\":\"X\",\"kcal\":0,\"prot\":0,\"carb\":0,\"fat\":0,\"time\":\"Xmin\",\"ingredients\":[{\"name\":\"NomExact\",\"qty\":0,\"unit\":\"g\"}],\"steps\":[\"etape1\",\"etape2\"],\"tip\":\"conseil\"}\nRègles: noms EXACTS inventaire · recettes connues · max 4 ingrédients · max 3 étapes courtes · tip=1 phrase";
 }
 function tryParseJSON(txt){
