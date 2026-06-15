@@ -264,7 +264,7 @@ let DAY_LOG=[];
 const TODAY=new Date().toISOString().slice(0,10);
 if(localStorage.getItem("km_logdate")===TODAY){DAY_LOG=JSON.parse(localStorage.getItem("km_daylog")||"[]");}
 else{localStorage.setItem("km_logdate",TODAY);localStorage.setItem("km_daylog","[]");}
-let selFood=null,selUnit="g",editItemId=null,editQty=0,selPreset=null,selPresetIdx=-1;
+let editItemId=null,editQty=0;
 const CATS=[
   {key:"dejeuner",label:"D\u00e9jeuner",emoji:"\uD83C\uDF05"},
   {key:"collation_am",label:"Collation AM",emoji:"\uD83C\uDF4E"},
@@ -274,7 +274,7 @@ const CATS=[
   {key:"collation_soir",label:"Soir",emoji:"\uD83C\uDF1B"},
 ];
 let activeCat="dejeuner";
-let _offCache=[],_busy=false;
+let _busy=false;
 
 // LOCAL_DB — inventaire type Métro Québec + influences françaises et italiennes
 const LOCAL_DB=[
@@ -758,7 +758,7 @@ function renderInventory(){
 
 // ADD ITEM
 let selFood=null,selUnit="g";
-let _offTimer=null;
+let _offTimer=null,_offCache=[];
 
 function openAddItem(){
   selFood=null;selUnit="g";
