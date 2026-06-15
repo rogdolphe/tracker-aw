@@ -43,11 +43,11 @@ label.f{display:block;font-size:9px;letter-spacing:.12em;text-transform:uppercas
 table{width:100%;border-collapse:collapse;font-size:12px}
 td,th{border-bottom:1px solid var(--line);padding:5px 6px;text-align:left}
 th{color:var(--dim);font-size:10px;letter-spacing:.1em;text-transform:uppercase}
-/* rangée d'exercice — entrée rapide mobile */
 .exrow{border-bottom:1px solid var(--line);padding:9px 0 10px;position:relative}
 .exrow.ss{border-left:3px solid var(--blue);padding-left:9px}
 .exrow.ss .sstag{position:absolute;left:-3px;top:-1px;background:var(--blue);color:#fff;font-size:8px;padding:0 4px;letter-spacing:.1em}
 .exname{font-weight:bold;font-size:14px}
+.home-badge{color:var(--gold);font-size:9px;border:1px solid var(--gold-dim);padding:0 4px;border-radius:2px;letter-spacing:.08em;vertical-align:middle}
 .exsugg{font-size:11px;color:var(--dim);margin:1px 0 6px}
 .exin{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .exin .w{width:88px}
@@ -68,6 +68,11 @@ th{color:var(--dim);font-size:10px;letter-spacing:.1em;text-transform:uppercase}
 .cal .d .xtra{display:block;color:var(--gold)}
 .cal .hd{text-align:center;color:var(--dim);font-size:9px;text-transform:uppercase;letter-spacing:.1em}
 .msg{border:1px solid var(--gold-dim);background:#1f1a08;padding:8px 10px;margin:8px 0;font-size:12px}
+.phase{padding:10px 12px;margin-bottom:10px}
+.phase .pr{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.phase .rir{text-align:right;font-size:11px;white-space:nowrap}
+.wkrow{padding:7px 10px;margin:5px 0;border:1px solid var(--line)}
+.wkrow.cur{background:var(--panel2)}
 .flexr{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 svg.chart{width:100%;background:var(--ink);border:1px solid var(--line)}
 hr{border:none;border-top:1px solid var(--line);margin:10px 0}
@@ -101,52 +106,69 @@ hr{border:none;border-top:1px solid var(--line);margin:10px 0}
 /* ============ PROGRAMME PAR DÉFAUT ============ */
 /* mode: "lin" = paliers (réussite → +step, 2 échecs → −10%)
    mode: "dp"  = double progression (reps→repHi, puis +step et retour à reps)
-   unit: "lbs" (défaut) ou "s" (tenues/temps — reps = secondes) */
+   unit: "lbs" (défaut) ou "s" (tenues/temps — reps = secondes)
+   loc:  "gym" (défaut) ou "home" (loaded strap à la maison) */
 function E(nom,sets,reps,poids,step,mode,opt){
   var o=opt||{};
   return {id:o.id, nom:nom, sets:sets, reps:reps, repHi:o.repHi||reps+2,
-          poids:poids, step:step, mode:mode, unit:o.unit||"lbs", ssg:o.ssg||0, aw:!!o.aw};
+          poids:poids, step:step, mode:mode, unit:o.unit||"lbs", ssg:o.ssg||0, aw:!!o.aw, loc:o.loc||"gym"};
 }
 var DEF_DAYS = {
-  lun:{nom:"Pull · Dos · Biceps", lieu:"Yvon Deschamps", type:"gym"},
-  mar:{nom:"Natation", lieu:"Yvon Deschamps", type:"nage"},
-  mer:{nom:"Push · Pecs · AW", lieu:"Yvon Deschamps", type:"gym"},
-  jeu:{nom:"Bands · Parc Lafontaine", lieu:"Parc Lafontaine", type:"gym"},
-  ven:{nom:"Lourd · Grip · Force", lieu:"Yvon Deschamps", type:"gym"},
-  sam:{nom:"Natation · Récup", lieu:"Yvon Deschamps", type:"nage"},
+  lun:{nom:"Pull A · Dos épais", lieu:"Yvon Deschamps", type:"gym"},
+  mar:{nom:"Push A · Horizontal", lieu:"Yvon Deschamps", type:"gym"},
+  mer:{nom:"Nage récup · zone 2", lieu:"Yvon Deschamps", type:"nage"},
+  jeu:{nom:"Jambes + Tronc", lieu:"Yvon Deschamps", type:"gym"},
+  ven:{nom:"Pull B · Dos large + AW", lieu:"Yvon Deschamps", type:"gym"},
+  sam:{nom:"Push B + Bras (léger)", lieu:"Yvon Deschamps", type:"gym"},
   dim:{nom:"Repos", lieu:"", type:"repos"}
 };
 var DEF_EX = {
   lun:[
-    E("Lat Pulldown",3,10,70,5,"lin"),
-    E("Seated Cable Row",3,10,70,5,"lin",{ssg:1}),
-    E("Dumbbell Row",3,8,55,2.5,"lin",{ssg:1,aw:true}),
-    E("Hammer Curl",3,8,25,2.5,"dp",{repHi:12,ssg:2,aw:true}),
-    E("Zottman Curl",3,8,15,2.5,"dp",{repHi:12,ssg:2,aw:true}),
-    E("Wrist Curl",3,12,20,2.5,"dp",{repHi:20,aw:true})
+    E("Assisted Pull-up",3,6,-40,5,"lin"),
+    E("Seated Cable Row",3,8,135,5,"dp",{repHi:12}),
+    E("EZ-Bar Curl",3,8,100,2.5,"dp",{repHi:12,ssg:1}),
+    E("Face Pull",3,15,60,2.5,"dp",{repHi:20,ssg:1}),
+    E("Hammer Curl",3,8,50,2.5,"dp",{repHi:12,ssg:2,aw:true}),
+    E("Wrist Curl",3,12,20,2.5,"dp",{repHi:20,ssg:2,aw:true}),
+    E("Hanging Knee Raise",3,10,0,0,"dp",{repHi:15})
   ],
-  mer:[
-    E("Dumbbell Bench Press",3,8,50,2.5,"lin"),
-    E("Incline Dumbbell Press",3,10,40,2.5,"lin",{ssg:1}),
-    E("Dumbbell Shoulder Press",3,10,30,2.5,"lin",{ssg:1}),
-    E("Lateral Raise",3,10,12.5,2.5,"dp",{repHi:15,ssg:2}),
-    E("Cable Pronation Curl",3,10,25,2.5,"dp",{repHi:14,ssg:2,aw:true}),
-    E("Reverse Curl",3,10,20,2.5,"dp",{repHi:14,aw:true})
+  mar:[
+    E("Barbell Bench Press",3,5,185,5,"lin"),
+    E("Incline Dumbbell Press",3,8,70,2.5,"dp",{repHi:12}),
+    E("Dumbbell Shoulder Press",3,8,60,2.5,"dp",{repHi:12,ssg:1}),
+    E("Lateral Raise",3,15,15,2.5,"dp",{repHi:20,ssg:1}),
+    E("Triceps Pushdown",3,10,30,2.5,"dp",{repHi:15}),
+    E("Pronation (loaded strap)",3,10,35,2.5,"dp",{repHi:14,ssg:3,aw:true,loc:"home"}),
+    E("Rising (loaded strap)",3,8,35,2.5,"dp",{repHi:12,ssg:3,aw:true,loc:"home"})
   ],
+  mer:[],
   jeu:[
-    E("Band Bicep Curl",3,8,30,2.5,"dp",{repHi:12,aw:true}),
-    E("Band Wrist Pronation",3,60,30,5,"dp",{repHi:75,unit:"s",ssg:1,aw:true}),
-    E("Band Tricep Pushdown",3,10,30,2.5,"dp",{repHi:14,ssg:1}),
-    E("Squat (bands / corps)",3,10,0,5,"lin"),
-    E("Pinch Grip (sangle)",3,60,0,2.5,"dp",{repHi:75,unit:"s",aw:true})
+    E("Barbell Squat",3,6,140,5,"lin"),
+    E("Romanian Deadlift",3,8,95,5,"lin"),
+    E("Single-Leg Squat",2,8,0,0,"dp",{repHi:10,ssg:1}),
+    E("Back Extension",3,12,20,2.5,"dp",{repHi:15,ssg:1}),
+    E("Plank",3,60,0,5,"dp",{repHi:90,unit:"s",ssg:2}),
+    E("Bird Dog (band)",2,10,0,0,"dp",{repHi:12,ssg:2})
   ],
   ven:[
-    E("Squat",3,10,65,5,"lin"),
-    E("Dumbbell Row",3,8,55,2.5,"lin",{ssg:1,aw:true}),
-    E("Farmer's Carry",3,30,35,2.5,"dp",{repHi:45,unit:"s",ssg:1,aw:true}),
-    E("Hanging Knee Raise",3,10,0,0,"dp",{repHi:15}),
-    E("Back Extension",3,10,0,2.5,"dp",{repHi:14}),
-    E("Mountain Climber (cardio)",1,600,0,0,"dp",{repHi:900,unit:"s"})
+    E("Lat Pulldown",3,10,125,5,"dp",{repHi:15}),
+    E("Dumbbell Row",3,10,70,2.5,"dp",{repHi:12}),
+    E("Pulldown Bicep Curl",3,10,115,2.5,"dp",{repHi:15,ssg:1}),
+    E("Short Curl (DB)",3,12,80,2.5,"dp",{repHi:15,ssg:1,aw:true}),
+    E("Finger Curls",3,15,20,2.5,"dp",{repHi:20,aw:true}),
+    E("Rising (loaded strap)",4,8,35,2.5,"dp",{repHi:12,aw:true,loc:"home"}),
+    E("Side Pressure / wrist wrench",3,10,20,2.5,"dp",{repHi:14,ssg:2,aw:true,loc:"home"}),
+    E("Back Pressure / king's move",3,10,20,2.5,"dp",{repHi:14,ssg:2,aw:true,loc:"home"})
+  ],
+  sam:[
+    E("Incline Dumbbell Press",3,10,70,2.5,"dp",{repHi:15}),
+    E("Dips",3,8,0,2.5,"dp",{repHi:12}),
+    E("Dumbbell Shoulder Press",3,10,60,2.5,"dp",{repHi:12,ssg:1}),
+    E("Lateral Raise",3,15,15,2.5,"dp",{repHi:20,ssg:1}),
+    E("Triceps Pushdown",3,12,30,2.5,"dp",{repHi:15,ssg:2}),
+    E("Cupping (machine)",3,10,60,2.5,"dp",{repHi:14,ssg:2,aw:true}),
+    E("Farmer's Carry",3,30,55,2.5,"dp",{repHi:45,unit:"s",aw:true}),
+    E("Pronation (loaded strap)",2,15,35,2.5,"dp",{repHi:18,aw:true,loc:"home"})
   ]
 };
 /* ids */
@@ -156,8 +178,9 @@ var DEF_STATE = {
   ts:0,
   days:DEF_DAYS,
   ex:DEF_EX,
-  logs:[],   /* {d, kind:"gym"|"nage"|"aw"|"extra", day?, entries:[{id,nom,poids,sets,reps,rpe}], dist?, min?, rounds?, nom?, notes?} */
-  body:[],   /* {d, poids, taille} */
+  comp:{date:"2026-10-17", nom:"Armbash ArmWrestling Series — Hawkesbury, ON"},
+  logs:[],
+  body:[],
   sugg:["Escaliers du Mont-Royal","Vélo — canal Lachine","Badminton libre Yvon Deschamps",
         "Bloc à Allez Up","Rando Mont-Saint-Hilaire","Ping-pong parc Lafontaine","Marche rapide 5 km"],
   gh:{owner:"rogdolphe",repo:"tracker-aw",file:"gym_data.json"}
@@ -167,9 +190,19 @@ try{ G = JSON.parse(localStorage.getItem("gym_aw_data")||"null"); }catch(e){ G=n
 if(!G) G = JSON.parse(JSON.stringify(DEF_STATE));
 (function merge(d,c){ for(var k in d){ if(c[k]===undefined) c[k]=d[k];
   else if(d[k]&&typeof d[k]==="object"&&!Array.isArray(d[k])) merge(d[k],c[k]); } })(DEF_STATE,G);
+/* migration : installe le programme courant (logs/poids/comp conservés) */
+function migrate(){
+  if(G.progVersion!==3){
+    G.days=JSON.parse(JSON.stringify(DEF_DAYS));
+    G.ex=JSON.parse(JSON.stringify(DEF_EX));
+    if(!G.comp) G.comp=JSON.parse(JSON.stringify(DEF_STATE.comp));
+    G.progVersion=3;
+  }
+}
+migrate();
 
 var tab="seance", calRef=new Date(), logKind=null, statEx=null, selDay=null, pendingDel=null;
-var form={};   /* saisie en cours par exercice: {id:{poids,sets,reps,rpe,done}} */
+var form={};
 
 /* ============ OUTILS ============ */
 var DK=["dim","lun","mar","mer","jeu","ven","sam"];
@@ -189,9 +222,26 @@ function lastEntries(id,n){
     var L=G.logs[i]; if(L.kind!=="gym"||!L.entries) continue;
     for(var j=0;j<L.entries.length;j++) if(L.entries[j].id===id){ out.push(L.entries[j]); break; }
   }
-  return out; /* du plus récent au plus ancien (logs triés unshift) */
+  return out;
 }
 function e1rm(w,r){ return w*(1+r/30); }
+function homeBadge(x){ return x.loc==="home"?' <span class="home-badge">🏠 MAISON</span>':''; }
+
+/* ============ PÉRIODISATION (pilotée par la date de compétition) ============ */
+function compDate(){ return (G.comp&&G.comp.date)? noon(G.comp.date) : null; }
+function daysToComp(){ var c=compDate(); if(!c) return null; var n=new Date(); n.setHours(12,0,0,0); return Math.round((c-n)/86400000); }
+function weeksToComp(){ var d=daysToComp(); return d==null?null:Math.ceil(d/7); }
+function phaseFor(wk){
+  if(wk==null) return {n:"—",rir:"—",vol:"—",focus:"Aucune date de compétition réglée (⚙ Réglages)",col:"#8d99ab"};
+  if(wk<0)   return {n:"Hors saison",rir:"3",vol:"libre",focus:"Compétition passée — repos puis nouveau bloc",col:"#8d99ab"};
+  if(wk===0) return {n:"Jour J",rir:"—",vol:"—",focus:"Compétition — bon combat",col:"#c9a227"};
+  if(wk===1) return {n:"Affûtage",rir:"2-3",vol:"−60%",focus:"Snap court, repos maximal, arriver frais",col:"#c0392b"};
+  if(wk<=3)  return {n:"Pic AW",rir:"0-1 (AW)",vol:"bas",focus:"Table fraîche, technique, tous les vecteurs",col:"#c0392b"};
+  if(wk<=6)  return {n:"Intensification",rir:"1-2",vol:"général ↓ / AW ↑",focus:"AW sous charge, top sets lourds",col:"#8a5a2b"};
+  if(wk===7) return {n:"Décharge",rir:"3",vol:"−45%",focus:"Récup tendineuse avant le pic",col:"#6fae57"};
+  if(wk<=11) return {n:"Accumulation",rir:"2-3",vol:"haut",focus:"Construire le volume et la technique",col:"#4a7fb5"};
+  return {n:"Base / ré-entrée",rir:"3",vol:"modéré, on monte",focus:"Tendons, technique, recomp — pas de grind",col:"#4a7fb5"};
+}
 
 /* ============ MOTEUR DE PROGRESSION ============ */
 function fail(ex,en){ return (en.rpe&&en.rpe>=9) || en.reps<ex.reps; }
@@ -211,7 +261,6 @@ function suggest(ex){
 
 /* ============ ACTIONS — séance ============ */
 function parseWeights(v){
-  /* "95 115 135" ou "95,115,135" → [95,115,135] ; "135" → [135] */
   var arr=String(v).split(/[\s,]+/).map(function(s){return parseFloat(s);}).filter(function(n){return !isNaN(n);});
   return arr;
 }
@@ -219,9 +268,9 @@ window.uIn=function(id,k,v){
   form[id]=form[id]||{};
   if(k==="poids"){
     var arr=parseWeights(v);
-    form[id].wts=arr;                  /* tableau de poids par série */
-    form[id].poids=arr.length?arr[arr.length-1]:0;  /* poids "top" = max pour PR/progression */
-    if(arr.length>1) form[id].sets=arr.length;       /* multi-poids → nb de séries = nb de poids */
+    form[id].wts=arr;
+    form[id].poids=arr.length?arr[arr.length-1]:0;
+    if(arr.length>1) form[id].sets=arr.length;
   } else {
     form[id][k]=parseFloat(v)||0;
   }
@@ -240,12 +289,11 @@ window.finishGym=function(dk){
     var topW=(f.poids!==undefined&&!isNaN(f.poids)&&(f.wts?f.wts.length:true))?
       (wts?Math.max.apply(null,wts):f.poids):sg.poids;
     var en={id:x.id, nom:x.nom,
-      poids:topW,                       /* poids max de la séance (PR & progression) */
-      wts:wts,                          /* détail par série si multi-poids, sinon null */
+      poids:topW,
+      wts:wts,
       sets:(wts&&wts.length>1)?wts.length:(f.sets||x.sets),
       reps:f.reps||sg.reps, rpe:f.rpe||0};
     entries.push(en);
-    /* PR? */
     var hist=lastEntries(x.id,99), max=0;
     hist.forEach(function(h){ if(h.poids>max) max=h.poids; });
     if(en.poids>max && en.poids>0) prs.push(x.nom+" — "+en.poids+" lb");
@@ -286,12 +334,10 @@ window.saveBody=function(){
   save(); render();
 };
 
-/* lien CIV.SOBRE : séance faite = bonus gym du tribunal */
 function civFlag(){
   try{
     localStorage.setItem("gym_done_"+today(),"1");
     var civ=JSON.parse(localStorage.getItem("civ_sobre_data")||"null");
-    /* crédite le bonus gym du jour, que le verdict soit sobre OU rechute (discipline ≠ sobriété) */
     if(civ && civ.hist && civ.hist.length && civ.hist[0].d===today()){
       if(civ.hist[0].b.indexOf("gym")<0){
         var before=civ.hist[0].b.length;
@@ -308,7 +354,7 @@ function civFlag(){
 /* ============ ACTIONS — programme ============ */
 window.uEx=function(dk,i,k,v){
   var x=G.ex[dk][i];
-  x[k]=(k==="nom"||k==="mode"||k==="unit")? v : (parseFloat(v)||0);
+  x[k]=(k==="nom"||k==="mode"||k==="unit"||k==="loc")? v : (parseFloat(v)||0);
   save();
 };
 window.addEx=function(dk){
@@ -338,6 +384,7 @@ window.mvEx=function(dk,i,dir){
   var t=a[i]; a[i]=a[j]; a[j]=t; save(); render();
 };
 window.uDay=function(dk,k,v){ G.days[dk][k]=v; save(); };
+window.uComp=function(k,v){ if(!G.comp) G.comp={}; G.comp[k]=v; save(); render(); };
 window.addSugg=function(){ var v=$("sg-n").value; if(!v) return; G.sugg.push(v); save(); render(); };
 window.delSugg=function(i){ G.sugg.splice(i,1); save(); render(); };
 window.uG=function(k,v){ G.gh[k]=v; save(); };
@@ -356,7 +403,7 @@ window.impJSON=function(ev){
   r.readAsText(f);
 };
 
-/* ============ SYNC GITHUB (token partagé avec CIV.SOBRE) ============ */
+/* ============ SYNC GITHUB ============ */
 var ghTimer=null, ghSha=null;
 function setSyncStatus(st, msg){
   var led=$("sync-led"), txt=$("sync-txt");
@@ -404,6 +451,7 @@ function ghLoad(){
         G=remote;
         (function merge(d,c){ for(var k in d){ if(c[k]===undefined) c[k]=d[k];
           else if(d[k]&&typeof d[k]==="object"&&!Array.isArray(d[k])) merge(d[k],c[k]); } })(DEF_STATE,G);
+        migrate();
         localStorage.setItem("gym_aw_data", JSON.stringify(G));
         setSyncStatus("ok","✓ chargé "+new Date().toLocaleTimeString("fr-CA"));
         render();
@@ -413,7 +461,7 @@ function ghLoad(){
 }
 
 /* ============ RENDUS ============ */
-var TABS=[["seance","💪 Séance"],["cal","📅 Calendrier"],["stats","📊 Stats"],
+var TABS=[["seance","💪 Séance"],["plan","📈 Plan"],["cal","📅 Calendrier"],["stats","📊 Stats"],
           ["prog","🏗 Programme"],["param","⚙ Réglages"]];
 
 function render(){
@@ -423,22 +471,33 @@ function render(){
   var dk=dayKey(new Date()), day=G.days[dk];
   $("sub").textContent=new Date().toLocaleDateString("fr-CA",{weekday:"long",day:"numeric",month:"long"});
   var done30=compl30();
-  $("top-stats").innerHTML='<small>Aujourd\'hui : <b class="au">'+day.nom+'</b><br>Complétion 30j : <b class="'+(done30>=80?'g':'r')+'">'+done30+'%</b></small>';
-  var R={seance:rSeance,cal:rCal,stats:rStats,prog:rProg,param:rParam};
+  var dc=daysToComp(), ph=phaseFor(weeksToComp());
+  var compLine=(dc!=null&&dc>=0)?'<br>'+esc(G.comp.nom.split("—")[0].trim())+' : <b class="au">J-'+dc+'</b> · <b style="color:'+ph.col+'">'+ph.n+'</b>':'';
+  $("top-stats").innerHTML='<small>Aujourd\'hui : <b class="au">'+day.nom+'</b>'+compLine+'<br>Complétion 30j : <b class="'+(done30>=80?'g':'r')+'">'+done30+'%</b></small>';
+  var R={seance:rSeance,plan:rPlan,cal:rCal,stats:rStats,prog:rProg,param:rParam};
   $("app").innerHTML=R[tab]();
 }
 
 function loggedToday(){ return G.logs.filter(function(l){return l.d===today();}); }
 
+function phaseBanner(){
+  var wk=weeksToComp(); if(wk==null||wk<0) return "";
+  var ph=phaseFor(wk), dc=daysToComp();
+  return '<div class="card phase" style="border-color:'+ph.col+'"><div class="pr">'+
+   '<div><h3 style="color:'+ph.col+';margin:0">'+ph.n+(dc!=null?' · J-'+dc:'')+'</h3>'+
+   '<p class="dim" style="margin:2px 0 0">'+ph.focus+'</p></div>'+
+   '<div class="rir"><span class="dim">RIR cible</span><br><b class="au">'+ph.rir+'</b>'+
+   '<br><span class="dim">Volume</span><br><b>'+ph.vol+'</b></div></div></div>';
+}
+
 function rSeance(){
   var dk=dayKey(new Date()), day=G.days[dk], out="";
+  out+=phaseBanner();
   var logs=loggedToday();
-  /* poids corporel — optionnel */
   out+='<div class="card"><div class="flexr"><div style="flex:1"><label class="f">Poids corporel lb (optionnel)</label>'+
    '<input type="number" step="0.1" id="bw-p" placeholder="'+(G.body.length?G.body[0].poids:"230")+'"></div>'+
    '<div style="flex:1"><label class="f">Tour de taille cm (optionnel)</label><input type="number" step="0.1" id="bw-t"></div>'+
    '<div style="align-self:flex-end"><button class="ghost" onclick="saveBody()" style="height:40px">Noter</button></div></div></div>';
-  /* séances déjà loggées aujourd'hui — avec résumé détaillé */
   if(logs.length){
     out+='<div class="card"><h3>✓ Fait aujourd\'hui</h3>';
     logs.forEach(function(l){
@@ -473,7 +532,6 @@ function rSeance(){
     });
     out+='</div>';
   }
-  /* choix de ce qu'on logge */
   if(!logKind){
     out+='<div class="card"><h2>'+day.nom+(day.lieu?' <small>· '+day.lieu+'</small>':'')+'</h2>';
     if(day.type==="gym") out+='<button class="act" onclick="setKind(\'gym\')">▶ Commencer la séance du jour</button>';
@@ -497,14 +555,14 @@ function rSeance(){
   var gdk = logKind==="gym"? dk : (logKind.indexOf("gym:")===0? logKind.slice(4) : null);
   if(gdk){
     var exs=G.ex[gdk]||[];
-    out+='<div class="card"><h2>'+G.days[gdk].nom+'</h2><p class="dim">Charges pré-remplies par le moteur de progression — change seulement ce qui diffère. ✕ = exercice sauté.</p>';
+    out+='<div class="card"><h2>'+G.days[gdk].nom+'</h2><p class="dim">Charges pré-remplies par le moteur — change seulement ce qui diffère. 🏠 = à finir à la maison (sangle). ✕ = exercice sauté.</p>';
     exs.forEach(function(x){
       var f=form[x.id]||{}, sg=suggest(x);
       var ss=x.ssg>0;
       var wVal = (f.wts&&f.wts.length)? f.wts.join(" ") : (f.poids!==undefined? String(f.poids) : String(sg.poids));
       var multi = f.wts && f.wts.length>1;
       out+='<div class="exrow'+(ss?' ss':'')+'">'+(ss?'<span class="sstag">SS'+x.ssg+'</span>':'')+
-       '<div class="exname">'+esc(x.nom)+(x.aw?' <span class="bl">⚔</span>':'')+
+       '<div class="exname">'+esc(x.nom)+(x.aw?' <span class="bl">⚔</span>':'')+homeBadge(x)+
        (f.skip?' <span class="r">— sauté</span>':'')+'</div>'+
        '<div class="exsugg">sugg : <b class="au">'+sg.poids+' lb</b> · '+
         (f.sets||x.sets)+'×'+(f.reps||sg.reps)+(x.unit==="s"?" s":"")+' <span class="dim">('+sg.why+')</span>'+
@@ -522,7 +580,7 @@ function rSeance(){
        (f.skip?'<div class="exin"><span class="skip"><button class="off" onclick="uSkip(\''+x.id+'\')">↺</button></span></div>':'')+
       '</div>';
     });
-    out+='<p class="dim" style="margin-top:8px">💡 Poids montant : tape plusieurs poids séparés par un espace (ex. <b>95 115 135</b>) — chaque poids devient une série. Le reps s\'applique à chacune. Pour un seul poids, tape juste le nombre.</p>';
+    out+='<p class="dim" style="margin-top:8px">💡 Poids montant : tape plusieurs poids séparés par un espace (ex. <b>95 115 135</b>) — chaque poids devient une série.</p>';
     out+='<div style="margin-top:12px"><button class="act" onclick="finishGym(\''+gdk+'\')">✓ Terminer la séance</button></div>'+
      '<button class="ghost" style="margin-top:8px" onclick="setKind(null)">Annuler</button></div>';
     return out;
@@ -545,7 +603,6 @@ function rSeance(){
      '<button class="ghost" style="margin-top:8px" onclick="setKind(null)">Annuler</button></div>';
     return out;
   }
-  /* extra / hors routine */
   out+='<div class="card"><h2>🌳 Hors routine</h2>'+
    '<div class="flexr" style="margin-bottom:6px">'+G.sugg.map(function(s){
      return '<button class="ghost" onclick="document.getElementById(\'xt-n\').value=\''+esc(s).replace(/'/g,"\\'")+'\'">'+esc(s)+'</button>'; }).join("")+'</div>'+
@@ -573,6 +630,35 @@ function compl30(){
   return planned? Math.round(done/planned*100) : 100;
 }
 
+/* ----- PLAN (périodisation) ----- */
+function rPlan(){
+  var c=compDate();
+  if(!c) return '<div class="card"><h2>Plan</h2><p class="dim">Règle une date de compétition dans ⚙ Réglages pour générer ta progression.</p></div>';
+  var dc=daysToComp();
+  var out='<div class="card"><h2>'+esc(G.comp.nom)+'</h2><p class="dim">'+
+    c.toLocaleDateString("fr-CA",{weekday:"long",day:"numeric",month:"long",year:"numeric"})+
+    (dc!=null?' · <b class="au">J-'+dc+'</b> ('+Math.max(0,Math.ceil(dc/7))+' semaines)':'')+'</p>'+
+    '<p class="dim" style="font-size:11px">La phase se calcule automatiquement à partir de cette date. Le moteur gère la charge séance par séance ; la phase guide l\'intensité (RIR) et le volume.</p></div>';
+  var now=new Date(); now.setHours(12,0,0,0);
+  var dow=(now.getDay()+6)%7; var mon=new Date(now); mon.setDate(mon.getDate()-dow);
+  out+='<div class="card"><h3>Progression vers l\'événement</h3>';
+  var wki=new Date(mon), guard=0;
+  while(wki.getTime()<=c.getTime()+6*86400000 && guard<60){
+    var rem=Math.ceil((c-wki)/86400000/7);
+    var ph=phaseFor(rem);
+    var cur=(wki.getTime()===mon.getTime());
+    out+='<div class="wkrow'+(cur?' cur':'')+'" style="border-left:4px solid '+ph.col+'">'+
+      '<div class="flexr" style="justify-content:space-between"><b'+(cur?' class="au"':'')+'>Sem. du '+
+        wki.toLocaleDateString("fr-CA",{day:"numeric",month:"short"})+(cur?' · maintenant':'')+'</b>'+
+        '<span style="color:'+ph.col+';font-size:12px">'+ph.n+'</span></div>'+
+      '<div class="dim" style="font-size:11px">'+ph.focus+' · RIR '+ph.rir+' · volume '+ph.vol+'</div></div>';
+    wki=new Date(wki); wki.setDate(wki.getDate()+7); guard++;
+  }
+  out+='</div>';
+  out+='<div class="msg">Repère : décharge intégrée à 7 semaines de l\'événement (récup tendineuse), puis intensification → pic AW → affûtage. À 44 ans et en relance, autorégule : si la barre ralentit ou les coudes tirent, recule d\'une coche, ce n\'est jamais un échec.</div>';
+  return out;
+}
+
 function rCal(){
   var y=calRef.getFullYear(), m=calRef.getMonth();
   var first=new Date(y,m,1), start=(first.getDay()+6)%7, nd=new Date(y,m+1,0).getDate();
@@ -583,6 +669,7 @@ function rCal(){
   out+='<div class="cal">'+["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"].map(function(d){return '<div class="hd">'+d+'</div>';}).join("");
   for(var i=0;i<start;i++) out+='<div></div>';
   var now=new Date(); now.setHours(12,0,0,0);
+  var cstr=(G.comp&&G.comp.date)?G.comp.date:null;
   for(var d=1; d<=nd; d++){
     var dt=new Date(y,m,d,12), ds=dstr(dt), dk=dayKey(dt), ty=G.days[dk].type;
     var ls=lmap[ds]||[];
@@ -592,7 +679,9 @@ function rCal(){
       if(main) st=" ok";
       else if(dt<now) st=" miss";
     } else if(ls.length) st=" ok";
+    var isComp=(ds===cstr);
     out+='<div class="d'+st+(ds===today()?" today":"")+(selDay===ds?'" style="outline:2px solid var(--blue)':'')+'" onclick="selDayF(\''+ds+'\')"><b>'+d+'</b>'+
+     (isComp?'<span class="xtra" style="color:var(--red)">⚔ COMPÉT.</span>':'')+
      '<span class="pl">'+(ty==="repos"?"repos":G.days[dk].nom.split("·")[0].trim())+'</span>';
     ls.forEach(function(l){
       if(l.kind==="aw") out+='<span class="xtra">⚔ AW</span>';
@@ -601,25 +690,22 @@ function rCal(){
     });
     out+='</div>';
   }
-  out+='</div><p class="dim" style="margin-top:6px">Tape un jour pour voir le détail. Vert = entraînement prévu complété · Rouge = prévu mais manqué · ⚔ et 🌳 s\'ajoutent par-dessus, peu importe le jour. Pas d\'heures — juste fait ou pas fait.</p></div>';
-  /* ----- détail du jour sélectionné ----- */
+  out+='</div><p class="dim" style="margin-top:6px">Tape un jour pour voir le détail. Vert = entraînement prévu complété · Rouge = prévu mais manqué · ⚔ COMPÉT. = jour de l\'événement.</p></div>';
   if(selDay){
     var sd=noon(selDay), sdk=dayKey(sd), sty=G.days[sdk].type;
     var sls=lmap[selDay]||[];
     out+='<div class="card" style="border-color:var(--blue)"><h3>'+
       sd.toLocaleDateString("fr-CA",{weekday:"long",day:"numeric",month:"long"})+'</h3>';
-    /* prévu */
     out+='<p><b class="au">Prévu :</b> '+G.days[sdk].nom+(G.days[sdk].lieu?' <span class="dim">· '+esc(G.days[sdk].lieu)+'</span>':'')+'</p>';
     if(sty==="gym"&&(G.ex[sdk]||[]).length){
       out+='<table><tr><th>Exercice</th><th>Plan</th><th>Charge suggérée</th></tr>'+
        G.ex[sdk].map(function(x){
          var sg=suggest(x);
-         return '<tr><td>'+(x.ssg>0?'<span class="bl">SS'+x.ssg+'</span> ':'')+esc(x.nom)+(x.aw?' <span class="bl">⚔</span>':'')+
+         return '<tr><td>'+(x.ssg>0?'<span class="bl">SS'+x.ssg+'</span> ':'')+esc(x.nom)+(x.aw?' <span class="bl">⚔</span>':'')+homeBadge(x)+
           '</td><td class="dim">'+x.sets+'×'+x.reps+(x.unit==="s"?"s":"")+'</td>'+
           '<td><b class="au">'+sg.poids+' lb</b> <span class="dim">'+sg.why+'</span></td></tr>';
        }).join("")+'</table>';
     }
-    /* fait */
     if(sls.length){
       out+='<p style="margin-top:10px"><b class="g">Fait :</b></p>';
       sls.forEach(function(l){
@@ -637,12 +723,11 @@ function rCal(){
     } else if(sty!=="repos") out+='<p class="dim" style="margin-top:8px">Rien de loggé '+(sd<new Date()?'— jour manqué.':'encore.')+'</p>';
     out+='<button class="ghost" style="margin-top:8px" onclick="selDayF(null)">Fermer</button></div>';
   }
-  /* suggestions hors routine */
   out+='<div class="card"><h3>Suggestions hors routine</h3><div class="flexr">'+
    G.sugg.map(function(s,i){ return '<span class="ghost" style="display:inline-flex;align-items:center;gap:6px;padding:6px 10px">'+esc(s)+
      ' <a style="color:var(--red);cursor:pointer" onclick="delSugg('+i+')">✕</a></span>'; }).join("")+'</div>'+
    '<div class="flexr" style="margin-top:8px"><input id="sg-n" style="flex:1" placeholder="Nouvelle idée…"><button class="ghost" onclick="addSugg()">+ Ajouter</button></div>'+
-   '<p class="dim">Pour les logger : Séance → 🌳 Hors routine. Les pratiques AW (~aux 2 semaines, selon tes collègues) se loggent pareil, n\'importe quel jour.</p></div>';
+   '<p class="dim">Natation : créneaux bain libre adultes (même bâtiment), Mer et Ven. Logge-la avec le bouton 🏊.</p></div>';
   return out;
 }
 
@@ -667,12 +752,10 @@ function lineChart(pts,w,h,unit){
 }
 function rStats(){
   var out="";
-  /* cartes globales */
   var nGym=G.logs.filter(function(l){return l.kind==="gym";}).length;
   var nSwim=G.logs.filter(function(l){return l.kind==="nage";}).length;
   var nAW=G.logs.filter(function(l){return l.kind==="aw";}).length;
   var distTot=0,minSwim=0; G.logs.forEach(function(l){ if(l.kind==="nage"){distTot+=l.dist||0;minSwim+=l.min||0;} });
-  /* streak : jours consécutifs où prévu = fait (repos compte) */
   var lmap={}; G.logs.forEach(function(l){ (lmap[l.d]=lmap[l.d]||[]).push(l); });
   var streak=0, dt=new Date(); dt.setHours(12,0,0,0);
   if(!(lmap[dstr(dt)]||[]).some(function(l){return l.kind==="gym"||l.kind==="nage";}) && G.days[dayKey(dt)].type!=="repos") dt.setDate(dt.getDate()-1);
@@ -692,9 +775,7 @@ function rStats(){
    '<div class="stat">Pratiques AW<b class="bl">'+nAW+'</b></div>'+
    '<div class="stat">Volume cette sem.<b class="au">'+fmtVol(weekVol(0))+'</b><small>sem. passée : '+fmtVol(weekVol(1))+'</small></div>'+
   '</div>';
-  /* volume hebdo — 8 semaines */
   out+='<div class="card"><h3>Volume hebdomadaire (lb soulevées)</h3>'+volChart()+'</div>';
-  /* progression par exercice */
   var opts=allEx().map(function(x){ return '<option value="'+x.id+'"'+(statEx===x.id?' selected':'')+'>'+esc(x.nom)+'</option>'; }).join("");
   if(!statEx) statEx=allEx()[0]?allEx()[0].id:null;
   out+='<div class="card"><h3>Progression par exercice</h3>'+
@@ -712,7 +793,6 @@ function rStats(){
       out+='<p class="dim">Dernier : '+le[0].poids+' lb × '+le[0].reps+' → e1RM estimé <b class="au">'+e1rm(le[0].poids,le[0].reps).toFixed(0)+' lb</b></p>';
   }
   out+='</div></div>';
-  /* PRs */
   var prs=[];
   allEx().forEach(function(x){
     var max=0,when=""; G.logs.forEach(function(l){ if(l.kind!=="gym")return;
@@ -722,7 +802,6 @@ function rStats(){
   prs.sort(function(a,b){return b.m-a.m;});
   out+='<div class="card"><h3>🏆 Records (PR)</h3>'+(prs.length?'<table><tr><th>Exercice</th><th>Max</th><th>Date</th></tr>'+
    prs.map(function(p){return '<tr><td>'+esc(p.n)+(p.aw?' <span class="bl">⚔</span>':'')+'</td><td><b class="au">'+p.m+' lb</b></td><td class="dim">'+p.d+'</td></tr>';}).join("")+'</table>':'<p class="dim">Aucun record encore — la relance commence maintenant.</p>')+'</div>';
-  /* poids corporel */
   out+='<div class="card"><h3>Poids corporel</h3>';
   var bp=G.body.slice().reverse().filter(function(b){return b.poids>0;}).map(function(b){return [noon(b.d).getTime(), b.poids];});
   out+=lineChart(bp,640,160);
@@ -768,7 +847,7 @@ function volChart(){
 }
 
 function rProg(){
-  var out='<p class="dim">Modifie tout : nom, lieu, type de jour, séries×reps (→ = haut de fourchette en double progression), charge, pas, mode, unité, groupe superset (même numéro = même SS). « Échanger avec » déplace une séance complète vers un autre jour (les deux jours s\'échangent, l\'historique suit).</p>';
+  var out='<p class="dim">Modifie tout : nom, lieu, type, séries×reps (→ = haut de fourchette en double progression), charge, pas, mode, unité, lieu d\'exécution (gym/maison), groupe superset. « Échanger avec » déplace une séance vers un autre jour.</p>';
   ["lun","mar","mer","jeu","ven","sam","dim"].forEach(function(dk){
     var day=G.days[dk];
     out+='<div class="card"><h2>'+["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"][["lun","mar","mer","jeu","ven","sam","dim"].indexOf(dk)]+
@@ -790,6 +869,7 @@ function rProg(){
         out+='<div class="prog-ex">'+
          '<div class="row1">'+
           '<input class="nm" value="'+esc(x.nom)+'" onchange="uEx(\''+dk+'\','+i+',\'nom\',this.value)">'+
+          (x.loc==="home"?'<span class="home-badge">🏠</span>':'')+
           '<button class="ghost" onclick="mvEx(\''+dk+'\','+i+',-1)">↑</button>'+
           '<button class="ghost" onclick="mvEx(\''+dk+'\','+i+',1)">↓</button>'+
           (armed?'<button class="ghost" style="color:var(--red);border-color:var(--red)" onclick="delExo(\''+dk+'\','+i+')">sûr?</button>':
@@ -809,6 +889,9 @@ function rProg(){
           '<select class="sm" onchange="uEx(\''+dk+'\','+i+',\'unit\',this.value)">'+
             '<option value="lbs"'+(x.unit==="lbs"?" selected":"")+'>reps</option>'+
             '<option value="s"'+(x.unit==="s"?" selected":"")+'>secondes</option></select>'+
+          '<select class="sm" onchange="uEx(\''+dk+'\','+i+',\'loc\',this.value)" title="lieu d\'exécution">'+
+            '<option value="gym"'+(x.loc!=="home"?" selected":"")+'>gym</option>'+
+            '<option value="home"'+(x.loc==="home"?" selected":"")+'>maison</option></select>'+
           '<span class="dim">SS</span><input class="sm" type="number" min="0" value="'+x.ssg+'" onchange="uEx(\''+dk+'\','+i+',\'ssg\',this.value)">'+
          '</div></div>';
       });
@@ -816,21 +899,25 @@ function rProg(){
     }
     out+='</div>';
   });
-  out+='<div class="msg">La progression choisie : <b>paliers</b> pour les gros mouvements (squat, bench, rows — réussite à RPE ≤8 → +pas; deux échecs → décharge 10%) et <b>double progression</b> pour l\'isolation et le travail bras de fer (monte les reps jusqu\'au haut de fourchette, puis +pas et retour en bas). C\'est le combo le plus durable à 44 ans : les charges montent sans brûler les coudes et les avant-bras.</div>';
+  out+='<div class="msg">Progression : <b>paliers</b> pour les gros mouvements (Bench, Squat, Pull-up, RDL — réussite à RPE ≤8 → +pas; deux échecs → décharge 10%) et <b>double progression</b> pour l\'isolation et l\'AW (monte les reps jusqu\'au haut de fourchette, puis +pas). 🏠 = loaded strap à la maison, en fin de séance.</div>';
   return out;
 }
 
 function rParam(){
-  return '<div class="card"><h2>Sync GitHub</h2><div class="grid3">'+
+  return '<div class="card"><h2>Compétition</h2>'+
+   '<label class="f">Nom / lieu</label><input value="'+esc(G.comp.nom)+'" onchange="uComp(\'nom\',this.value)">'+
+   '<label class="f">Date (AAAA-MM-JJ)</label><input value="'+esc(G.comp.date)+'" onchange="uComp(\'date\',this.value)">'+
+   '<p class="dim">Le compte à rebours, la phase (onglet 📈 Plan) et le bandeau de séance se recalculent automatiquement à partir de cette date.</p></div>'+
+   '<div class="card"><h2>Sync GitHub</h2><div class="grid3">'+
    '<div><label class="f">Owner</label><input value="'+G.gh.owner+'" onchange="uG(\'owner\',this.value)"></div>'+
    '<div><label class="f">Repo</label><input value="'+G.gh.repo+'" onchange="uG(\'repo\',this.value)"></div>'+
    '<div><label class="f">Fichier</label><input value="'+G.gh.file+'" onchange="uG(\'file\',this.value)"></div></div>'+
    '<label class="f">Personal Access Token (partagé avec CIV.SOBRE)</label>'+
    '<input type="password" value="'+(ghTok()?'••••••••':'')+'" onchange="setTok(this.value)" placeholder="ghp_…">'+
-   '<p class="dim" id="gh-st">'+(ghTok()?'Token détecté — déjà configuré via CIV.SOBRE. Crée gym_data.json (contenu : {}) dans le repo si ce n\'est pas fait.':'Colle ton token (le même que CIV.SOBRE). Crée gym_data.json (contenu : {}) dans le repo.')+'</p>'+
+   '<p class="dim" id="gh-st">'+(ghTok()?'Token détecté — déjà configuré via CIV.SOBRE.':'Colle ton token (le même que CIV.SOBRE). Crée gym_data.json (contenu : {}) dans le repo.')+'</p>'+
    '<div class="flexr"><button class="ghost" onclick="expJSON()">Exporter JSON</button>'+
    '<label class="ghost" style="display:inline-block">Importer JSON <input type="file" accept=".json" style="display:none" onchange="impJSON(event)"></label></div></div>'+
-   '<div class="card"><h3>Lien CIV.SOBRE</h3><p class="dim">Quand tu termines une séance (gym, natation, AW ou hors routine), le bonus 🏋️ du tribunal du jour se coche automatiquement dans CIV.SOBRE : si ton check-in sobre est déjà fait, les +3 ⚔ s\'ajoutent direct; sinon, le toggle sera pré-coché en vert quand tu ouvriras le tribunal. Les deux apps doivent tourner sur rogdolphe.github.io dans le même navigateur.</p></div>';
+   '<div class="card"><h3>Lien CIV.SOBRE</h3><p class="dim">Quand tu termines une séance (gym, natation, AW ou hors routine), le bonus 🏋️ du tribunal du jour se coche automatiquement dans CIV.SOBRE. Les deux apps doivent tourner sur rogdolphe.github.io dans le même navigateur.</p></div>';
 }
 
 render();
