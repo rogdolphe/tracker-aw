@@ -251,7 +251,11 @@ body{font-family:"DM Sans",system-ui,sans-serif;background:var(--bg);color:var(-
       <div class="msect" style="margin-top:20px">Mes appareils</div>
       <p style="font-size:12px;color:var(--tx2);margin-bottom:10px">Sélectionne les appareils que tu possèdes. Claude en tiendra compte pour générer tes recettes.</p>
       <div id="appliance-chips" style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px"></div>
-      <button class="btn-prim" onclick="saveAppliances()">✓ Enregistrer les appareils</button>
+      <button class="btn-prim" onclick="saveAppliances()">&#10003; Enregistrer les appareils</button>
+      <div class="msect" style="margin-top:20px">Styles culinaires</div>
+      <p style="font-size:12px;color:var(--tx2);margin-bottom:10px">Sélectionne les cuisines que tu apprécies. Claude privilégiera ces styles dans tes recettes.</p>
+      <div id="style-chips" style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px"></div>
+      <button class="btn-prim" onclick="saveStyles()">&#10003; Enregistrer les styles</button>
       <div class="msect" style="margin-top:18px;color:#a03030">Zone danger</div>
       <button class="btn-danger" onclick="if(confirm('Supprimer tout l\'inventaire?')){INV=[];saveINV();renderInventory();toast('Inventaire effac\u00e9')}">Effacer l&apos;inventaire</button>
       <button class="btn-danger" onclick="if(confirm('Effacer le plan?')){PLAN=null;localStorage.removeItem('km_plan');localStorage.removeItem('km_plan_date');renderPlan();toast('Plan effac\u00e9')}">Effacer le plan</button>
@@ -274,15 +278,17 @@ let editItemId=null,editQty=0;
 const CATS=[
   {key:"dejeuner",label:"D\u00e9jeuner",emoji:"\uD83C\uDF05"},
   {key:"collation_am",label:"Collation AM",emoji:"\uD83C\uDF4E"},
+  {key:"dessert",label:"Dessert",emoji:"\uD83C\uDF70"},
   {key:"diner",label:"D\u00EEner",emoji:"\u2600\uFE0F"},
   {key:"apero",label:"Ap\u00E9ro",emoji:"\uD83C\uDF77"},
   {key:"souper",label:"Souper",emoji:"\uD83C\uDF19"},
   {key:"collation_soir",label:"Soir",emoji:"\uD83C\uDF1B"},
-  {key:"dessert",label:"Dessert",emoji:"\uD83C\uDF70"},
 ];
+
 let activeCat="dejeuner";
 let _busy=false;
 let APPLIANCES=JSON.parse(localStorage.getItem('km_appliances')||'["four","plaques","micro_ondes"]');
+let STYLES=JSON.parse(localStorage.getItem('km_styles')||'["francais","italien","quebecois"]');
 const APPLIANCE_LIST=[
   {key:'four',label:'Four'},
   {key:'plaques',label:'Plaques de cuisson'},
@@ -299,6 +305,18 @@ const APPLIANCE_LIST=[
   {key:'wok',label:'Wok'},
   {key:'friteuse',label:'Friteuse'},
   {key:'raclette',label:'Raclette / fondue'},
+];
+const STYLE_LIST=[
+  {key:'francais',label:'Français / Bistro'},
+  {key:'italien',label:'Italien'},
+  {key:'quebecois',label:'Québécois'},
+  {key:'mediterraneen',label:'Méditerranéen'},
+  {key:'americain',label:'Américain / BBQ'},
+  {key:'asiatique',label:'Asiatique'},
+  {key:'mexicain',label:'Mexicain / Tex-Mex'},
+  {key:'grec',label:'Grec'},
+  {key:'japonais',label:'Japonais'},
+  {key:'espagnol',label:'Espagnol'},
 ];
 
 // LOCAL_DB — inventaire type Métro Québec + influences françaises et italiennes
@@ -808,6 +826,7 @@ function openSettings(){
   document.getElementById("g-kcal").value=GOALS.kcal;document.getElementById("g-prot").value=GOALS.prot;
   document.getElementById("g-carb").value=GOALS.carb;document.getElementById("g-fat").value=GOALS.fat;
   renderApplianceChips();
+  renderStyleChips();
   openM("settingsModal");
 }
 function saveApiKey(){
@@ -821,6 +840,23 @@ function saveGoals(){
 }
 
 // APPLIANCES
+function renderStyleChips(){
+  const el=document.getElementById("style-chips");
+  if(!el)return;
+  el.innerHTML=STYLE_LIST.map(function(s){
+    var on=STYLES.includes(s.key)?" on":"";
+    return "<button class=\"app-chip"+on+"\" data-key=\""+s.key+"\" onclick=\"toggleStyle(this)\">"+esc(s.label)+"</button>";
+  }).join("");
+}
+function toggleStyle(btn){
+  var key=btn.dataset.key;
+  if(STYLES.includes(key)){STYLES=STYLES.filter(function(k){return k!==key;});btn.classList.remove("on");}
+  else{STYLES.push(key);btn.classList.add("on");}
+}
+function saveStyles(){
+  localStorage.setItem("km_styles",JSON.stringify(STYLES));
+  toast("✓ Styles enregistrés");
+}
 function renderApplianceChips(){
   const el=document.getElementById("appliance-chips");
   if(!el)return;
@@ -838,6 +874,23 @@ function toggleApp(btn){
     APPLIANCES.push(key);
     btn.classList.add("on");
   }
+}
+function renderStyleChips(){
+  const el=document.getElementById("style-chips");
+  if(!el)return;
+  el.innerHTML=STYLE_LIST.map(function(s){
+    var on=STYLES.includes(s.key)?" on":"";
+    return "<button class=\"app-chip"+on+"\" data-key=\""+s.key+"\" onclick=\"toggleStyle(this)\">"+esc(s.label)+"</button>";
+  }).join("");
+}
+function toggleStyle(btn){
+  var key=btn.dataset.key;
+  if(STYLES.includes(key)){STYLES=STYLES.filter(function(k){return k!==key;});btn.classList.remove("on");}
+  else{STYLES.push(key);btn.classList.add("on");}
+}
+function saveStyles(){
+  localStorage.setItem("km_styles",JSON.stringify(STYLES));
+  toast("\u2713 Styles enregistr\u00e9s");
 }
 function saveAppliances(){
   localStorage.setItem("km_appliances",JSON.stringify(APPLIANCES));
