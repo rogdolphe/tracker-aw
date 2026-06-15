@@ -247,7 +247,7 @@ body{font-family:"DM Sans",system-ui,sans-serif;background:var(--bg);color:var(-
         <div><div class="form-label">Glucides (g)</div><input type="number" class="s-inp" id="g-carb"></div>
         <div><div class="form-label">Lipides (g)</div><input type="number" class="s-inp" id="g-fat"></div>
       </div>
-      <button class="btn-prim" onclick="saveGoals()">Enregistrer</button>
+      <button class="btn-prim" onclick="saveGoals()">Enregistrer les objectifs</button>
       <div class="msect" style="margin-top:20px">Mes appareils</div>
       <p style="font-size:12px;color:var(--tx2);margin-bottom:10px">Sélectionne les appareils que tu possèdes. Claude en tiendra compte pour générer tes recettes.</p>
       <div id="appliance-chips" style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px"></div>
@@ -265,10 +265,12 @@ body{font-family:"DM Sans",system-ui,sans-serif;background:var(--bg);color:var(-
       <input type="password" class="s-inp" id="gh-token-inp" placeholder="ghp_..." style="margin-bottom:8px">
       <div class="form-label" style="margin-bottom:4px">Dépôt GitHub (owner/repo)</div>
       <input type="text" class="s-inp" id="gh-repo-inp" placeholder="rogdolphe/tracker-aw" style="margin-bottom:8px">
-      <div style="display:flex;gap:8px">
-        <button class="btn-prim" onclick="saveGHToken()">Enregistrer</button>
-        <button class="btn-sec" onclick="ghPull(true)">&#8595; Charger</button>
-        <button class="btn-sec" onclick="ghPush(true)">&#8593; Sauvegarder</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn-green" style="margin-top:0;flex:1;padding:10px" onclick="saveGHToken()">Enregistrer le token</button>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn-sec" style="flex:1" onclick="ghPull(true)">&#8595; Charger depuis GitHub</button>
+        <button class="btn-sec" style="flex:1" onclick="ghPush(true)">&#8593; Pousser vers GitHub</button>
       </div>
       <div class="msect" style="margin-top:18px;color:#a03030">Zone danger</div>
       <button class="btn-danger" onclick="if(confirm('Supprimer tout l\'inventaire?')){INV=[];saveINV();renderInventory();toast('Inventaire effac\u00e9')}">Effacer l&apos;inventaire</button>
@@ -911,7 +913,8 @@ function saveStyles(){
 }
 function saveAppliances(){
   localStorage.setItem("km_appliances",JSON.stringify(APPLIANCES));
-  toast("✓ Appareils enregistrés");
+  localStorage.setItem("km_styles",JSON.stringify(STYLES));
+  toast("✓ Appareils et styles enregistrés");
 }
 // INVENTORY
 function renderInventory(){
@@ -1118,9 +1121,22 @@ const SYS="Tu es un chef culinaire expert. Génère des recettes réalistes et c
 function recipeCount(){return INV.length<8?2:INV.length<15?3:INV.length<25?4:5;}
 function buildPrompt(){
   const n=recipeCount();
-  const inv=INV.map(i=>{const u=i.unit==="units"?"u":i.unit;return i.name+"("+i.qty+u+")";}).join(", ");
-  const appNames=APPLIANCE_LIST.filter(a=>APPLIANCES.includes(a.key)).map(a=>a.label).join(', ');
-  return "Inventaire: "+inv+"\nObjectifs: "+GOALS.kcal+"kcal "+GOALS.prot+"g prot\n\nGénère "+n+" recettes par catégorie.\nJSON: {\"dejeuner\":[],\"collation_am\":[],\"diner\":[],\"apero\":[],\"souper\":[],\"collation_soir\":[]}\nChaque recette: {\"name\":\"Nom\",\"emoji\":\"X\",\"kcal\":0,\"prot\":0,\"carb\":0,\"fat\":0,\"time\":\"Xmin\",\"ingredients\":[{\"name\":\"NomExact\",\"qty\":0,\"unit\":\"g\"}],\"steps\":[\"etape1\",\"etape2\"],\"tip\":\"conseil\"}\nRègles: noms EXACTS inventaire · recettes connues · max 4 ingrédients · max 3 étapes courtes · tip=1 phrase";
+  const inv=INV.map(function(i){var u=i.unit==="units"?"u":i.unit;return i.name+"("+i.qty+u+")";}).join(", ");
+  const appNames=APPLIANCE_LIST.filter(function(a){return APPLIANCES.includes(a.key);}).map(function(a){return a.label;}).join(", ");
+  const styleNames=STYLE_LIST.filter(function(s){return STYLES.includes(s.key);}).map(function(s){return s.label;}).join(", ");
+  return "Inventaire: "+inv
+    +"\nObjectifs: "+GOALS.kcal+"kcal "+GOALS.prot+"g prot"
+    +"\nAppareils: "+appNames
+    +"\nStyles: "+styleNames
+    +"\n\nG\u00e9n\u00e8re "+n+" recettes pour CHACUNE de ces 7 cat\u00e9gories OBLIGATOIRES."
+    +"\nJSON: {\"dejeuner\":[],\"collation_am\":[],\"dessert\":[],\"diner\":[],\"apero\":[],\"souper\":[],\"collation_soir\":[]}"
+    +"\nChaque recette: {\"name\":\"Nom\",\"emoji\":\"X\",\"kcal\":0,\"prot\":0,\"carb\":0,\"fat\":0,\"time\":\"Xmin\",\"ingredients\":[{\"name\":\"NomExact\",\"qty\":0,\"unit\":\"g\"}],\"steps\":[\"etape1\",\"etape2\"],\"tip\":\"conseil\"}"
+    +"\nR\u00e8gles:"
+    +"\n- Noms EXACTS de l'inventaire"
+    +"\n- Recettes connues et r\u00e9alistes"
+    +"\n- Max 4 ingr\u00e9dients, max 3 \u00e9tapes"
+    +"\n- dejeuner=petit-d\u00e9jeuner, collation_am=snack matin, diner=repas midi, apero=bouchees, souper=repas soir, collation_soir=snack soir"
+    +"\n- dessert=desserts sucr\u00e9s. IMPORTANT: pour dessert utilise ce qui est disponible: oeufs+beurre+farine=cr\u00eapes/biscuits/g\u00e2teau, yogourt+fruits=parfait, pommes=compote, chocolat=mousse. Tu DOIS g\u00e9n\u00e9rer "+n+" desserts.";
 }
 function tryParseJSON(txt){
   txt=txt.trim();
