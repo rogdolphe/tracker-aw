@@ -1,7 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
-  <rect width="192" height="192" rx="38" fill="#d97706"/>
-  <rect x="44" y="56" width="104" height="10" rx="5" fill="white"/>
-  <rect x="44" y="86" width="72" height="10" rx="5" fill="white" opacity=".85"/>
-  <rect x="44" y="116" width="88" height="10" rx="5" fill="white" opacity=".7"/>
-  <text x="148" y="158" text-anchor="middle" font-family="monospace" font-size="36" font-weight="bold" fill="white" opacity=".9">$</text>
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Dark rounded square background -->
+  <rect width="512" height="512" rx="110" fill="#1e1d1b"/>
+
+  <!-- Fork (left side) -->
+  <!-- Handle -->
+  <rect x="175" y="290" width="28" height="130" rx="14" fill="#f0ede8"/>
+  <!-- Tines -->
+  <rect x="152" y="110" width="12" height="110" rx="6" fill="#f0ede8"/>
+  <rect x="183" y="110" width="12" height="110" rx="6" fill="#f0ede8"/>
+  <rect x="214" y="110" width="12" height="110" rx="6" fill="#f0ede8"/>
+  <!-- Fork bridge -->
+  <rect x="152" y="210" width="74" height="22" rx="8" fill="#f0ede8"/>
+  <rect x="163" y="225" width="52" height="65" rx="8" fill="#f0ede8"/>
+
+  <!-- Macro bars (right side) -->
+  <!-- Protein bar (green) -->
+  <rect x="300" y="320" width="38" height="100" rx="10" fill="#1d9e75"/>
+  <!-- Carbs bar (blue) -->
+  <rect x="348" y="260" width="38" height="160" rx="10" fill="#3b82f6"/>
+  <!-- Fat bar (pink) — tallest = macros balanced -->
+  <rect x="254" y="200" width="38" height="220" rx="10" fill="#ec4899"/>
 </svg>
