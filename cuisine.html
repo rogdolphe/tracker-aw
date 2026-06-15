@@ -575,27 +575,37 @@ function deleteItem(id){if(!confirm("Supprimer cet aliment?"))return;INV=INV.fil
 // PLAN GENERATION
 function getSundayStr(){const d=new Date();const sun=new Date(d);sun.setDate(d.getDate()-d.getDay());return sun.toISOString().slice(0,10);}
 function needsRegen(){return new Date().getDay()===0&&localStorage.getItem("km_plan_date")!==getSundayStr();}
-const SYS="Tu es un chef culinaire expert. G\u00e9n\u00e8re des recettes r\u00e9alistes et connues (plats authentiques, pas invent\u00e9s) UNIQUEMENT avec les ingr\u00e9dients fournis. R\u00e9ponds UNIQUEMENT en JSON valide, sans markdown.";
+const SYS="Tu es un chef culinaire expert. Génère des recettes réalistes et connues UNIQUEMENT avec les ingrédients fournis. Réponds UNIQUEMENT en JSON compact valide, sans markdown.";
+function recipeCount(){return INV.length<8?2:INV.length<15?3:INV.length<25?4:5;}
 function buildPrompt(){
-  const inv=INV.map(i=>{const u=i.unit==="units"?"unit\u00e9s":i.unit;return"- "+i.name+" ("+i.qty+u+"): "+i.kcal+" kcal, "+i.prot+"g prot, "+i.carb+"g C, "+i.fat+"g L pour 100g";}).join("\n");
-  return "Mon inventaire:\n"+inv+"\n\nObjectifs: "+GOALS.kcal+" kcal, "+GOALS.prot+"g prot, "+GOALS.carb+"g glucides, "+GOALS.fat+"g lipides\n\nG\u00e9n\u00e8re 5 recettes par cat\u00e9gorie, vari\u00e9es.\n\nJSON:\n{\"dejeuner\":[...],\"collation_am\":[...],\"diner\":[...],\"apero\":[...],\"souper\":[...],\"collation_soir\":[...]}\n\nChaque recette:\n{\"name\":\"Nom\",\"emoji\":\"emoji\",\"kcal\":380,\"prot\":28,\"carb\":8,\"fat\":18,\"time\":\"10 min\",\"ingredients\":[{\"name\":\"Nom exact inventaire\",\"qty\":3,\"unit\":\"unit\u00e9s\"}],\"steps\":[\"Etape 1\",\"Etape 2\"],\"tip\":\"Conseil\"}\n\nR\u00e8gles: noms EXACTS de l\u2019inventaire \u00b7 recettes connues \u00b7 max 5 ingr\u00e9dients \u00b7 max 4 \u00e9tapes \u00b7 favoriser les prot\u00e9ines \u00b7 cat\u00e9gories: dejeuner=matin, collation_am=snack matin, diner=midi, apero=bouchees, souper=soir, collation_soir=snack soir";
+  const n=recipeCount();
+  const inv=INV.map(i=>{const u=i.unit==="units"?"u":i.unit;return i.name+"("+i.qty+u+")";}).join(", ");
+  return "Inventaire: "+inv+"\nObjectifs: "+GOALS.kcal+"kcal "+GOALS.prot+"g prot\n\nGénère "+n+" recettes par catégorie.\nJSON: {\"dejeuner\":[],\"collation_am\":[],\"diner\":[],\"apero\":[],\"souper\":[],\"collation_soir\":[]}\nChaque recette: {\"name\":\"Nom\",\"emoji\":\"X\",\"kcal\":0,\"prot\":0,\"carb\":0,\"fat\":0,\"time\":\"Xmin\",\"ingredients\":[{\"name\":\"NomExact\",\"qty\":0,\"unit\":\"g\"}],\"steps\":[\"etape1\",\"etape2\"],\"tip\":\"conseil\"}\nRègles: noms EXACTS inventaire · recettes connues · max 4 ingrédients · max 3 étapes courtes · tip=1 phrase";
+}
+function tryParseJSON(txt){
+  txt=txt.trim().replace(/^```json\n?/,"").replace(/\n?```$/,"").trim();
+  try{return JSON.parse(txt);}catch(e){
+    const fixes=[txt+'"]}',txt+']}]',txt+']}]}',txt+']}}'];
+    for(const f of fixes){try{return JSON.parse(f);}catch(e2){}}
+    throw new Error("Réponse tronquée. Ajoute plus d’aliments et réessaie.");
+  }
 }
 async function generatePlan(){
   const apiKey=localStorage.getItem("km_api_key");
-  if(!apiKey){toast("Configure ta cl\u00e9 API dans \u2699\ufe0f");openSettings();return;}
-  if(!INV.length){toast("Ajoute des aliments d\u2019abord");return;}
-  document.getElementById("plan-content").innerHTML="<div class=\"plan-loading\"><div class=\"plan-loading-ic\">\uD83E\uDDD1\u200D\uD83C\uDF73</div><div class=\"plan-loading-t\">G\u00e9n\u00e9ration du plan...</div><div class=\"plan-loading-s\">Claude analyse ton inventaire et cr\u00e9e des recettes r\u00e9alistes.<br>Environ 15-30 secondes...</div></div>";
+  if(!apiKey){toast("Configure ta clé API dans ⚙️");openSettings();return;}
+  if(!INV.length){toast("Ajoute des aliments d’abord");return;}
+  const n=recipeCount();
+  document.getElementById("plan-content").innerHTML="<div class=\"plan-loading\"><div class=\"plan-loading-ic\">🧑‍🍳</div><div class=\"plan-loading-t\">Génération ("+n+" recettes/catégorie)...</div><div class=\"plan-loading-s\">Claude analyse tes "+INV.length+" aliments.<br>~20 secondes...</div></div>";
   try{
-    const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:4096,system:SYS,messages:[{role:"user",content:buildPrompt()}]})});
+    const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:8000,system:SYS,messages:[{role:"user",content:buildPrompt()}]})});
     if(!res.ok){const e=await res.json();throw new Error(e.error?.message||"Erreur API "+res.status);}
     const data=await res.json();
-    let txt=data.content[0].text.trim().replace(/^```json\n?/,"").replace(/\n?```$/,"").trim();
-    PLAN=JSON.parse(txt);
+    PLAN=tryParseJSON(data.content[0].text);
     localStorage.setItem("km_plan",JSON.stringify(PLAN));
     localStorage.setItem("km_plan_date",getSundayStr());
-    renderPlan();toast("\u2713 Plan g\u00e9n\u00e9r\u00e9!");
+    renderPlan();toast("✓ Plan généré!");
   }catch(e){
-    document.getElementById("plan-content").innerHTML="<div class=\"plan-empty\"><div class=\"plan-empty-ic\">\u26a0\ufe0f</div><div class=\"plan-empty-t\">Erreur</div><div class=\"plan-empty-s\">"+esc(e.message)+"</div><button class=\"btn-prim\" style=\"margin-top:14px\" onclick=\"generatePlan()\">R\u00e9essayer</button></div>";
+    document.getElementById("plan-content").innerHTML="<div class=\"plan-empty\"><div class=\"plan-empty-ic\">⚠️</div><div class=\"plan-empty-t\">Erreur</div><div class=\"plan-empty-s\">"+esc(e.message)+"</div><button class=\"btn-prim\" style=\"margin-top:14px\" onclick=\"generatePlan()\">Réessayer</button></div>";
   }
 }
 
