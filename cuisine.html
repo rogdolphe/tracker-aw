@@ -1198,6 +1198,7 @@ async function generatePlan(){
     log("<br>\u1F6D1 Aucune recette. V\u00e9rifie ta cl\u00e9 API dans \u2699\ufe0f.");
     return;
   }
+  localStorage.setItem("km_plan_updated",new Date().toISOString());
   renderPlan();
   schedulePush();
   if(errors.length>0)toast("\u26a0\ufe0f "+tot+" recettes (\u00e9checs: "+errors.join(",")+")");
@@ -1363,6 +1364,51 @@ function setSyncStatus(msg,color){
   if(el){el.textContent=msg;el.style.color=color||"var(--tx3)";}
 }
 
+
+async function ghPush(feedback){
+  const token=localStorage.getItem("km_gh_token");
+  if(!token)return;
+  const repo=localStorage.getItem("km_gh_repo")||"rogdolphe/tracker-aw";
+  setSyncStatus("Sauvegarde…","var(--tx3)");
+  try{
+    const payload={inventory:INV,goals:GOALS,appliances:APPLIANCES,styles:STYLES,
+      plan:PLAN||null,plan_date:localStorage.getItem("km_plan_date")||"",
+      updated:new Date().toISOString()};
+    // Save local timestamp
+    localStorage.setItem("km_plan_updated",payload.updated);
+    const b64=btoa(unescape(encodeURIComponent(JSON.stringify(payload,null,2))));
+    let sha=localStorage.getItem("km_gh_sha");
+    // Retry once with fresh SHA on conflict
+    for(let attempt=0;attempt<2;attempt++){
+      const body={message:"Sync Cuisine & Macros "+new Date().toISOString().slice(0,10),content:b64};
+      if(sha)body.sha=sha;
+      const res=await fetch("https://api.github.com/repos/"+repo+"/contents/cuisine-data.json",{
+        method:"PUT",
+        headers:{"Authorization":"token "+token,"Content-Type":"application/json","Accept":"application/vnd.github.v3+json"},
+        body:JSON.stringify(body)
+      });
+      if(res.ok){
+        const d2=await res.json();
+        localStorage.setItem("km_gh_sha",d2.content.sha);
+        const d=new Date();
+        setSyncStatus("✓ Syncé "+d.getHours()+":"+String(d.getMinutes()).padStart(2,"0"),"var(--gn)");
+        if(feedback)toast("✓ Sauvegardé sur GitHub");
+        return;
+      }else if(res.status===409||res.status===422){
+        const info=await fetch("https://api.github.com/repos/"+repo+"/contents/cuisine-data.json",{
+          headers:{"Authorization":"token "+token,"Accept":"application/vnd.github.v3+json"}
+        });
+        if(info.ok){const fd=await info.json();sha=fd.sha;localStorage.setItem("km_gh_sha",sha);}
+      }else{
+        const e=await res.json();throw new Error(e.message||"HTTP "+res.status);
+      }
+    }
+    throw new Error("Échec après 2 tentatives");
+  }catch(e){
+    setSyncStatus("⚠️ Erreur sync","#c0392b");
+    if(feedback)toast("Erreur sync: "+e.message);
+  }
+}
 async function ghPull(feedback){
   const token=localStorage.getItem("km_gh_token");
   if(!token)return;
@@ -1375,63 +1421,30 @@ async function ghPull(feedback){
     if(res.status===404){setSyncStatus("Pas encore syncé","var(--tx3)");return;}
     if(!res.ok)throw new Error("HTTP "+res.status);
     const data=await res.json();
-    const b64=data.content.split("\n").join("");const json=JSON.parse(decodeURIComponent(escape(atob(b64))));
+    const b64clean=data.content.split("\n").join("");
+    const json=JSON.parse(decodeURIComponent(escape(atob(b64clean))));
     localStorage.setItem("km_gh_sha",data.sha);
     if(json.inventory){INV=json.inventory;saveINV();renderInventory();}
     if(json.goals){GOALS=json.goals;localStorage.setItem("km_goals",JSON.stringify(GOALS));updateSub();}
     if(json.appliances){APPLIANCES=json.appliances;localStorage.setItem("km_appliances",JSON.stringify(APPLIANCES));}
     if(json.styles){STYLES=json.styles;localStorage.setItem("km_styles",JSON.stringify(STYLES));}
-    if(json.plan&&typeof json.plan==="object"){PLAN=json.plan;localStorage.setItem("km_plan",JSON.stringify(PLAN));}
-    if(json.plan_date){localStorage.setItem("km_plan_date",json.plan_date);}
-    renderPlan();
+    // Load remote plan only if newer than local
+    const localUpdated=localStorage.getItem("km_plan_updated")||"";
+    const remoteUpdated=json.updated||"";
+    if(json.plan&&(!PLAN||!Object.keys(PLAN).length||remoteUpdated>localUpdated)){
+      PLAN=json.plan;
+      localStorage.setItem("km_plan",JSON.stringify(PLAN));
+      if(json.plan_date)localStorage.setItem("km_plan_date",json.plan_date);
+      if(json.updated)localStorage.setItem("km_plan_updated",json.updated);
+      renderPlan();
+    }
     const d=new Date();
     setSyncStatus("✓ Syncé "+d.getHours()+":"+String(d.getMinutes()).padStart(2,"0"),"var(--gn)");
-    if(feedback)toast("✓ Inventaire chargé depuis GitHub");
+    if(feedback)toast("✓ Chargé depuis GitHub");
   }catch(e){
     setSyncStatus("⚠️ Erreur sync","#c0392b");
     if(feedback)toast("Erreur GitHub: "+e.message);
   }
 }
 
-async function ghPush(feedback){
-  const token=localStorage.getItem("km_gh_token");
-  if(!token)return;
-  const repo=localStorage.getItem("km_gh_repo")||"rogdolphe/tracker-aw";
-  setSyncStatus("Sauvegarde…","var(--tx3)");
-  try{
-    const payload={inventory:INV,goals:GOALS,appliances:APPLIANCES,styles:STYLES,plan:PLAN||null,plan_date:localStorage.getItem("km_plan_date")||"",updated:new Date().toISOString()};
-    const b64=btoa(unescape(encodeURIComponent(JSON.stringify(payload,null,2))));
-    const sha=localStorage.getItem("km_gh_sha");
-    const body={message:"Sync Cuisine & Macros "+new Date().toISOString().slice(0,10),content:b64};
-    if(sha)body.sha=sha;
-    const res=await fetch("https://api.github.com/repos/"+repo+"/contents/cuisine-data.json",{
-      method:"PUT",
-      headers:{"Authorization":"token "+token,"Content-Type":"application/json","Accept":"application/vnd.github.v3+json"},
-      body:JSON.stringify(body)
-    });
-    if(!res.ok){const e=await res.json();throw new Error(e.message||"HTTP "+res.status);}
-    const data=await res.json();
-    localStorage.setItem("km_gh_sha",data.content.sha);
-    renderPlan();
-    const d=new Date();
-    setSyncStatus("✓ Syncé "+d.getHours()+":"+String(d.getMinutes()).padStart(2,"0"),"var(--gn)");
-    if(feedback)toast("✓ Sauvegardé sur GitHub");
-  }catch(e){
-    setSyncStatus("⚠️ Erreur sync","#c0392b");
-    if(feedback)toast("Erreur GitHub: "+e.message);
-  }
-}
 
-function schedulePush(){
-  clearTimeout(_ghPushTimer);
-  _ghPushTimer=setTimeout(()=>ghPush(false),3000);
-}
-
-// INIT
-ghPull(false);
-renderInventory();
-renderPlan();
-if(needsRegen())setTimeout(()=>generatePlan(),1500);
-</script>
-</body>
-</html>
