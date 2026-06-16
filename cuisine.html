@@ -1152,73 +1152,43 @@ function tryParseJSON(txt){
 }
 async function generatePlan(){
   if(!INV.length){toast("Ajoute des aliments d'abord");return;}
-  document.getElementById("plan-content").innerHTML=
-    "<div class=\"plan-loading\">"+
-    "<div class=\"plan-loading-ic\">&#x1F9D1;&#x200D;&#x1F373;</div>"+
-    "<div class=\"plan-loading-t\">G\u00e9n\u00e9ration v3.0&hellip;</div>"+
-    "<div class=\"plan-loading-s\">3 appels en parall\u00e8le</div>"+
-    "</div>";
-  try{
-    var res=await Promise.all([callClaude("dej"),callClaude("rep"),callClaude("snk")]);
-    PLAN=Object.assign({},res[0],res[1],res[2]);
-    localStorage.setItem("km_plan",JSON.stringify(PLAN));
-    localStorage.setItem("km_plan_date",getSundayStr());
-    renderPlan();
-    var tot=Object.values(PLAN).reduce(function(s,a){return s+(a?a.length:0);},0);
-    toast("\u2713 "+tot+" recettes!");
-  }catch(e){
-    document.getElementById("plan-content").innerHTML=
-      "<div class=\"plan-empty\"><div class=\"plan-empty-ic\">\u26a0\ufe0f</div>"+
-      "<div class=\"plan-empty-t\">Erreur</div>"+
-      "<div class=\"plan-empty-s\" style=\"word-break:break-all;font-size:11px\">"+esc(e.message)+"</div>"+
-      "<button class=\"btn-prim\" style=\"margin-top:14px\" onclick=\"generatePlan()\">R\u00e9essayer</button></div>";
+  PLAN={};
+  localStorage.removeItem("km_plan");
+  var pc=document.getElementById("plan-content");
+  pc.innerHTML="<div class=\"plan-loading\"><div class=\"plan-loading-ic\">&#x1F9D1;&#x200D;&#x1F373;</div><div class=\"plan-loading-t\">G\u00e9n\u00e9ration v3.1&hellip;</div><div id=\"gen-log\" style=\"font-size:11px;margin-top:12px;color:var(--tx2);text-align:left;max-width:400px\"></div></div>";
+  var log=function(msg){var el=document.getElementById("gen-log");if(el)el.innerHTML+=msg+"<br>";};
+
+  var calls=[
+    {type:"snk",label:"Collation / Ap\u00e9ro / Soir"},
+    {type:"dej",label:"D\u00e9jeuner / Dessert"},
+    {type:"rep",label:"D\u00eener / Souper"}
+  ];
+  var errors=[];
+  for(var i=0;i<calls.length;i++){
+    var call=calls[i];
+    log("&#x23F3; "+call.label+"&hellip;");
+    try{
+      var result=await callClaude(call.type);
+      Object.assign(PLAN,result);
+      var count=Object.values(result).reduce(function(s,a){return s+(a?a.length:0);},0);
+      log("&#x2705; "+call.label+" ("+count+" recettes)");
+    }catch(e){
+      log("&#x274C; "+call.label+": "+esc(e.message.slice(0,200)));
+      errors.push(call.label+": "+e.message.slice(0,300));
+    }
   }
+  if(Object.keys(PLAN).length===0){
+    pc.innerHTML="<div class=\"plan-empty\"><div class=\"plan-empty-ic\">&#x26A0;&#xFE0F;</div><div class=\"plan-empty-t\">\u00c9chec total</div><div class=\"plan-empty-s\" style=\"font-size:10px;word-break:break-all\">"+esc(errors.join(" | ").slice(0,600))+"</div><button class=\"btn-prim\" style=\"margin-top:14px\" onclick=\"generatePlan()\">R\u00e9essayer</button></div>";
+    return;
+  }
+  localStorage.setItem("km_plan",JSON.stringify(PLAN));
+  localStorage.setItem("km_plan_date",getSundayStr());
+  renderPlan();
+  var tot=Object.values(PLAN).reduce(function(s,a){return s+(a?a.length:0);},0);
+  if(errors.length>0)toast("\u26a0\ufe0f "+tot+" recettes ("+errors.length+" cat\u00e9gorie(s) \u00e9chou\u00e9e(s))");
+  else toast("\u2713 "+tot+" recettes!");
 }
 
-async function callClaude(type){
-  var keyMap={"dej":["dejeuner","dessert"],"rep":["diner","souper"],"snk":["collation_am","apero","collation_soir"]};
-  var payload={model:"claude-sonnet-4-6",max_tokens:3000,system:SYS,
-    messages:[{role:"user",content:buildPromptFor(type)}]};
-  var apiKey=localStorage.getItem("km_api_key");
-  var res;
-  if(PROXY_URL&&PROXY_URL.indexOf("VOTRE-APP")<0){
-    res=await fetch(PROXY_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
-  }else if(apiKey){
-    res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",
-      headers:{"Content-Type":"application/json","x-api-key":apiKey,
-        "anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-      body:JSON.stringify(payload)});
-  }else{
-    throw new Error("Cl\u00e9 API manquante");
-  }
-  var rawText="";
-  try{
-    var data=await res.json();
-    if(data.error)throw new Error("[API ERR] "+JSON.stringify(data.error));
-    if(!data.content||!data.content[0])throw new Error("[VIDE] Pas de contenu");
-    rawText=data.content[0].text;
-    var parsed=tryParseJSON(rawText);
-    // Normalize accented keys
-    var norm={};
-    Object.keys(parsed).forEach(function(k){
-      var k2=k.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
-      if(k2==="dejeuner")norm.dejeuner=parsed[k];
-      else if(k2==="diner")norm.diner=parsed[k];
-      else if(k2==="apero")norm.apero=parsed[k];
-      else norm[k2]=parsed[k];
-    });
-    var expected=keyMap[type]||[];
-    var found=expected.filter(function(k){return Array.isArray(norm[k])&&norm[k].length>0;});
-    if(found.length===0){
-      throw new Error("["+type+"] Cl\u00e9s re\u00e7ues: "+Object.keys(norm).join(",")+
-        " | Attendues: "+expected.join(",")+
-        " | D\u00e9but r\u00e9ponse: "+rawText.slice(0,120));
-    }
-    return norm;
-  }catch(e){
-    throw new Error(e.message+(rawText?" | RAW:"+rawText.slice(0,100):""));
-  }
-}
 
 async function fetchRecipeDetail(recipe,catKey){
   var apiKey=localStorage.getItem("km_api_key");
