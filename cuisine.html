@@ -13,7 +13,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#f7f6f3;--sf:#fff;--sf2:#f0efe9;--bd:rgba(0,0,0,.09);--bd2:rgba(0,0,0,.18);--tx:#1a1917;--tx2:#6b6a65;--tx3:#a09e98;--gn:#1d9e75;--r:14px;--rs:10px;--pill:99px;--nav:64px}
+:root{--bg:#1a0a2e;--sf:#2d1b4e;--sf2:#3a2060;--bd:rgba(180,130,255,.2);--bd2:rgba(180,130,255,.4);--tx:#f0e6ff;--tx2:#c4a8e8;--tx3:#9070c0;--gn:#9333ea;--r:14px;--rs:10px;--pill:99px;--nav:64px}
 @media(prefers-color-scheme:dark){:root{--bg:#131211;--sf:#1e1d1b;--sf2:#282724;--bd:rgba(255,255,255,.09);--bd2:rgba(255,255,255,.18);--tx:#f0ede8;--tx2:#9a9892;--tx3:#635f5a}}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:"DM Sans",system-ui,sans-serif;background:var(--bg);color:var(--tx);min-height:100vh}
@@ -126,7 +126,7 @@ body{font-family:"DM Sans",system-ui,sans-serif;background:var(--bg);color:var(-
 .stock-ok{background:#EAF3DE;color:#27500A}.stock-low{background:#FFF8E6;color:#92600A}.stock-none{background:#FBEAEF;color:#72243E}
 .btn-prim{padding:10px 18px;border-radius:var(--r);border:none;background:var(--tx);color:var(--bg);font-family:"DM Sans",sans-serif;font-size:12px;font-weight:600;cursor:pointer}
 .btn-sec{padding:10px 18px;border-radius:var(--r);border:1px solid var(--bd2);background:var(--sf);color:var(--tx2);font-family:"DM Sans",sans-serif;font-size:12px;font-weight:500;cursor:pointer}
-.btn-green{width:100%;padding:13px;background:var(--gn);color:#fff;border:none;border-radius:var(--r);font-size:14px;font-weight:600;cursor:pointer;font-family:"DM Sans",sans-serif;margin-top:10px}
+.btn-green{width:100%;padding:13px;background:#9333ea;color:#fff;border:none;border-radius:var(--r);font-size:14px;font-weight:600;cursor:pointer;font-family:"DM Sans",sans-serif;margin-top:10px}
 .btn-close{width:100%;padding:13px;background:var(--tx);color:var(--bg);border:none;border-radius:var(--r);font-size:14px;font-weight:600;cursor:pointer;margin-top:14px;font-family:"DM Sans",sans-serif}
 .btn-danger{padding:10px 18px;border-radius:var(--r);border:1px solid #a03030;background:var(--sf);color:#a03030;font-family:"DM Sans",sans-serif;font-size:12px;font-weight:500;cursor:pointer;width:100%;margin-top:8px}
 .icon-btn{font-size:11px;padding:6px 12px;border-radius:var(--pill);border:1px solid var(--bd2);background:var(--sf2);color:var(--tx);cursor:pointer;font-family:"DM Sans",sans-serif;font-weight:500}
@@ -137,7 +137,7 @@ body{font-family:"DM Sans",system-ui,sans-serif;background:var(--bg);color:var(-
 </head>
 <body>
 <div class="app-bar">
-  <div><div class="app-title">&#x1F957; Cuisine &amp; Macros</div><div class="app-sub" id="app-sub">0 aliments</div><div class="app-sub" id="sync-status" style="color:var(--tx3)"></div></div>
+  <div><div class="app-title">&#x1F957; Cuisine &amp; Macros</div><div class="app-sub" id="app-sub">0 aliments</div><div class="app-sub" style="color:#9333ea;font-size:10px">v3.0 • violet</div><div class="app-sub" id="sync-status" style="color:var(--tx3)"></div></div>
   <button class="icon-btn" onclick="openSettings()">&#9881;</button>
 </div>
 <div class="content">
@@ -1140,6 +1140,131 @@ function buildPromptFor(type){
   }
 }
 function buildPrompt(){return buildPromptFor("main");}
+function tryParseJSON(txt){
+  txt=txt.trim();
+  var s=txt.indexOf("{"),e=txt.lastIndexOf("}");
+  if(s>0&&e>s)txt=txt.slice(s,e+1);
+  try{return JSON.parse(txt);}catch(err){
+    var f=[txt+'"]}',txt+']}]',txt+']}]}',txt+'}'];
+    for(var i=0;i<f.length;i++){try{return JSON.parse(f[i]);}catch(e2){}}
+    throw new Error("R\u00e9ponse tronqu\u00e9e. R\u00e9essaie.");
+  }
+}
+async function generatePlan(){
+  if(!INV.length){toast("Ajoute des aliments d'abord");return;}
+  document.getElementById("plan-content").innerHTML=
+    "<div class=\"plan-loading\">"+
+    "<div class=\"plan-loading-ic\">&#x1F9D1;&#x200D;&#x1F373;</div>"+
+    "<div class=\"plan-loading-t\">G\u00e9n\u00e9ration v3.0&hellip;</div>"+
+    "<div class=\"plan-loading-s\">3 appels en parall\u00e8le</div>"+
+    "</div>";
+  try{
+    var res=await Promise.all([callClaude("dej"),callClaude("rep"),callClaude("snk")]);
+    PLAN=Object.assign({},res[0],res[1],res[2]);
+    localStorage.setItem("km_plan",JSON.stringify(PLAN));
+    localStorage.setItem("km_plan_date",getSundayStr());
+    renderPlan();
+    var tot=Object.values(PLAN).reduce(function(s,a){return s+(a?a.length:0);},0);
+    toast("\u2713 "+tot+" recettes!");
+  }catch(e){
+    document.getElementById("plan-content").innerHTML=
+      "<div class=\"plan-empty\"><div class=\"plan-empty-ic\">\u26a0\ufe0f</div>"+
+      "<div class=\"plan-empty-t\">Erreur</div>"+
+      "<div class=\"plan-empty-s\" style=\"word-break:break-all;font-size:11px\">"+esc(e.message)+"</div>"+
+      "<button class=\"btn-prim\" style=\"margin-top:14px\" onclick=\"generatePlan()\">R\u00e9essayer</button></div>";
+  }
+}
+
+async function callClaude(type){
+  var keyMap={"dej":["dejeuner","dessert"],"rep":["diner","souper"],"snk":["collation_am","apero","collation_soir"]};
+  var payload={model:"claude-sonnet-4-6",max_tokens:3000,system:SYS,
+    messages:[{role:"user",content:buildPromptFor(type)}]};
+  var apiKey=localStorage.getItem("km_api_key");
+  var res;
+  if(PROXY_URL&&PROXY_URL.indexOf("VOTRE-APP")<0){
+    res=await fetch(PROXY_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+  }else if(apiKey){
+    res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",
+      headers:{"Content-Type":"application/json","x-api-key":apiKey,
+        "anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+      body:JSON.stringify(payload)});
+  }else{
+    throw new Error("Cl\u00e9 API manquante");
+  }
+  var rawText="";
+  try{
+    var data=await res.json();
+    if(data.error)throw new Error("[API ERR] "+JSON.stringify(data.error));
+    if(!data.content||!data.content[0])throw new Error("[VIDE] Pas de contenu");
+    rawText=data.content[0].text;
+    var parsed=tryParseJSON(rawText);
+    // Normalize accented keys
+    var norm={};
+    Object.keys(parsed).forEach(function(k){
+      var k2=k.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+      if(k2==="dejeuner")norm.dejeuner=parsed[k];
+      else if(k2==="diner")norm.diner=parsed[k];
+      else if(k2==="apero")norm.apero=parsed[k];
+      else norm[k2]=parsed[k];
+    });
+    var expected=keyMap[type]||[];
+    var found=expected.filter(function(k){return Array.isArray(norm[k])&&norm[k].length>0;});
+    if(found.length===0){
+      throw new Error("["+type+"] Cl\u00e9s re\u00e7ues: "+Object.keys(norm).join(",")+
+        " | Attendues: "+expected.join(",")+
+        " | D\u00e9but r\u00e9ponse: "+rawText.slice(0,120));
+    }
+    return norm;
+  }catch(e){
+    throw new Error(e.message+(rawText?" | RAW:"+rawText.slice(0,100):""));
+  }
+}
+
+async function fetchRecipeDetail(recipe,catKey){
+  var apiKey=localStorage.getItem("km_api_key");
+  var invStr=INV.map(function(i){var u=i.unit==="units"?"u":i.unit;return i.name+"("+i.qty+u+")";}).join(", ");
+  var prompt="Stock: "+invStr+"\nRecette: "+recipe.name+"\nBase: "+JSON.stringify(recipe.ingredients)+
+    "\n\nJSON d\u00e9taill\u00e9: {\"name\":\"\",\"emoji\":\"\",\"kcal\":0,\"prot\":0,\"carb\":0,\"fat\":0,\"time\":\"\","+
+    "\"ingredients\":[{\"name\":\"NomExact\",\"qty\":0,\"unit\":\"g\"}],"+
+    "\"steps\":[\"\u00e9tape pr\u00e9cise\"],\"tip\":\"conseil\"}"+
+    "\nMax 8 ingr, 5-6 \u00e9tapes, toutes quantit\u00e9s en g/ml. Compact.";
+  var payload={model:"claude-sonnet-4-6",max_tokens:1500,system:SYS,messages:[{role:"user",content:prompt}]};
+  var apiKey2=localStorage.getItem("km_api_key");
+  var r;
+  if(PROXY_URL&&PROXY_URL.indexOf("VOTRE-APP")<0){
+    r=await fetch(PROXY_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+  }else if(apiKey2){
+    r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",
+      headers:{"Content-Type":"application/json","x-api-key":apiKey2,
+        "anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+      body:JSON.stringify(payload)});
+  }else{return null;}
+  if(!r.ok)return null;
+  var d=await r.json();
+  if(!d.content||!d.content[0])return null;
+  try{return tryParseJSON(d.content[0].text);}catch(e){return null;}
+}
+
+function buildPromptFor(type){
+  var inv=INV.map(function(i){var u=i.unit==="units"?"u":i.unit;return i.name+"("+i.qty+u+")";}).join(", ");
+  var app=APPLIANCE_LIST.filter(function(a){return APPLIANCES.includes(a.key);}).map(function(a){return a.label;}).join(", ");
+  var sty=STYLE_LIST.filter(function(s){return STYLES.includes(s.key);}).map(function(s){return s.label;}).join(", ");
+  var hdr="Stock: "+inv+"\nObjectifs: "+GOALS.kcal+"kcal|"+GOALS.prot+"gP\nAppareils: "+app+"\nStyles: "+sty;
+  var fmt="\nFormat: {\"name\":\"Nom\",\"emoji\":\"X\",\"kcal\":0,\"prot\":0,\"carb\":0,\"fat\":0,\"time\":\"Xmin\",\"ingredients\":[{\"name\":\"NomExact\",\"qty\":0,\"unit\":\"g\"}],\"steps\":[\"etape\"],\"tip\":\"conseil\"}";
+  var rules="\nMax 5 ingr, 3 etapes. Noms EXACTS inventaire. JSON compact.";
+  if(type==="dej"){
+    return hdr+"\n\nGenere 5 recettes par categorie.\nJSON: {\"dejeuner\":[],\"dessert\":[]}"
+      +fmt+rules+"\nProteines: dejeuner "+Math.round(GOALS.prot*.20)+"g+ | dessert "+Math.round(GOALS.prot*.08)+"g+"
+      +"\ndessert: crepes/gateau/mousse/compote avec oeufs/beurre/sucre/farine/fruits.";
+  }else if(type==="rep"){
+    return hdr+"\n\nGenere 5 recettes par categorie.\nJSON: {\"diner\":[],\"souper\":[]}"
+      +fmt+rules+"\nProteines: diner "+Math.round(GOALS.prot*.22)+"g+ | souper "+Math.round(GOALS.prot*.28)+"g+";
+  }else{
+    return hdr+"\n\nGenere 4 recettes par categorie.\nJSON: {\"collation_am\":[],\"apero\":[],\"collation_soir\":[]}"
+      +fmt+rules;
+  }
+}
+function buildPrompt(){return buildPromptFor("rep");}
 function tryParseJSON(txt){
   txt=txt.trim();
   var s=txt.indexOf("{"),e=txt.lastIndexOf("}");
