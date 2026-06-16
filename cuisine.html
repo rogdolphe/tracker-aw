@@ -1151,15 +1151,17 @@ function tryParseJSON(txt){
   }
 }
 async function generatePlan(){
+  if(_busy){toast("G\u00e9n\u00e9ration d\u00e9j\u00e0 en cours...");return;}
+  _busy=true;
   if(!INV.length){toast("Ajoute des aliments d'abord");return;}
   PLAN={};localStorage.removeItem("km_plan");
   var cats=[
-    {key:"dejeuner",     n:5, prot:Math.round(GOALS.prot*.20), hint:"petit-dejeuner"},
+    {key:"dejeuner",     n:4, prot:Math.round(GOALS.prot*.20), hint:"petit-dejeuner"},
     {key:"collation_am", n:4, prot:Math.round(GOALS.prot*.08), hint:"snack du matin"},
-    {key:"dessert",      n:5, prot:Math.round(GOALS.prot*.08), hint:"dessert sucre avec oeufs beurre sucre farine fruits"},
-    {key:"diner",        n:5, prot:Math.round(GOALS.prot*.22), hint:"repas du midi"},
+    {key:"dessert",      n:4, prot:Math.round(GOALS.prot*.08), hint:"dessert sucre avec oeufs beurre sucre farine fruits"},
+    {key:"diner",        n:4, prot:Math.round(GOALS.prot*.22), hint:"repas du midi"},
     {key:"apero",        n:4, prot:Math.round(GOALS.prot*.07), hint:"bouchees aperitif"},
-    {key:"souper",       n:5, prot:Math.round(GOALS.prot*.28), hint:"repas du soir"},
+    {key:"souper",       n:4, prot:Math.round(GOALS.prot*.28), hint:"repas du soir"},
     {key:"collation_soir",n:4,prot:Math.round(GOALS.prot*.07),hint:"snack leger du soir"}
   ];
 
@@ -1188,6 +1190,7 @@ async function generatePlan(){
     }
   }
 
+  _busy=false;
   localStorage.setItem("km_plan",JSON.stringify(PLAN));
   localStorage.setItem("km_plan_date",getSundayStr());
   var tot=Object.values(PLAN).reduce(function(s,a){return s+a.length;},0);
@@ -1211,7 +1214,7 @@ async function callSingleCat(catKey,n,protTarget,hint){
     "[{\"name\":\"Nom\",\"emoji\":\"X\",\"kcal\":0,\"prot\":0,\"carb\":0,\"fat\":0,\"time\":\"Xmin\","+
     "\"ingredients\":[{\"name\":\"NomExact\",\"qty\":0,\"unit\":\"g\"}],\"steps\":[\"etape\"],\"tip\":\"conseil\"}]\n"+
     "Proteines cible: "+protTarget+"g+. Max 5 ingredients, 3 etapes. Noms EXACTS inventaire. JSON pur, zero texte autour.";
-  var payload={model:"claude-sonnet-4-6",max_tokens:2000,system:"Tu es un chef culinaire. Reponds UNIQUEMENT avec du JSON valide, zero texte avant ou apres, zero markdown.",
+  var payload={model:"claude-sonnet-4-6",max_tokens:3000,system:"Tu es un chef culinaire. Reponds UNIQUEMENT avec du JSON valide, zero texte avant ou apres, zero markdown.",
     messages:[{role:"user",content:prompt}]};
   var apiKey=localStorage.getItem("km_api_key");
   var res;
