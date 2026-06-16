@@ -137,7 +137,7 @@ body{font-family:"DM Sans",system-ui,sans-serif;background:var(--bg);color:var(-
 </head>
 <body>
 <div class="app-bar">
-  <div><div class="app-title">&#x1F957; Cuisine &amp; Macros</div><div class="app-sub" id="app-sub">0 aliments</div><div id="app-ver" style="font-size:10px;color:#a78bfa">v3.3 • violet</div><div id="sync-status" style="font-size:10px;color:var(--tx3)"></div><div class="app-sub" style="color:#9333ea;font-size:10px">v3.0 • violet</div><div class="app-sub" id="sync-status" style="color:var(--tx3)"></div></div>
+  <div><div class="app-title">&#x1F957; Cuisine &amp; Macros</div><div class="app-sub" id="app-sub">0 aliments</div><div style="font-size:10px;color:#a78bfa;font-weight:700">v3.3 ✓</div><div id="sync-status" style="font-size:10px;color:#9070c0"></div><div class="app-sub" style="color:#9333ea;font-size:10px">v3.0 • violet</div><div class="app-sub" id="sync-status" style="color:var(--tx3)"></div></div>
   <button class="icon-btn" onclick="openSettings()">&#9881;</button>
 </div>
 <div class="content">
@@ -282,6 +282,7 @@ body{font-family:"DM Sans",system-ui,sans-serif;background:var(--bg);color:var(-
 
 <div class="toast" id="toast"></div>
 <script>
+
 // STATE
 let GOALS=JSON.parse(localStorage.getItem("km_goals")||"null")||{kcal:2100,prot:155,carb:200,fat:65};
 let INV=JSON.parse(localStorage.getItem("km_inv")||"[]");
@@ -1418,36 +1419,36 @@ async function ghPull(feedback){
   setSyncStatus("Synchronisation…","var(--tx3)");
   try{
     const res=await fetch("https://api.github.com/repos/"+repo+"/contents/cuisine-data.json",{
-      headers:{"Authorization":"token "+token,"Accept":"application/vnd.github.v3+json"}});
+      headers:{"Authorization":"token "+token,"Accept":"application/vnd.github.v3+json"}
+    });
     if(res.status===404){setSyncStatus("Pas encore syncé","var(--tx3)");return;}
     if(!res.ok)throw new Error("HTTP "+res.status);
     const data=await res.json();
-    const json=JSON.parse(decodeURIComponent(escape(atob(data.content.split("\n").join("")))));
+    const b64clean=data.content.split("\n").join("");
+    const json=JSON.parse(decodeURIComponent(escape(atob(b64clean))));
     localStorage.setItem("km_gh_sha",data.sha);
-    // Only overwrite inventory if remote has items
-    if(json.inventory&&json.inventory.length>0){
-      INV=json.inventory;
-      localStorage.setItem("km_inv",JSON.stringify(INV)); // No saveINV() to avoid push
-      renderInventory();
-    }
+    if(json.inventory&&json.inventory.length>0){INV=json.inventory;localStorage.setItem("km_inv",JSON.stringify(INV));renderInventory();}
     if(json.goals){GOALS=json.goals;localStorage.setItem("km_goals",JSON.stringify(GOALS));updateSub();}
     if(json.appliances){APPLIANCES=json.appliances;localStorage.setItem("km_appliances",JSON.stringify(APPLIANCES));}
     if(json.styles){STYLES=json.styles;localStorage.setItem("km_styles",JSON.stringify(STYLES));}
-    // Load plan only if remote is newer
+    // Load remote plan only if newer than local
     const localPlanUpdated=localStorage.getItem("km_plan_updated")||"";
-    const remotePlanUpdated=json.plan_updated||"";
-    const localHasPlan=PLAN&&Object.keys(PLAN).some(function(k){return Array.isArray(PLAN[k])&&PLAN[k].length>0;});
+    const remotePlanUpdated=json.plan_updated||json.updated||"";
+    const localHasPlan=PLAN&&Object.keys(PLAN).some(function(k){return PLAN[k]&&PLAN[k].length>0;});
     if(json.plan&&(!localHasPlan||remotePlanUpdated>localPlanUpdated)){
       PLAN=json.plan;
       localStorage.setItem("km_plan",JSON.stringify(PLAN));
       if(json.plan_date)localStorage.setItem("km_plan_date",json.plan_date);
-      if(json.plan_updated)localStorage.setItem("km_plan_updated",json.plan_updated);
+      if(json.updated)localStorage.setItem("km_plan_updated",json.updated);
       renderPlan();
     }
     const d=new Date();
-    setSyncStatus("✓ Syncé "+d.getHours()+":"+String(d.getMinutes()).padStart(2,"0"),"#9333ea");
+    setSyncStatus("✓ Syncé "+d.getHours()+":"+String(d.getMinutes()).padStart(2,"0"),"var(--gn)");
     if(feedback)toast("✓ Chargé depuis GitHub");
-  }catch(e){setSyncStatus("⚠️ Erreur sync","#c0392b");if(feedback)toast("Erreur: "+e.message);}
+  }catch(e){
+    setSyncStatus("⚠️ Erreur sync","#c0392b");
+    if(feedback)toast("Erreur GitHub: "+e.message);
+  }
 }
 
 
@@ -1459,18 +1460,17 @@ if(!INV||INV.length===0){
   INV=_backup;
   localStorage.setItem("km_inv",JSON.stringify(INV));
 }
-ghPull(false);
-renderInventory();
-renderPlan();
-
-// INIT
+// INIT v3.3
 try{
   if(!INV||INV.length===0){
     INV=[{"id": 1781478509657, "name": "Yogourt grec", "brand": "", "cat": "Produits laitiers", "unit": "g", "unitWt": null, "qty": 300, "low": 0, "kcal": 59, "prot": 10, "carb": 3.6, "fat": 0.4}, {"id": 1781485909409, "name": "Oeufs", "brand": "", "cat": "Oeufs", "unit": "units", "unitWt": 60, "qty": 10, "low": 0, "kcal": 155, "prot": 13, "carb": 1.1, "fat": 11}, {"id": 1781485917626, "name": "Pommes de terre", "brand": "", "cat": "L\u00e9gumes", "unit": "g", "unitWt": null, "qty": 1700, "low": 0, "kcal": 77, "prot": 2, "carb": 17, "fat": 0.1}, {"id": 1781485970776, "name": "Beurre", "brand": "", "cat": "Produits laitiers", "unit": "g", "unitWt": null, "qty": 122, "low": 0, "kcal": 717, "prot": 0.9, "carb": 0.1, "fat": 81}, {"id": 1781493468513, "name": "Poulet breast", "brand": "", "cat": "Volaille", "unit": "g", "unitWt": null, "qty": 450, "low": 0, "kcal": 165, "prot": 31, "carb": 0, "fat": 3.6}, {"id": 1781493567848, "name": "Boeuf hach\u00e9 maigre", "brand": "", "cat": "Viandes", "unit": "g", "unitWt": null, "qty": 450, "low": 0, "kcal": 215, "prot": 26, "carb": 0, "fat": 12}, {"id": 1781493593408, "name": "Crevettes cuites d\u00e9cortiqu\u00e9es", "brand": "", "cat": "Poissons & fruits de mer", "unit": "g", "unitWt": null, "qty": 680, "low": 0, "kcal": 99, "prot": 21, "carb": 0.9, "fat": 1.1}, {"id": 1781493619168, "name": "Tofu ferme", "brand": "", "cat": "Substituts v\u00e9g\u00e9taux", "unit": "g", "unitWt": null, "qty": 454, "low": 0, "kcal": 76, "prot": 8, "carb": 1.9, "fat": 4.2}, {"id": 1781493689624, "name": "Mozzarella r\u00e2p\u00e9e", "brand": "", "cat": "Fromages", "unit": "g", "unitWt": null, "qty": 300, "low": 0, "kcal": 280, "prot": 28, "carb": 3.1, "fat": 17}, {"id": 1781493738440, "name": "Lait \u00e9vapor\u00e9 entier", "brand": "", "cat": "Oeufs & produits laitiers", "unit": "ml", "unitWt": null, "qty": 600, "low": 0, "kcal": 135, "prot": 7, "carb": 10, "fat": 8}, {"id": 1781493762536, "name": "Margarine", "brand": "", "cat": "Oeufs & produits laitiers", "unit": "g", "unitWt": null, "qty": 400, "low": 0, "kcal": 718, "prot": 0.1, "carb": 0.7, "fat": 80}, {"id": 1781493783448, "name": "Chou vert", "brand": "", "cat": "L\u00e9gumes", "unit": "g", "unitWt": null, "qty": 1400, "low": 0, "kcal": 25, "prot": 1.3, "carb": 6, "fat": 0.1}, {"id": 1781493795240, "name": "Champignons blancs", "brand": "", "cat": "L\u00e9gumes", "unit": "g", "unitWt": null, "qty": 250, "low": 0, "kcal": 22, "prot": 3.1, "carb": 3.3, "fat": 0.3}, {"id": 1781493909128, "name": "Tomates", "brand": "", "cat": "L\u00e9gumes", "unit": "g", "unitWt": null, "qty": 2, "low": 0, "kcal": 18, "prot": 0.9, "carb": 3.9, "fat": 0.2}, {"id": 1781493929832, "name": "Pommes", "brand": "", "cat": "Fruits", "unit": "units", "unitWt": 182, "qty": 12, "low": 0, "kcal": 52, "prot": 0.3, "carb": 14, "fat": 0.2}, {"id": 1781494005600, "name": "Oignons jaunes", "brand": "", "cat": "L\u00e9gumes", "unit": "g", "unitWt": null, "qty": 2, "low": 0, "kcal": 40, "prot": 1.1, "carb": 9, "fat": 0.1}, {"id": 1781494046576, "name": "Ail (t\u00eates)", "brand": "", "cat": "L\u00e9gumes", "unit": "g", "unitWt": null, "qty": 100, "low": 0, "kcal": 149, "prot": 6.4, "carb": 33, "fat": 0.5}, {"id": 1781494064256, "name": "Riz blanc long grain", "brand": "", "cat": "C\u00e9r\u00e9ales & p\u00e2tes", "unit": "g", "unitWt": null, "qty": 1089, "low": 0, "kcal": 130, "prot": 2.7, "carb": 28, "fat": 0.3}, {"id": 1781494092160, "name": "Quinoa", "brand": "", "cat": "C\u00e9r\u00e9ales & p\u00e2tes", "unit": "g", "unitWt": null, "qty": 973, "low": 0, "kcal": 368, "prot": 14, "carb": 64, "fat": 6}, {"id": 1781494159504, "name": "Spaghetti", "brand": "", "cat": "C\u00e9r\u00e9ales & p\u00e2tes", "unit": "g", "unitWt": null, "qty": 240, "low": 0, "kcal": 131, "prot": 5, "carb": 25, "fat": 1.1}, {"id": 1781494172896, "name": "Pappardelle", "brand": "", "cat": "C\u00e9r\u00e9ales & p\u00e2tes", "unit": "g", "unitWt": null, "qty": 490, "low": 0, "kcal": 131, "prot": 5, "carb": 25, "fat": 1.1}, {"id": 1781494207016, "name": "Gruau instantan\u00e9", "brand": "", "cat": "C\u00e9r\u00e9ales & p\u00e2tes", "unit": "g", "unitWt": null, "qty": 737, "low": 0, "kcal": 379, "prot": 13, "carb": 68, "fat": 6.5}, {"id": 1781494313728, "name": "Lentilles brunes s\u00e8ches", "brand": "", "cat": "L\u00e9gumineuses", "unit": "g", "unitWt": null, "qty": 563, "low": 0, "kcal": 352, "prot": 25, "carb": 60, "fat": 1.1}, {"id": 1781494339696, "name": "Farine tout usage", "brand": "", "cat": "C\u00e9r\u00e9ales & p\u00e2tes", "unit": "g", "unitWt": null, "qty": 2500, "low": 0, "kcal": 364, "prot": 10, "carb": 76, "fat": 1}, {"id": 1781494382256, "name": "Haricots de soisson en conserve", "brand": "", "cat": "L\u00e9gumineuses", "unit": "g", "unitWt": null, "qty": 540, "low": 0, "kcal": 130, "prot": 8, "carb": 24, "fat": 0.5}, {"id": 1781494416376, "name": "Pois chiches en conserve", "brand": "", "cat": "L\u00e9gumineuses", "unit": "g", "unitWt": null, "qty": 500, "low": 0, "kcal": 139, "prot": 7.3, "carb": 23, "fat": 2.4}, {"id": 1781494510264, "name": "Graines de chia", "brand": "", "cat": "Noix & graines", "unit": "g", "unitWt": null, "qty": 234, "low": 0, "kcal": 486, "prot": 17, "carb": 42, "fat": 31}, {"id": 1781494535456, "name": "Mac\u00e9doine de l\u00e9gumes surgel\u00e9e", "brand": "", "cat": "L\u00e9gumes", "unit": "g", "unitWt": null, "qty": 200, "low": 0, "kcal": 40, "prot": 1.5, "carb": 8, "fat": 0.3}, {"id": 1781494556800, "name": "Thon solide blanc en conserve", "brand": "", "cat": "Poissons & fruits de mer", "unit": "g", "unitWt": null, "qty": 240, "low": 0, "kcal": 108, "prot": 24, "carb": 0, "fat": 1}, {"id": 1781494569624, "name": "Sauce soya", "brand": "", "cat": "Condiments & sauces", "unit": "ml", "unitWt": null, "qty": 400, "low": 0, "kcal": 53, "prot": 8, "carb": 5, "fat": 0.1}, {"id": 1781494585160, "name": "Sirop d'\u00e9rable", "brand": "", "cat": "Condiments & sauces", "unit": "ml", "unitWt": null, "qty": 60, "low": 0, "kcal": 260, "prot": 0, "carb": 67, "fat": 0}, {"id": 1781494600176, "name": "Moutarde de Dijon", "brand": "", "cat": "Condiments & sauces", "unit": "g", "unitWt": null, "qty": 300, "low": 0, "kcal": 66, "prot": 4.4, "carb": 6, "fat": 3.3}, {"id": 1781494613376, "name": "Ketchup", "brand": "", "cat": "Condiments & sauces", "unit": "g", "unitWt": null, "qty": 800, "low": 0, "kcal": 100, "prot": 1.7, "carb": 27, "fat": 0.1}, {"id": 1781494629008, "name": "Sauce piquante Tabasco", "brand": "", "cat": "Condiments & sauces", "unit": "ml", "unitWt": null, "qty": 40, "low": 0, "kcal": 11, "prot": 0.5, "carb": 0.9, "fat": 0.5}, {"id": 1781494651720, "name": "Vinaigre de vin rouge", "brand": "", "cat": "Huiles & vinaigres", "unit": "ml", "unitWt": null, "qty": 150, "low": 0, "kcal": 19, "prot": 0, "carb": 0.3, "fat": 0}, {"id": 1781494663872, "name": "Vinaigre de riz", "brand": "", "cat": "Huiles & vinaigres", "unit": "ml", "unitWt": null, "qty": 400, "low": 0, "kcal": 18, "prot": 0, "carb": 1, "fat": 0}, {"id": 1781494688352, "name": "vinaigre de table blanc", "brand": "", "cat": "Autre", "unit": "g", "unitWt": null, "qty": 3000, "low": 0, "kcal": 1, "prot": 0, "carb": 0.2, "fat": 0}, {"id": 1781494706465, "name": "Huile de s\u00e9same grill\u00e9", "brand": "", "cat": "Huiles & vinaigres", "unit": "ml", "unitWt": null, "qty": 325, "low": 0, "kcal": 884, "prot": 0, "carb": 0, "fat": 100}, {"id": 1781494725888, "name": "Huile d'arachide", "brand": "", "cat": "Huiles & vinaigres", "unit": "ml", "unitWt": null, "qty": 700, "low": 0, "kcal": 884, "prot": 0, "carb": 0, "fat": 100}, {"id": 1781494743176, "name": "Bouillon de boeuf (poudre)", "brand": "", "cat": "Bouillons", "unit": "g", "unitWt": null, "qty": 100, "low": 0, "kcal": 283, "prot": 9, "carb": 50, "fat": 6}, {"id": 1781494754168, "name": "Bouillon de poulet (poudre)", "brand": "", "cat": "Bouillons", "unit": "g", "unitWt": null, "qty": 300, "low": 0, "kcal": 326, "prot": 7, "carb": 52, "fat": 9}, {"id": 1781494768424, "name": "Miel", "brand": "", "cat": "Condiments & sauces", "unit": "g", "unitWt": null, "qty": 400, "low": 0, "kcal": 304, "prot": 0.3, "carb": 82, "fat": 0}, {"id": 1781494847560, "name": "Cayenne / piment fort", "brand": "", "cat": "\u00c9pices & herbes", "unit": "g", "unitWt": null, "qty": 50, "low": 0, "kcal": 318, "prot": 12, "carb": 57, "fat": 17}, {"id": 1781494860328, "name": "Sel de mer", "brand": "", "cat": "\u00c9pices & herbes", "unit": "g", "unitWt": null, "qty": 300, "low": 0, "kcal": 0, "prot": 0, "carb": 0, "fat": 0}, {"id": 1781494871600, "name": "Sel de table", "brand": "", "cat": "\u00c9pices & herbes", "unit": "g", "unitWt": null, "qty": 200, "low": 0, "kcal": 0, "prot": 0, "carb": 0, "fat": 0}, {"id": 1781494899088, "name": "Caf\u00e9 expresso", "brand": "", "cat": "Boissons", "unit": "g", "unitWt": null, "qty": 200, "low": 0, "kcal": 0, "prot": 0.1, "carb": 0, "fat": 0}, {"id": 1781494924216, "name": "Paprika doux", "brand": "", "cat": "\u00c9pices & herbes", "unit": "g", "unitWt": null, "qty": 50, "low": 0, "kcal": 282, "prot": 14, "carb": 54, "fat": 13}, {"id": 1781494934160, "name": "Gingembre moulu", "brand": "", "cat": "\u00c9pices & herbes", "unit": "g", "unitWt": null, "qty": 50, "low": 0, "kcal": 335, "prot": 9, "carb": 72, "fat": 4.2}, {"id": 1781494950472, "name": "Poudre d'oignon", "brand": "", "cat": "\u00c9pices & herbes", "unit": "g", "unitWt": null, "qty": 50, "low": 0, "kcal": 341, "prot": 11, "carb": 79, "fat": 1}, {"id": 1781494959616, "name": "Poudre d'ail", "brand": "", "cat": "\u00c9pices & herbes", "unit": "g", "unitWt": null, "qty": 50, "low": 0, "kcal": 331, "prot": 17, "carb": 73, "fat": 0.7}, {"id": 1781494983600, "name": "Garam masala", "brand": "", "cat": "\u00c9pices & herbes", "unit": "g", "unitWt": null, "qty": 50, "low": 0, "kcal": 379, "prot": 13, "carb": 58, "fat": 15}, {"id": 1781495005408, "name": "Huile d'olive extra-vierge", "brand": "", "cat": "Huiles & vinaigres", "unit": "ml", "unitWt": null, "qty": 400, "low": 0, "kcal": 884, "prot": 0, "carb": 0, "fat": 100}, {"id": 1781495124872, "name": "Ramen (blocs)", "brand": "", "cat": "C\u00e9r\u00e9ales & p\u00e2tes", "unit": "g", "unitWt": null, "qty": 1, "low": 0, "kcal": 436, "prot": 10, "carb": 65, "fat": 16}, {"id": 1781495258888, "name": "Coulis de tomates", "brand": "", "cat": "Condiments & sauces", "unit": "g", "unitWt": null, "qty": 700, "low": 0, "kcal": 32, "prot": 1.6, "carb": 7, "fat": 0.3}, {"id": 1781495287232, "name": "Tomates enti\u00e8res pel\u00e9es", "brand": "", "cat": "Conserves", "unit": "g", "unitWt": null, "qty": 796, "low": 0, "kcal": 18, "prot": 0.9, "carb": 4, "fat": 0.2}, {"id": 1781497528216, "name": "Lait d'amandes non sucr\u00e9", "brand": "", "cat": "Boissons", "unit": "ml", "unitWt": null, "qty": 500, "low": 0, "kcal": 13, "prot": 0.4, "carb": 0.4, "fat": 1.1}, {"id": 1781497798624, "name": "Sucre blanc", "brand": "", "cat": "Boissons", "unit": "g", "unitWt": null, "qty": 500, "low": 0, "kcal": 387, "prot": 0, "carb": 100, "fat": 0}, {"id": 1781497810951, "name": "Sucre \u00e0 glacer", "brand": "", "cat": "Boissons", "unit": "g", "unitWt": null, "qty": 500, "low": 0, "kcal": 389, "prot": 0, "carb": 100, "fat": 0}, {"id": 1781497825544, "name": "Cassonade", "brand": "", "cat": "Boissons", "unit": "g", "unitWt": null, "qty": 400, "low": 0, "kcal": 377, "prot": 0.1, "carb": 97, "fat": 0}];
     localStorage.setItem("km_inv",JSON.stringify(INV));
   }
 }catch(e){}
-ghPull(false);
 renderInventory();
 renderPlan();
+if(localStorage.getItem("km_gh_token"))setTimeout(function(){ghPull(false);},500);
 
+</script>
+</body>
+</html>
