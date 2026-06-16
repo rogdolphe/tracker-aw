@@ -293,7 +293,7 @@ else{localStorage.setItem("km_logdate",TODAY);localStorage.setItem("km_daylog","
 let editItemId=null,editQty=0;
 const CATS=[
   {key:"dejeuner",label:"D\u00e9jeuner",emoji:"\uD83C\uDF05"},
-  {key:"collation_am",label:"Collation AM",emoji:"\uD83C\uDF4E"},
+  {key:"collation_am",label:"Collation",emoji:"\uD83C\uDF4E"},
   {key:"dessert",label:"Dessert",emoji:"\uD83C\uDF70"},
   {key:"diner",label:"D\u00EEner",emoji:"\u2600\uFE0F"},
   {key:"apero",label:"Ap\u00E9ro",emoji:"\uD83C\uDF77"},
@@ -303,6 +303,7 @@ const CATS=[
 
 let activeCat="dejeuner";
 let _busy=false;
+const PROXY_URL="https://VOTRE-APP.railway.app/chat"; // Mettre a jour apres deploiement Railway
 let APPLIANCES=JSON.parse(localStorage.getItem('km_appliances')||'["four","plaques","micro_ondes"]');
 let STYLES=JSON.parse(localStorage.getItem('km_styles')||'["francais","italien","quebecois"]');
 const APPLIANCE_LIST=[
@@ -1117,27 +1118,28 @@ function deleteItem(id){if(!confirm("Supprimer cet aliment?"))return;INV=INV.fil
 // PLAN GENERATION
 function getSundayStr(){const d=new Date();const sun=new Date(d);sun.setDate(d.getDate()-d.getDay());return sun.toISOString().slice(0,10);}
 function needsRegen(){return new Date().getDay()===0&&localStorage.getItem("km_plan_date")!==getSundayStr();}
-const SYS="Tu es un chef culinaire expert. Génère des recettes réalistes et connues UNIQUEMENT avec les ingrédients fournis. Réponds UNIQUEMENT en JSON compact valide, sans markdown.";
+const SYS="Tu es un chef culinaire professionnel formé dans la tradition française et québécoise, inspiré par les standards de Ricardo Larivée et Marmiton. Tu crées des recettes précises, détaillées et savoureuses uniquement avec les ingrédients fournis. Réponds UNIQUEMENT en JSON valide, sans markdown.";
 function recipeCount(){return INV.length<8?2:INV.length<15?3:INV.length<25?4:5;}
-function buildPrompt(){
-  const n=recipeCount();
-  const inv=INV.map(function(i){var u=i.unit==="units"?"u":i.unit;return i.name+"("+i.qty+u+")";}).join(", ");
-  const appNames=APPLIANCE_LIST.filter(function(a){return APPLIANCES.includes(a.key);}).map(function(a){return a.label;}).join(", ");
-  const styleNames=STYLE_LIST.filter(function(s){return STYLES.includes(s.key);}).map(function(s){return s.label;}).join(", ");
-  return "Inventaire: "+inv
-    +"\nObjectifs: "+GOALS.kcal+"kcal "+GOALS.prot+"g prot"
-    +"\nAppareils: "+appNames
-    +"\nStyles: "+styleNames
-    +"\n\nG\u00e9n\u00e8re "+n+" recettes pour CHACUNE de ces 7 cat\u00e9gories OBLIGATOIRES."
-    +"\nJSON: {\"dejeuner\":[],\"collation_am\":[],\"dessert\":[],\"diner\":[],\"apero\":[],\"souper\":[],\"collation_soir\":[]}"
-    +"\nChaque recette: {\"name\":\"Nom\",\"emoji\":\"X\",\"kcal\":0,\"prot\":0,\"carb\":0,\"fat\":0,\"time\":\"Xmin\",\"ingredients\":[{\"name\":\"NomExact\",\"qty\":0,\"unit\":\"g\"}],\"steps\":[\"etape1\",\"etape2\"],\"tip\":\"conseil\"}"
-    +"\nR\u00e8gles:"
-    +"\n- Noms EXACTS de l'inventaire"
-    +"\n- Recettes connues et r\u00e9alistes"
-    +"\n- Max 4 ingr\u00e9dients, max 3 \u00e9tapes"
-    +"\n- dejeuner=petit-d\u00e9jeuner, collation_am=snack matin, diner=repas midi, apero=bouchees, souper=repas soir, collation_soir=snack soir"
-    +"\n- dessert=desserts sucr\u00e9s. IMPORTANT: pour dessert utilise ce qui est disponible: oeufs+beurre+farine=cr\u00eapes/biscuits/g\u00e2teau, yogourt+fruits=parfait, pommes=compote, chocolat=mousse. Tu DOIS g\u00e9n\u00e9rer "+n+" desserts.";
+function buildPromptFor(type){
+  var qty=INV.map(function(i){var u=i.unit==="units"?"u":i.unit;return i.name+"("+i.qty+u+")";}).join(", ");
+  var mac=INV.map(function(i){var u=i.unit==="units"?"u":i.unit;return i.name+":"+i.prot+"gP/100"+u;}).join(", ");
+  var app=APPLIANCE_LIST.filter(function(a){return APPLIANCES.includes(a.key);}).map(function(a){return a.label;}).join(", ");
+  var sty=STYLE_LIST.filter(function(s){return STYLES.includes(s.key);}).map(function(s){return s.label;}).join(", ");
+  var hdr="Stock: "+qty+"\nMacros: "+mac+"\nObjectifs: "+GOALS.kcal+"kcal | "+GOALS.prot+"g prot | "+GOALS.carb+"g glucides | "+GOALS.fat+"g lipides\nAppareils: "+app+"\nStyles: "+sty;
+  var fmt='\nFormat: {"name":"Nom exact","emoji":"X","kcal":0,"prot":0,"carb":0,"fat":0,"time":"Xmin","ingredients":[{"name":"NomExactInventaire","qty":0,"unit":"g"}],"steps":["etape precise avec temperature degC et temps"],"tip":"conseil technique"}';
+  var rules="\nREGLES: noms EXACTS inventaire | toutes quantites en g ou ml epices incluses (sel:3g poivre:1g huile:15ml) | 4-6 etapes precises avec temperatures reperes visuels | style Ricardo-Marmiton | JSON compact";
+  if(type==="main"){
+    return hdr+"\n\nGenere 8 recettes par categorie pour ces 4 categories.\nJSON: {\"dejeuner\":[],\"diner\":[],\"souper\":[],\"dessert\":[]}"
+      +fmt+rules
+      +"\nProteines: dejeuner "+Math.round(GOALS.prot*.20)+"g+ | diner "+Math.round(GOALS.prot*.22)+"g+ | souper "+Math.round(GOALS.prot*.28)+"g+ | dessert "+Math.round(GOALS.prot*.08)+"g+"
+      +"\ndessert OBLIGATOIRE: crepes/biscuits/gateau/mousse/pudding/compote/parfait avec oeufs beurre sucre farine fruits disponibles.";
+  } else {
+    return hdr+"\n\nGenere 4 recettes par categorie pour ces 3 categories.\nJSON: {\"collation_am\":[],\"apero\":[],\"collation_soir\":[]}"
+      +fmt+rules
+      +"\ncollation_am=snack matin rapide | apero=bouchees partageables | collation_soir=snack leger soir";
+  }
 }
+function buildPrompt(){return buildPromptFor("main");}
 function tryParseJSON(txt){
   txt=txt.trim();
   var s=txt.indexOf("{"),e=txt.lastIndexOf("}");
@@ -1149,22 +1151,44 @@ function tryParseJSON(txt){
   }
 }
 async function generatePlan(){
-  const apiKey=localStorage.getItem("km_api_key");
-  if(!apiKey){toast("Configure ta clé API dans ⚙️");openSettings();return;}
-  if(!INV.length){toast("Ajoute des aliments d’abord");return;}
-  const n=recipeCount();
-  document.getElementById("plan-content").innerHTML="<div class=\"plan-loading\"><div class=\"plan-loading-ic\">🧑‍🍳</div><div class=\"plan-loading-t\">Génération ("+n+" recettes/catégorie)...</div><div class=\"plan-loading-s\">Claude analyse tes "+INV.length+" aliments.<br>~20 secondes...</div></div>";
+  if(!INV.length){toast("Ajoute des aliments d'abord");return;}
+  document.getElementById("plan-content").innerHTML=
+    "<div class=\"plan-loading\">"+
+    "<div class=\"plan-loading-ic\">&#x1F9D1;&#x200D;&#x1F373;</div>"+
+    "<div class=\"plan-loading-t\">G\u00e9n\u00e9ration en cours&hellip;</div>"+
+    "<div class=\"plan-loading-s\">Garde cet onglet ouvert pendant la g\u00e9n\u00e9ration.<br>2 appels en parall\u00e8le &mdash; environ 20-30 secondes.</div>"+
+    "</div>";
   try{
-    const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:8000,system:SYS,messages:[{role:"user",content:buildPrompt()}]})});
-    if(!res.ok){const e=await res.json();throw new Error(e.error?.message||"Erreur API "+res.status);}
-    const data=await res.json();
-    PLAN=tryParseJSON(data.content[0].text);
+    var results=await Promise.all([callClaude("main"),callClaude("snacks")]);
+    PLAN=Object.assign({},results[0],results[1]);
     localStorage.setItem("km_plan",JSON.stringify(PLAN));
     localStorage.setItem("km_plan_date",getSundayStr());
-    renderPlan();toast("✓ Plan généré!");
+    renderPlan();
+    var total=Object.values(PLAN).reduce(function(s,a){return s+(a?a.length:0);},0);
+    toast("\u2713 "+total+" recettes g\u00e9n\u00e9r\u00e9es!");
   }catch(e){
-    document.getElementById("plan-content").innerHTML="<div class=\"plan-empty\"><div class=\"plan-empty-ic\">⚠️</div><div class=\"plan-empty-t\">Erreur</div><div class=\"plan-empty-s\">"+esc(e.message)+"</div><button class=\"btn-prim\" style=\"margin-top:14px\" onclick=\"generatePlan()\">Réessayer</button></div>";
+    document.getElementById("plan-content").innerHTML=
+      "<div class=\"plan-empty\"><div class=\"plan-empty-ic\">\u26a0\ufe0f</div>"+
+      "<div class=\"plan-empty-t\">Erreur</div>"+
+      "<div class=\"plan-empty-s\">"+esc(e.message)+"</div>"+
+      "<button class=\"btn-prim\" style=\"margin-top:14px\" onclick=\"generatePlan()\">R\u00e9essayer</button></div>";
   }
+}
+
+async function callClaude(type){
+  var payload={model:"claude-sonnet-4-6",max_tokens:8000,system:SYS,messages:[{role:"user",content:buildPromptFor(type)}]};
+  var apiKey=localStorage.getItem("km_api_key");
+  var res;
+  if(PROXY_URL&&PROXY_URL.indexOf("VOTRE-APP")<0){
+    res=await fetch(PROXY_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+  } else if(apiKey){
+    res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify(payload)});
+  } else {
+    throw new Error("Configure ta cl\u00e9 API dans les param\u00e8tres \u2699\ufe0f");
+  }
+  if(!res.ok){var er=await res.json();throw new Error((er.error&&er.error.message)||"Erreur HTTP "+res.status);}
+  var data=await res.json();
+  return tryParseJSON(data.content[0].text);
 }
 
 // PLAN DISPLAY
