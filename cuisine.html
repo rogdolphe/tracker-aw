@@ -1151,10 +1151,18 @@ function tryParseJSON(txt){
   }
 }
 async function generatePlan(){
-  if(_busy){toast("G\u00e9n\u00e9ration d\u00e9j\u00e0 en cours...");return;}
-  _busy=true;
+  if(_busy){toast("Déjà en cours, patiente...");return;}
   if(!INV.length){toast("Ajoute des aliments d'abord");return;}
+  _busy=true;
   PLAN={};localStorage.removeItem("km_plan");
+  var pc=document.getElementById("plan-content");
+  var loadHTML='<div class="plan-loading">'
+    +'<div class="plan-loading-ic">&#x1F9D1;&#x200D;&#x1F373;</div>'
+    +'<div class="plan-loading-t">Génération v3.2&hellip;</div>'
+    +'<div id="gen-log" style="font-size:13px;margin-top:12px;text-align:left;max-width:440px;line-height:2.0"></div>'
+    +'</div>';
+  pc.innerHTML=loadHTML;
+  function log(msg){var el=document.getElementById("gen-log");if(el)el.innerHTML+=msg+"<br>";}
   var cats=[
     {key:"dejeuner",     n:4, prot:Math.round(GOALS.prot*.20), hint:"petit-dejeuner"},
     {key:"collation_am", n:4, prot:Math.round(GOALS.prot*.08), hint:"snack du matin"},
@@ -1164,45 +1172,36 @@ async function generatePlan(){
     {key:"souper",       n:4, prot:Math.round(GOALS.prot*.28), hint:"repas du soir"},
     {key:"collation_soir",n:4,prot:Math.round(GOALS.prot*.07),hint:"snack leger du soir"}
   ];
-
-  var pc=document.getElementById("plan-content");
-  var loadHTML='<div class="plan-loading">'
-    +'<div class="plan-loading-ic">&#x1F9D1;&#x200D;&#x1F373;</div>'
-    +'<div class="plan-loading-t">G\u00e9n\u00e9ration v3.2&hellip;</div>'
-    +'<div id="gen-log" style="font-size:12px;margin-top:10px;text-align:left;max-width:420px;line-height:1.9"></div>'
-    +'</div>';
-  pc.innerHTML=loadHTML;
-
-  function log(msg){var el=document.getElementById("gen-log");if(el)el.innerHTML+=msg+"<br>";}
-
   var errors=[];
-  for(var i=0;i<cats.length;i++){
-    var cat=cats[i];
-    log("\u23F3 "+cat.key+"&hellip;");
-    try{
-      var recipes=await callSingleCat(cat.key,cat.n,cat.prot,cat.hint);
-      PLAN[cat.key]=recipes;
-      log("\u2705 "+cat.key+": "+recipes.length+" recettes");
-    }catch(e){
-      log("\u274C "+cat.key+": "+esc(e.message.slice(0,150)));
-      errors.push(cat.key);
-      PLAN[cat.key]=[];
+  try{
+    for(var i=0;i<cats.length;i++){
+      var cat=cats[i];
+      log("⏳ "+cat.key+"…");
+      try{
+        var recipes=await callSingleCat(cat.key,cat.n,cat.prot,cat.hint);
+        PLAN[cat.key]=recipes;
+        log("✅ "+cat.key+": "+recipes.length+" recettes");
+      }catch(e){
+        log("❌ "+cat.key+": "+esc(e.message.slice(0,120)));
+        errors.push(cat.key);
+        PLAN[cat.key]=[];
+      }
     }
+    var tot=Object.values(PLAN).reduce(function(s,a){return s+a.length;},0);
+    localStorage.setItem("km_plan",JSON.stringify(PLAN));
+    localStorage.setItem("km_plan_date",getSundayStr());
+    localStorage.setItem("km_plan_updated",new Date().toISOString());
+    if(errors.length>0){
+      log("<br>⚠️ Échecs: "+errors.join(", "));
+    }
+    log("<br>✨ "+tot+" recettes prêtes! Affichage dans 3 secondes…");
+    schedulePush();
+    setTimeout(function(){renderPlan();},3000);
+    if(errors.length>0)toast("⚠️ "+tot+" recettes (échecs: "+errors.join(",")+")");
+    else toast("✓ "+tot+" recettes générées!");
+  }finally{
+    _busy=false;
   }
-
-  _busy=false;
-  localStorage.setItem("km_plan",JSON.stringify(PLAN));
-  localStorage.setItem("km_plan_date",getSundayStr());
-  var tot=Object.values(PLAN).reduce(function(s,a){return s+a.length;},0);
-  if(tot===0){
-    log("<br>\u1F6D1 Aucune recette. V\u00e9rifie ta cl\u00e9 API dans \u2699\ufe0f.");
-    return;
-  }
-  localStorage.setItem("km_plan_updated",new Date().toISOString());
-  renderPlan();
-  schedulePush();
-  if(errors.length>0)toast("\u26a0\ufe0f "+tot+" recettes (\u00e9checs: "+errors.join(",")+")");
-  else toast("\u2713 "+tot+" recettes!");
 }
 
 
