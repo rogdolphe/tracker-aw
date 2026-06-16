@@ -1199,6 +1199,7 @@ async function generatePlan(){
     return;
   }
   renderPlan();
+  schedulePush();
   if(errors.length>0)toast("\u26a0\ufe0f "+tot+" recettes (\u00e9checs: "+errors.join(",")+")");
   else toast("\u2713 "+tot+" recettes!");
 }
@@ -1380,6 +1381,9 @@ async function ghPull(feedback){
     if(json.goals){GOALS=json.goals;localStorage.setItem("km_goals",JSON.stringify(GOALS));updateSub();}
     if(json.appliances){APPLIANCES=json.appliances;localStorage.setItem("km_appliances",JSON.stringify(APPLIANCES));}
     if(json.styles){STYLES=json.styles;localStorage.setItem("km_styles",JSON.stringify(STYLES));}
+    if(json.plan&&typeof json.plan==="object"){PLAN=json.plan;localStorage.setItem("km_plan",JSON.stringify(PLAN));}
+    if(json.plan_date){localStorage.setItem("km_plan_date",json.plan_date);}
+    renderPlan();
     const d=new Date();
     setSyncStatus("✓ Syncé "+d.getHours()+":"+String(d.getMinutes()).padStart(2,"0"),"var(--gn)");
     if(feedback)toast("✓ Inventaire chargé depuis GitHub");
@@ -1395,7 +1399,7 @@ async function ghPush(feedback){
   const repo=localStorage.getItem("km_gh_repo")||"rogdolphe/tracker-aw";
   setSyncStatus("Sauvegarde…","var(--tx3)");
   try{
-    const payload={inventory:INV,goals:GOALS,appliances:APPLIANCES,styles:STYLES,updated:new Date().toISOString()};
+    const payload={inventory:INV,goals:GOALS,appliances:APPLIANCES,styles:STYLES,plan:PLAN||null,plan_date:localStorage.getItem("km_plan_date")||"",updated:new Date().toISOString()};
     const b64=btoa(unescape(encodeURIComponent(JSON.stringify(payload,null,2))));
     const sha=localStorage.getItem("km_gh_sha");
     const body={message:"Sync Cuisine & Macros "+new Date().toISOString().slice(0,10),content:b64};
@@ -1408,6 +1412,7 @@ async function ghPush(feedback){
     if(!res.ok){const e=await res.json();throw new Error(e.message||"HTTP "+res.status);}
     const data=await res.json();
     localStorage.setItem("km_gh_sha",data.content.sha);
+    renderPlan();
     const d=new Date();
     setSyncStatus("✓ Syncé "+d.getHours()+":"+String(d.getMinutes()).padStart(2,"0"),"var(--gn)");
     if(feedback)toast("✓ Sauvegardé sur GitHub");
