@@ -1156,6 +1156,106 @@ async function generatePlan(){
     "<div class=\"plan-loading\">"+
     "<div class=\"plan-loading-ic\">&#x1F9D1;&#x200D;&#x1F373;</div>"+
     "<div class=\"plan-loading-t\">G\u00e9n\u00e9ration en cours&hellip;</div>"+
+    "<div class=\"plan-loading-s\">3 appels en parall\u00e8le &mdash; ~15 secondes</div>"+
+    "</div>";
+  try{
+    var r=await Promise.all([callClaude("dej"),callClaude("rep"),callClaude("snk")]);
+    PLAN=Object.assign({},r[0],r[1],r[2]);
+    localStorage.setItem("km_plan",JSON.stringify(PLAN));
+    localStorage.setItem("km_plan_date",getSundayStr());
+    renderPlan();
+    var tot=Object.values(PLAN).reduce(function(s,a){return s+(a?a.length:0);},0);
+    toast("\u2713 "+tot+" recettes!");
+  }catch(e){
+    document.getElementById("plan-content").innerHTML=
+      "<div class=\"plan-empty\"><div class=\"plan-empty-ic\">\u26a0\ufe0f</div>"+
+      "<div class=\"plan-empty-t\">Erreur</div>"+
+      "<div class=\"plan-empty-s\">"+esc(e.message)+"</div>"+
+      "<button class=\"btn-prim\" style=\"margin-top:14px\" onclick=\"generatePlan()\">R\u00e9essayer</button></div>";
+  }
+}
+
+async function callClaude(type){
+  var payload={model:"claude-sonnet-4-6",max_tokens:3000,system:SYS,messages:[{role:"user",content:buildPromptFor(type)}]};
+  var apiKey=localStorage.getItem("km_api_key");
+  var res;
+  if(PROXY_URL&&PROXY_URL.indexOf("VOTRE-APP")<0){
+    res=await fetch(PROXY_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+  }else if(apiKey){
+    res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify(payload)});
+  }else{throw new Error("Configure ta cl\u00e9 API dans \u2699\ufe0f");}
+  if(!res.ok){var er=await res.json();throw new Error((er.error&&er.error.message)||"HTTP "+res.status);}
+  var data=await res.json();
+  if(data.error)throw new Error(data.error.message);
+  if(!data.content||!data.content[0])throw new Error("R\u00e9ponse vide de l'API");
+  var parsed=tryParseJSON(data.content[0].text);
+  // Normalize keys: dejeuner/diner/apero sans accents
+  var norm={};
+  Object.keys(parsed).forEach(function(k){
+    var k2=k.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z_]/g,"_");
+    if(k2==="d_jeuner"||k2==="dejeuner")norm["dejeuner"]=parsed[k];
+    else if(k2==="d_ner"||k2==="diner")norm["diner"]=parsed[k];
+    else if(k2==="ap_ro"||k2==="apero")norm["apero"]=parsed[k];
+    else norm[k2]=parsed[k];
+  });
+  return norm;
+}
+
+async function fetchRecipeDetail(recipe,cat){
+  var apiKey=localStorage.getItem("km_api_key");
+  var invStr=INV.map(function(i){var u=i.unit==="units"?"u":i.unit;return i.name+"("+i.qty+u+")";}).join(", ");
+  var prompt="Stock disponible: "+invStr+"\n\nRecette: "+recipe.name+"\nIngr\u00e9dients de base: "+JSON.stringify(recipe.ingredients)+"\n\nG\u00e9n\u00e8re la recette compl\u00e8te style Ricardo-Marmiton.\nJSON: {\"name\":\"\",\"emoji\":\"\",\"kcal\":0,\"prot\":0,\"carb\":0,\"fat\":0,\"time\":\"\",\"servings\":2,\"ingredients\":[{\"name\":\"NomExact\",\"qty\":0,\"unit\":\"g\"}],\"steps\":[\"\u00e9tape d\u00e9taill\u00e9e avec temp\u00e9rature et rep\u00e8re visuel\"],\"tip\":\"conseil technique\"}\nR\u00e8gles: toutes quantit\u00e9s en g ou ml \u00e9pices incluses, 5-6 \u00e9tapes pr\u00e9cises, max 8 ingr\u00e9dients, JSON compact.";
+  var payload={model:"claude-sonnet-4-6",max_tokens:1500,system:SYS,messages:[{role:"user",content:prompt}]};
+  var res;
+  if(PROXY_URL&&PROXY_URL.indexOf("VOTRE-APP")<0){
+    res=await fetch(PROXY_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+  }else if(apiKey){
+    res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify(payload)});
+  }else{return null;}
+  if(!res.ok)return null;
+  var data=await res.json();
+  if(!data.content||!data.content[0])return null;
+  try{return tryParseJSON(data.content[0].text);}catch(e){return null;}
+}
+
+function buildPromptFor(type){
+  var inv=INV.map(function(i){var u=i.unit==="units"?"u":i.unit;return i.name+"("+i.qty+u+")";}).join(", ");
+  var app=APPLIANCE_LIST.filter(function(a){return APPLIANCES.includes(a.key);}).map(function(a){return a.label;}).join(", ");
+  var sty=STYLE_LIST.filter(function(s){return STYLES.includes(s.key);}).map(function(s){return s.label;}).join(", ");
+  var hdr="Stock: "+inv+"\nObjectifs: "+GOALS.kcal+"kcal|"+GOALS.prot+"gP|"+GOALS.carb+"gC|"+GOALS.fat+"gL\nAppareils: "+app+"\nStyles: "+sty;
+  var fmt='\nFormat compact: {"name":"Nom","emoji":"X","kcal":0,"prot":0,"carb":0,"fat":0,"time":"Xmin","ingredients":[{"name":"NomExact","qty":0,"unit":"g"}],"steps":["etape courte"],"tip":"conseil"}';
+  var rules="\nMax 5 ingredients, 3 etapes courtes. Noms EXACTS inventaire. JSON compact sans espaces.";
+  if(type==="dej"){
+    return hdr+"\n\nGenere 5 recettes par categorie.\nJSON: {\"dejeuner\":[],\"dessert\":[]}"
+      +fmt+rules
+      +"\nProteines: dejeuner "+Math.round(GOALS.prot*.20)+"g+ | dessert "+Math.round(GOALS.prot*.08)+"g+"
+      +"\ndessert: crepes/gateau/mousse/compote/parfait avec oeufs/beurre/sucre/farine/fruits.";
+  }else if(type==="rep"){
+    return hdr+"\n\nGenere 5 recettes par categorie.\nJSON: {\"diner\":[],\"souper\":[]}"
+      +fmt+rules
+      +"\nProteines: diner "+Math.round(GOALS.prot*.22)+"g+ | souper "+Math.round(GOALS.prot*.28)+"g+";
+  }else{
+    return hdr+"\n\nGenere 4 recettes par categorie.\nJSON: {\"collation_am\":[],\"apero\":[],\"collation_soir\":[]}"
+      +fmt+rules;
+  }
+}
+function buildPrompt(){return buildPromptFor("rep");}
+function tryParseJSON(txt){
+  txt=txt.trim();
+  var s=txt.indexOf("{"),e=txt.lastIndexOf("}");
+  if(s>0&&e>s)txt=txt.slice(s,e+1);
+  try{return JSON.parse(txt);}catch(err){
+    var f=[txt+'"]}',txt+']}]',txt+']}]}',txt+'}'];
+    for(var i=0;i<f.length;i++){try{return JSON.parse(f[i]);}catch(e2){}}
+    throw new Error("R\u00e9ponse tronqu\u00e9e. R\u00e9essaie.");
+  }
+}
+async function generatePlan(){
+  if(!INV.length){toast("Ajoute des aliments d'abord");return;}
+  document.getElementById("plan-content").innerHTML=
+    "<div class=\"plan-loading\">"+
+    "<div class=\"plan-loading-ic\">&#x1F9D1;&#x200D;&#x1F373;</div>"+
+    "<div class=\"plan-loading-t\">G\u00e9n\u00e9ration en cours&hellip;</div>"+
     "<div class=\"plan-loading-s\">Garde cet onglet ouvert.<br>3 appels en parall\u00e8le &mdash; ~25 secondes.</div>"+
     "</div>";
   try{
@@ -1407,10 +1507,22 @@ function openRecipe(catKey,idx){
   body+="<div class=\"msect\">\u00c9tapes</div>";
   (r.steps||[]).forEach((s,i)=>body+="<div class=\"step-row\"><div class=\"step-num\">"+(i+1)+"</div><div class=\"step-txt\">"+esc(s)+"</div></div>");
   if(r.tip)body+="<div class=\"tip-box\">\uD83D\uDCA1 "+esc(r.tip)+"</div>";
+  body+="<button class=\"btn-sec\" style=\"width:100%;margin-bottom:8px\" onclick=\"showDetailedRecipe('"+catKey+"',"+recIdx+")\">📚 Voir recette complète</button>";
   body+="<button class=\"btn-green\" onclick=\"cookRecipe('"+catKey+"',"+idx+")\">J\u2019ai cuisin\u00e9 \u00e7a \u2014 d\u00e9duire du stock</button><button class=\"btn-close\" onclick=\"closeM('recipeModal')\">Fermer</button>";
   document.getElementById("rec-body").innerHTML=body;
   openM("recipeModal");
 }
+async function showDetailedRecipe(catKey,recIdx){
+  var r=PLAN[catKey]&&PLAN[catKey][recIdx];if(!r)return;
+  var allBtns=document.querySelectorAll("#rec-body button");
+  allBtns.forEach(function(b){if(b.textContent.indexOf("Voir recette")>=0){b.textContent="Chargement…";b.disabled=true;}});
+  var detail=await fetchRecipeDetail(r,catKey);
+  if(!detail){toast("⚠️ Échec du chargement");return;}
+  PLAN[catKey][recIdx]=Object.assign({},r,detail);
+  openRecipe(catKey,recIdx);
+  toast("✓ Recette complète!");
+}
+
 function cookRecipe(catKey,idx){
   const r=PLAN[catKey][idx];if(!r)return;
   let n=0;
