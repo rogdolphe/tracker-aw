@@ -1744,6 +1744,7 @@ function renderPlan(){
   renderPlanGrid();
 }
 function renderPlanGrid(){
+  if(!PLAN||!PLAN[activeCat]){document.getElementById("plan-content").innerHTML='<div class="plan-empty"><div class="plan-empty-t">Aucun plan généré</div><div class="plan-empty-s">Ajoute des aliments dans Stock, puis appuie sur Régénérer.</div></div>';return;}
   const recipes=PLAN[activeCat]||[];
   if(!recipes.length){document.getElementById("plan-content").innerHTML="<div class=\"plan-empty\"><div class=\"plan-empty-t\">Aucune recette pour cette cat\u00e9gorie</div></div>";return;}
   document.getElementById("plan-content").innerHTML="<div class=\"plan-grid\">"+recipes.map((r,i)=>"<div class=\"plan-card\" onclick=\"openRecipe('"+activeCat+"',"+i+")\"><div class=\"plan-emoji\">"+esc(r.emoji||"")+"</div><div class=\"plan-name\">"+esc(r.name)+"</div><div class=\"plan-prot\">"+r.prot+"g prot</div><div class=\"plan-time\">"+r.kcal+" kcal \u00b7 "+esc(r.time||"")+"</div></div>").join("")+"</div>";
