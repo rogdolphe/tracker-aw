@@ -1370,8 +1370,11 @@ async function ghPush(feedback){
   const repo=localStorage.getItem("km_gh_repo")||"rogdolphe/tracker-aw";
   setSyncStatus("Sauvegarde…","var(--tx3)");
   try{
+    const savedPlan=PLAN&&Object.keys(PLAN).length?PLAN:JSON.parse(localStorage.getItem("km_plan")||"null");
+    const savedPlanDate=localStorage.getItem("km_plan_date")||"";
+    const savedPlanUpdated=localStorage.getItem("km_plan_updated")||"";
     const payload={inventory:INV,goals:GOALS,appliances:APPLIANCES,styles:STYLES,
-      plan:PLAN||null,plan_date:localStorage.getItem("km_plan_date")||"",
+      plan:savedPlan,plan_date:savedPlanDate,plan_updated:savedPlanUpdated,
       updated:new Date().toISOString()};
     // Save local timestamp
     localStorage.setItem("km_plan_updated",payload.updated);
@@ -1428,9 +1431,10 @@ async function ghPull(feedback){
     if(json.appliances){APPLIANCES=json.appliances;localStorage.setItem("km_appliances",JSON.stringify(APPLIANCES));}
     if(json.styles){STYLES=json.styles;localStorage.setItem("km_styles",JSON.stringify(STYLES));}
     // Load remote plan only if newer than local
-    const localUpdated=localStorage.getItem("km_plan_updated")||"";
-    const remoteUpdated=json.updated||"";
-    if(json.plan&&(!PLAN||!Object.keys(PLAN).length||remoteUpdated>localUpdated)){
+    const localPlanUpdated=localStorage.getItem("km_plan_updated")||"";
+    const remotePlanUpdated=json.plan_updated||json.updated||"";
+    const localHasPlan=PLAN&&Object.keys(PLAN).some(function(k){return PLAN[k]&&PLAN[k].length>0;});
+    if(json.plan&&(!localHasPlan||remotePlanUpdated>localPlanUpdated)){
       PLAN=json.plan;
       localStorage.setItem("km_plan",JSON.stringify(PLAN));
       if(json.plan_date)localStorage.setItem("km_plan_date",json.plan_date);
