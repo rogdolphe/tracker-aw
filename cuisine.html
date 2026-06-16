@@ -1156,6 +1156,86 @@ async function generatePlan(){
     "<div class=\"plan-loading\">"+
     "<div class=\"plan-loading-ic\">&#x1F9D1;&#x200D;&#x1F373;</div>"+
     "<div class=\"plan-loading-t\">G\u00e9n\u00e9ration en cours&hellip;</div>"+
+    "<div class=\"plan-loading-s\">Garde cet onglet ouvert.<br>3 appels en parall\u00e8le &mdash; ~25 secondes.</div>"+
+    "</div>";
+  try{
+    var results=await Promise.all([
+      callClaude("dejeuner"),
+      callClaude("repas"),
+      callClaude("snacks")
+    ]);
+    PLAN=Object.assign({},results[0],results[1],results[2]);
+    localStorage.setItem("km_plan",JSON.stringify(PLAN));
+    localStorage.setItem("km_plan_date",getSundayStr());
+    renderPlan();
+    var total=Object.values(PLAN).reduce(function(s,a){return s+(a?a.length:0);},0);
+    toast("\u2713 "+total+" recettes g\u00e9n\u00e9r\u00e9es!");
+  }catch(e){
+    document.getElementById("plan-content").innerHTML=
+      "<div class=\"plan-empty\"><div class=\"plan-empty-ic\">\u26a0\ufe0f</div>"+
+      "<div class=\"plan-empty-t\">Erreur</div>"+
+      "<div class=\"plan-empty-s\">"+esc(e.message)+"</div>"+
+      "<button class=\"btn-prim\" style=\"margin-top:14px\" onclick=\"generatePlan()\">R\u00e9essayer</button></div>";
+  }
+}
+
+async function callClaude(type){
+  var payload={model:"claude-sonnet-4-6",max_tokens:8192,system:SYS,messages:[{role:"user",content:buildPromptFor(type)}]};
+  var apiKey=localStorage.getItem("km_api_key");
+  var res;
+  if(PROXY_URL&&PROXY_URL.indexOf("VOTRE-APP")<0){
+    res=await fetch(PROXY_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+  } else if(apiKey){
+    res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify(payload)});
+  } else {
+    throw new Error("Configure ta cl\u00e9 API dans les param\u00e8tres \u2699\ufe0f");
+  }
+  if(!res.ok){var er=await res.json();throw new Error((er.error&&er.error.message)||"Erreur HTTP "+res.status);}
+  var data=await res.json();
+  return tryParseJSON(data.content[0].text);
+}
+
+function buildPromptFor(type){
+  var qty=INV.map(function(i){var u=i.unit==="units"?"u":i.unit;return i.name+"("+i.qty+u+")";}).join(", ");
+  var mac=INV.map(function(i){var u=i.unit==="units"?"u":i.unit;return i.name+":"+i.prot+"gP";}).join(", ");
+  var app=APPLIANCE_LIST.filter(function(a){return APPLIANCES.includes(a.key);}).map(function(a){return a.label;}).join(", ");
+  var sty=STYLE_LIST.filter(function(s){return STYLES.includes(s.key);}).map(function(s){return s.label;}).join(", ");
+  var hdr="Stock: "+qty+"\nProteines/100g: "+mac+"\nObjectifs: "+GOALS.kcal+"kcal | "+GOALS.prot+"g prot | "+GOALS.carb+"g glucides | "+GOALS.fat+"g lipides\nAppareils: "+app+"\nStyles: "+sty;
+  var fmt='\nFormat: {"name":"Nom","emoji":"X","kcal":0,"prot":0,"carb":0,"fat":0,"time":"Xmin","ingredients":[{"name":"NomExact","qty":0,"unit":"g"}],"steps":["etape avec temperature degC et temps exact"],"tip":"conseil technique"}';
+  var rules="\nREGLES: noms EXACTS inventaire | quantites en g/ml epices incluses (sel:3g poivre:1g huile:15ml) | 4-5 etapes precises temperature+temps+repere visuel | style Ricardo-Marmiton | max 7 ingredients | JSON compact";
+
+  if(type==="dejeuner"){
+    return hdr+"\n\nGenere 6 recettes pour 2 categories.\nJSON: {\"dejeuner\":[],\"dessert\":[]}"
+      +fmt+rules
+      +"\nProteines: dejeuner "+Math.round(GOALS.prot*.20)+"g+ | dessert "+Math.round(GOALS.prot*.08)+"g+"
+      +"\ndessert OBLIGATOIRE: crepes/biscuits/gateau/mousse/pudding/compote/parfait avec oeufs beurre sucre farine fruits.";
+  } else if(type==="repas"){
+    return hdr+"\n\nGenere 6 recettes pour 2 categories.\nJSON: {\"diner\":[],\"souper\":[]}"
+      +fmt+rules
+      +"\nProteines: diner "+Math.round(GOALS.prot*.22)+"g+ | souper "+Math.round(GOALS.prot*.28)+"g+";
+  } else {
+    return hdr+"\n\nGenere 4 recettes pour 3 categories.\nJSON: {\"collation_am\":[],\"apero\":[],\"collation_soir\":[]}"
+      +fmt+rules
+      +"\ncollation_am=snack matin | apero=bouchees a partager | collation_soir=snack leger soir";
+  }
+}
+function buildPrompt(){return buildPromptFor("repas");}
+function tryParseJSON(txt){
+  txt=txt.trim();
+  var s=txt.indexOf("{"),e=txt.lastIndexOf("}");
+  if(s>0&&e>s)txt=txt.slice(s,e+1);
+  try{return JSON.parse(txt);}catch(err){
+    var f=[txt+'"]}',txt+']}]',txt+']}]}',txt+'}'];
+    for(var i=0;i<f.length;i++){try{return JSON.parse(f[i]);}catch(e2){}}
+    throw new Error("R\u00e9ponse tronqu\u00e9e. R\u00e9essaie.");
+  }
+}
+async function generatePlan(){
+  if(!INV.length){toast("Ajoute des aliments d'abord");return;}
+  document.getElementById("plan-content").innerHTML=
+    "<div class=\"plan-loading\">"+
+    "<div class=\"plan-loading-ic\">&#x1F9D1;&#x200D;&#x1F373;</div>"+
+    "<div class=\"plan-loading-t\">G\u00e9n\u00e9ration en cours&hellip;</div>"+
     "<div class=\"plan-loading-s\">Garde cet onglet ouvert pendant la g\u00e9n\u00e9ration.<br>2 appels en parall\u00e8le &mdash; environ 20-30 secondes.</div>"+
     "</div>";
   try{
