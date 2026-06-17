@@ -839,6 +839,20 @@
       "prot": 20,
       "carb": 0,
       "fat": 6
+    },
+    {
+      "id": 1781662909279,
+      "name": "Brocoli",
+      "brand": "",
+      "cat": "Légumes",
+      "unit": "units",
+      "unitWt": null,
+      "qty": 2,
+      "low": 0,
+      "kcal": 34,
+      "prot": 2.8,
+      "carb": 7,
+      "fat": 0.4
     }
   ],
   "goals": {
@@ -2048,6 +2062,6 @@
     ]
   },
   "plan_date": "2026-06-14",
-  "plan_updated": "2026-06-16T05:36:52.357Z",
-  "updated": "2026-06-17T02:15:48.339Z"
+  "plan_updated": "2026-06-17T02:15:48.339Z",
+  "updated": "2026-06-17T02:21:52.280Z"
 }
