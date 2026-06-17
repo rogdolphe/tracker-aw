@@ -63,7 +63,7 @@
       "cat": "Volaille",
       "unit": "g",
       "unitWt": null,
-      "qty": 450,
+      "qty": 300,
       "low": 0,
       "kcal": 165,
       "prot": 31,
@@ -245,7 +245,7 @@
       "cat": "Céréales & pâtes",
       "unit": "g",
       "unitWt": null,
-      "qty": 939,
+      "qty": 789,
       "low": 0,
       "kcal": 130,
       "prot": 2.7,
@@ -567,7 +567,7 @@
       "cat": "Bouillons",
       "unit": "g",
       "unitWt": null,
-      "qty": 300,
+      "qty": 295,
       "low": 0,
       "kcal": 326,
       "prot": 7,
@@ -651,7 +651,7 @@
       "cat": "Épices & herbes",
       "unit": "g",
       "unitWt": null,
-      "qty": 50,
+      "qty": 46,
       "low": 0,
       "kcal": 282,
       "prot": 14,
@@ -721,7 +721,7 @@
       "cat": "Huiles & vinaigres",
       "unit": "ml",
       "unitWt": null,
-      "qty": 400,
+      "qty": 390,
       "low": 0,
       "kcal": 884,
       "prot": 0,
@@ -2109,6 +2109,6 @@
     ]
   },
   "plan_date": "2026-06-15",
-  "plan_updated": "2026-06-17T02:36:32.484Z",
-  "updated": "2026-06-17T02:38:17.576Z"
+  "plan_updated": "2026-06-17T02:38:17.576Z",
+  "updated": "2026-06-17T02:43:59.657Z"
 }
