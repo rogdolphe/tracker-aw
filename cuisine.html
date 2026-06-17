@@ -126,7 +126,7 @@ body{font-family:"DM Sans",system-ui,sans-serif;background:var(--bg);color:var(-
 .stock-ok{background:#EAF3DE;color:#27500A}.stock-low{background:#FFF8E6;color:#92600A}.stock-none{background:#FBEAEF;color:#72243E}
 .btn-prim{padding:10px 18px;border-radius:var(--r);border:none;background:var(--tx);color:var(--bg);font-family:"DM Sans",sans-serif;font-size:12px;font-weight:600;cursor:pointer}
 .btn-sec{padding:10px 18px;border-radius:var(--r);border:1px solid var(--bd2);background:var(--sf);color:var(--tx2);font-family:"DM Sans",sans-serif;font-size:12px;font-weight:500;cursor:pointer}
-.btn-green{width:100%;padding:13px;background:#9333ea;color:#fff;border:none;border-radius:var(--r);font-size:14px;font-weight:600;cursor:pointer;font-family:"DM Sans",sans-serif;margin-top:10px}
+.btn-green{width:100%;padding:13px;background:#238636;color:#fff;border:none;border-radius:var(--r);font-size:14px;font-weight:600;cursor:pointer;font-family:"DM Sans",sans-serif;margin-top:10px}
 .btn-close{width:100%;padding:13px;background:var(--tx);color:var(--bg);border:none;border-radius:var(--r);font-size:14px;font-weight:600;cursor:pointer;margin-top:14px;font-family:"DM Sans",sans-serif}
 .btn-danger{padding:10px 18px;border-radius:var(--r);border:1px solid #a03030;background:var(--sf);color:#a03030;font-family:"DM Sans",sans-serif;font-size:12px;font-weight:500;cursor:pointer;width:100%;margin-top:8px}
 .icon-btn{font-size:11px;padding:6px 12px;border-radius:var(--pill);border:1px solid var(--bd2);background:var(--sf2);color:var(--tx);cursor:pointer;font-family:"DM Sans",sans-serif;font-weight:500}
@@ -182,54 +182,7 @@ body{font-family:"DM Sans",system-ui,sans-serif;background:var(--bg);color:var(-
 </div>
 
 <!-- MODAL ADD ITEM -->
-<div class="modal-bd" id="addModal" onclick="if(event.target===this)closeM('addModal')">
-  <div class="modal-box"><div class="mpill"></div>
-    <div class="mhd"><div class="mtitle">Ajouter un aliment</div><div class="msub" id="add-hint">Tape le nom pour rechercher</div></div>
-    <div class="mbody">
-      <div class="s-wrap" style="margin-bottom:8px">
-        <input type="text" class="s-inp" id="add-search" placeholder="poulet, crevettes, riz blanc, gruau..." oninput="liveSearch(this.value)" autocomplete="off" autofocus>
-      </div>
-      <div id="add-results"></div>
-      <div id="add-form" style="display:none;border-top:1px solid var(--bd);padding-top:14px;margin-top:8px">
-        <div class="sel-food-box" id="sel-food-box">
-          <div><div class="sel-food-name" id="sel-food-name"></div><div class="sel-food-mac" id="sel-food-mac"></div></div>
-          <button class="sel-food-clear" onclick="clearSel()">&#x2715;</button>
-        </div>
-        <div style="display:flex;gap:8px;margin-bottom:10px">
-          <div style="flex:1"><div class="form-label">Cat&eacute;gorie</div>
-            <select class="s-inp" id="add-cat" style="font-family:'DM Sans',sans-serif;font-size:13px">
-              <option>Viandes</option><option>Volaille</option><option>Charcuterie</option>
-              <option>Poissons & fruits de mer</option><option>Oeufs & produits laitiers</option>
-              <option>Fromages</option><option>L&eacute;gumineuses</option><option>Substituts v&eacute;g&eacute;taux</option>
-              <option>C&eacute;r&eacute;ales & p&acirc;tes</option><option>Pain & viennoiserie</option>
-              <option>L&eacute;gumes</option><option>Fruits</option><option>Noix & graines</option>
-              <option>Conserves</option><option>Condiments & sauces</option><option>Huiles & vinaigres</option>
-              <option>&Eacute;pices & herbes</option><option>Bouillons</option>
-              <option>Suppl&eacute;ments</option><option>Boissons</option><option>Autre</option>
-            </select>
-          </div>
-          <div style="flex:1"><div class="form-label">Unit&eacute;</div>
-            <div class="unit-row" style="margin-bottom:0">
-              <button class="unit-btn active" id="u-g" onclick="setUnit('g')">g</button>
-              <button class="unit-btn" id="u-ml" onclick="setUnit('ml')">ml</button>
-              <button class="unit-btn" id="u-units" onclick="setUnit('units')">u</button>
-            </div>
-          </div>
-        </div>
-        <div id="unit-wt-wrap" style="display:none;margin-bottom:10px">
-          <div class="form-label">Poids approximatif d&#8217;une unit&eacute; (g) &mdash; optionnel</div>
-          <input type="number" class="s-inp" id="unit-wt" placeholder="ex: 60 pour un oeuf">
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:0">
-          <div><div class="form-label">Quantit&eacute; en stock</div><input type="number" class="s-inp" id="add-qty" placeholder="ex: 500" min="0"></div>
-          <div><div class="form-label">Seuil bas (optionnel)</div><input type="number" class="s-inp" id="add-low" placeholder="ex: 100"></div>
-        </div>
-        <button class="btn-green" onclick="saveNewItem()">&#10003; Ajouter &agrave; l&#8217;inventaire</button>
-      </div>
-      <button class="btn-close" onclick="closeM('addModal')">Fermer</button>
-    </div>
-  </div>
-</div>
+
 
 <!-- MODAL EDIT ITEM -->
 <div class="modal-bd" id="editModal" onclick="if(event.target===this)closeM('editModal')">
@@ -434,7 +387,7 @@ body{font-family:"DM Sans",system-ui,sans-serif;background:var(--bg);color:var(-
 .stock-ok{background:#EAF3DE;color:#27500A}.stock-low{background:#FFF8E6;color:#92600A}.stock-none{background:#FBEAEF;color:#72243E}
 .btn-prim{padding:10px 18px;border-radius:var(--r);border:none;background:var(--tx);color:var(--bg);font-family:"DM Sans",sans-serif;font-size:12px;font-weight:600;cursor:pointer}
 .btn-sec{padding:10px 18px;border-radius:var(--r);border:1px solid var(--bd2);background:var(--sf);color:var(--tx2);font-family:"DM Sans",sans-serif;font-size:12px;font-weight:500;cursor:pointer}
-.btn-green{width:100%;padding:13px;background:#9333ea;color:#fff;border:none;border-radius:var(--r);font-size:14px;font-weight:600;cursor:pointer;font-family:"DM Sans",sans-serif;margin-top:10px}
+.btn-green{width:100%;padding:13px;background:#238636;color:#fff;border:none;border-radius:var(--r);font-size:14px;font-weight:600;cursor:pointer;font-family:"DM Sans",sans-serif;margin-top:10px}
 .btn-close{width:100%;padding:13px;background:var(--tx);color:var(--bg);border:none;border-radius:var(--r);font-size:14px;font-weight:600;cursor:pointer;margin-top:14px;font-family:"DM Sans",sans-serif}
 .btn-danger{padding:10px 18px;border-radius:var(--r);border:1px solid #a03030;background:var(--sf);color:#a03030;font-family:"DM Sans",sans-serif;font-size:12px;font-weight:500;cursor:pointer;width:100%;margin-top:8px}
 .icon-btn{font-size:11px;padding:6px 12px;border-radius:var(--pill);border:1px solid var(--bd2);background:var(--sf2);color:var(--tx);cursor:pointer;font-family:"DM Sans",sans-serif;font-weight:500}
@@ -540,53 +493,7 @@ body{font-family:"DM Sans",system-ui,sans-serif;background:var(--bg);color:var(-
 </div>
 
 <!-- MODAL SETTINGS -->
-<div class="modal-bd" id="settingsModal" onclick="if(event.target===this)closeM('settingsModal')">
-  <div class="modal-box"><div class="mpill"></div>
-    <div class="mhd"><div class="mtitle">&#9881; Param&egrave;tres</div></div>
-    <div class="mbody">
-      <div class="msect">Cl&eacute; API Anthropic</div>
-      <p style="font-size:12px;color:var(--tx2);line-height:1.6;margin-bottom:8px">Obtiens ta cl&eacute; sur <b>console.anthropic.com</b> &rarr; Cl&eacute;s API.</p>
-      <input type="password" class="s-inp" id="api-key-inp" placeholder="sk-ant-..." style="margin-bottom:8px">
-      <button class="btn-prim" onclick="saveApiKey()">Sauvegarder la clé API</button>
-      <div class="msect" style="margin-top:18px">Objectifs nutritionnels</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-        <div><div class="form-label">Calories (kcal)</div><input type="number" class="s-inp" id="g-kcal"></div>
-        <div><div class="form-label">Prot&eacute;ines (g)</div><input type="number" class="s-inp" id="g-prot"></div>
-        <div><div class="form-label">Glucides (g)</div><input type="number" class="s-inp" id="g-carb"></div>
-        <div><div class="form-label">Lipides (g)</div><input type="number" class="s-inp" id="g-fat"></div>
-      </div>
-      <button class="btn-prim" onclick="saveGoals()">Sauvegarder les objectifs</button>
-      <div class="msect" style="margin-top:20px">Mes appareils</div>
-      <p style="font-size:12px;color:var(--tx2);margin-bottom:10px">Sélectionne les appareils que tu possèdes. Claude en tiendra compte pour générer tes recettes.</p>
-      <div id="appliance-chips" style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px"></div>
-      <button class="btn-prim" onclick="saveAppliances()">&#10003; Enregistrer les appareils</button>
-      <div class="msect" style="margin-top:20px">Styles culinaires</div>
-      <p style="font-size:12px;color:var(--tx2);margin-bottom:10px">Sélectionne les cuisines que tu apprécies. Claude privilégiera ces styles dans tes recettes.</p>
-      <div id="style-chips" style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px"></div>
-      <button class="btn-prim" onclick="saveStyles()">&#10003; Enregistrer les styles</button>
-      <div class="msect" style="margin-top:20px">Synchronisation GitHub</div>
-      <p style="font-size:12px;color:var(--tx2);line-height:1.6;margin-bottom:8px">
-        Sync ton inventaire entre tous tes appareils via GitHub.<br>
-        Token : <b>github.com &rarr; Settings &rarr; Developer settings &rarr; Personal access tokens &rarr; Tokens (classic)</b><br>
-        Permissions requises : <b>repo</b> (lecture + écriture)
-      </p>
-      <input type="password" class="s-inp" id="gh-token-inp" placeholder="ghp_..." style="margin-bottom:8px">
-      <div class="form-label" style="margin-bottom:4px">Dépôt GitHub (owner/repo)</div>
-      <input type="text" class="s-inp" id="gh-repo-inp" placeholder="rogdolphe/tracker-aw" style="margin-bottom:8px">
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn-green" style="margin-top:0;flex:1;padding:10px" onclick="saveGHToken()">Enregistrer le token</button>
-      </div>
-      <div style="display:flex;gap:8px;margin-top:8px">
-        <button class="btn-sec" style="flex:1" onclick="ghPull(true)">&#8595; Charger depuis GitHub</button>
-        <button class="btn-sec" style="flex:1" onclick="ghPush(true)">&#8593; Pousser vers GitHub</button>
-      </div>
-      <div class="msect" style="margin-top:18px;color:#a03030">Zone danger</div>
-      <button class="btn-danger" onclick="if(confirm('Supprimer tout l\'inventaire?')){INV=[];saveINV();renderInventory();toast('Inventaire effac\u00e9')}">Effacer l&apos;inventaire</button>
-      <button class="btn-danger" onclick="if(confirm('Effacer le plan?')){PLAN=null;localStorage.removeItem('km_plan');localStorage.removeItem('km_plan_date');renderPlan();toast('Plan effac\u00e9')}">Effacer le plan</button>
-      <button class="btn-close" onclick="closeM('settingsModal')">Fermer</button>
-    </div>
-  </div>
-</div>
+
 
 <div class="toast" id="toast"></div>
 <script>
