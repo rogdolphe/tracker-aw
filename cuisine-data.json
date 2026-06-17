@@ -881,6 +881,20 @@
       "prot": 8,
       "carb": 46,
       "fat": 43
+    },
+    {
+      "id": 1781663569991,
+      "name": "Chocolat mi-sucré",
+      "brand": "",
+      "cat": "Pain & viennoiserie",
+      "unit": "g",
+      "unitWt": null,
+      "qty": 200,
+      "low": 0,
+      "kcal": 479,
+      "prot": 4.9,
+      "carb": 63,
+      "fat": 27
     }
   ],
   "goals": {
@@ -2100,6 +2114,6 @@
     ]
   },
   "plan_date": "2026-06-15",
-  "plan_updated": "2026-06-17T02:31:29.085Z",
-  "updated": "2026-06-17T02:32:32.432Z"
+  "plan_updated": "2026-06-17T02:32:32.432Z",
+  "updated": "2026-06-17T02:32:52.999Z"
 }
