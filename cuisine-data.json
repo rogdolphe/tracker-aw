@@ -924,13 +924,13 @@
   "plan": {
     "dejeuner": [
       {
-        "name": "Omelette au brocoli et mozzarella",
-        "emoji": "🥚",
+        "name": "Omelette au fromage et champignons",
+        "emoji": "🍳",
         "kcal": 420,
-        "prot": 38,
-        "carb": 8,
-        "fat": 26,
-        "time": "15min",
+        "prot": 34,
+        "carb": 6,
+        "fat": 29,
+        "time": "12min",
         "ingredients": [
           {
             "name": "Oeufs",
@@ -938,13 +938,13 @@
             "unit": "u"
           },
           {
-            "name": "Mozzarella râpée",
-            "qty": 50,
+            "name": "Champignons blancs",
+            "qty": 80,
             "unit": "g"
           },
           {
-            "name": "Brocoli",
-            "qty": 150,
+            "name": "Mozzarella râpée",
+            "qty": 40,
             "unit": "g"
           },
           {
@@ -959,20 +959,20 @@
           }
         ],
         "steps": [
-          "Couper le brocoli en petits bouquets et cuire 3 min au micro-ondes avec un peu d'eau.",
-          "Battre les oeufs avec le sel, faire fondre le beurre dans une poêle à feu moyen et verser les oeufs.",
-          "Déposer le brocoli et la mozzarella sur une moitié, plier l'omelette et cuire 1 min jusqu'à fonte du fromage."
+          "Faire revenir les champignons tranchés dans le beurre à feu moyen sur la plaque de cuisson pendant 3 minutes.",
+          "Battre les oeufs avec le sel, verser dans la poêle et laisser coaguler 2 minutes en soulevant les bords.",
+          "Ajouter la mozzarella et les champignons sur une moitié, plier l'omelette et servir."
         ],
-        "tip": "Couvrir la poêle 30 secondes pour bien faire fondre la mozzarella sans surcuire les oeufs."
+        "tip": "Pour une omelette plus légère, remplacez 1 oeuf entier par 2 blancs d'oeufs."
       },
       {
-        "name": "Bol de gruau protéiné au yogourt grec et miel",
+        "name": "Gruau protéiné au miel et chia",
         "emoji": "🥣",
-        "kcal": 390,
-        "prot": 22,
-        "carb": 58,
-        "fat": 7,
-        "time": "10min",
+        "kcal": 410,
+        "prot": 32,
+        "carb": 52,
+        "fat": 9,
+        "time": "8min",
         "ingredients": [
           {
             "name": "Gruau instantané",
@@ -985,120 +985,120 @@
             "unit": "g"
           },
           {
-            "name": "Lait d'amandes non sucré",
-            "qty": 200,
-            "unit": "ml"
+            "name": "Graines de chia",
+            "qty": 20,
+            "unit": "g"
           },
           {
             "name": "Miel",
-            "qty": 20,
-            "unit": "g"
-          },
-          {
-            "name": "Graines de chia",
             "qty": 15,
             "unit": "g"
+          },
+          {
+            "name": "Lait d'amandes non sucré",
+            "qty": 200,
+            "unit": "ml"
           }
         ],
         "steps": [
-          "Verser le gruau et le lait d'amandes dans un bol, cuire 2 min au micro-ondes en remuant à mi-cuisson.",
-          "Incorporer les graines de chia et le miel, bien mélanger.",
+          "Cuire le gruau avec le lait d'amandes au micro-ondes 3 minutes, remuer à mi-cuisson.",
+          "Incorporer les graines de chia et le miel dans le gruau chaud et laisser gonfler 2 minutes.",
           "Déposer le yogourt grec sur le dessus et servir immédiatement."
         ],
-        "tip": "Laisser reposer 1 min après cuisson pour que les graines de chia épaississent légèrement le gruau."
+        "tip": "Préparez la veille en ajoutant le lait froid pour un overnight oats sans cuisson."
       },
       {
-        "name": "Galette de pommes de terre au four et oeuf poché",
-        "emoji": "🥔",
-        "kcal": 480,
-        "prot": 22,
-        "carb": 55,
-        "fat": 18,
-        "time": "35min",
-        "ingredients": [
-          {
-            "name": "Pommes de terre",
-            "qty": 400,
-            "unit": "g"
-          },
-          {
-            "name": "Oeufs",
-            "qty": 3,
-            "unit": "u"
-          },
-          {
-            "name": "Margarine",
-            "qty": 20,
-            "unit": "g"
-          },
-          {
-            "name": "Poudre d'ail",
-            "qty": 3,
-            "unit": "g"
-          },
-          {
-            "name": "Sel de mer",
-            "qty": 3,
-            "unit": "g"
-          }
-        ],
-        "steps": [
-          "Râper les pommes de terre, essorer avec un linge, mélanger avec la margarine fondue, le sel et la poudre d'ail, former deux galettes et cuire au four à 220°C pendant 25 min en retournant à mi-cuisson.",
-          "Pocher les oeufs dans une casserole d'eau frémissante vinaigrée pendant 3 min.",
-          "Déposer les oeufs pochés sur les galettes et servir aussitôt."
-        ],
-        "tip": "Bien essorer les pommes de terre râpées pour obtenir des galettes croustillantes à l'extérieur."
-      },
-      {
-        "name": "Pain doré québécois à la cannelle",
+        "name": "Toast aux oeufs brouillés et saumon",
         "emoji": "🍞",
-        "kcal": 520,
-        "prot": 32,
-        "carb": 62,
-        "fat": 16,
-        "time": "20min",
+        "kcal": 480,
+        "prot": 38,
+        "carb": 32,
+        "fat": 22,
+        "time": "10min",
         "ingredients": [
           {
             "name": "Oeufs",
-            "qty": 4,
+            "qty": 3,
             "unit": "u"
           },
           {
-            "name": "Yogourt grec",
-            "qty": 100,
-            "unit": "g"
-          },
-          {
-            "name": "Farine tout usage",
+            "name": "Truite arc-en-ciel",
             "qty": 80,
             "unit": "g"
           },
           {
-            "name": "Sirop d'érable",
-            "qty": 30,
-            "unit": "ml"
+            "name": "Pain blanc tranché",
+            "qty": 2,
+            "unit": "u"
           },
           {
             "name": "Beurre",
-            "qty": 15,
+            "qty": 12,
+            "unit": "g"
+          },
+          {
+            "name": "Yogourt grec",
+            "qty": 30,
             "unit": "g"
           }
         ],
         "steps": [
-          "Mélanger les oeufs, le yogourt grec et la farine au robot culinaire jusqu'à obtenir une pâte lisse et homogène.",
-          "Faire fondre le beurre dans une poêle à feu moyen, verser des portions de pâte et cuire 3 min de chaque côté jusqu'à dorure.",
-          "Servir avec le sirop d'érable versé sur le dessus."
+          "Griller le pain au grille-pain ou à l'air fryer 3 minutes à 180°C.",
+          "Faire fondre le beurre dans une poêle, ajouter les oeufs battus et remuer doucement à feu doux jusqu'à texture crémeuse.",
+          "Tartiner le yogourt grec sur les toasts, déposer les oeufs brouillés et des lamelles de truite par-dessus."
         ],
-        "tip": "La pâte doit être assez épaisse pour former de petites crêpes épaisses style pancakes; ajouter un peu d'eau si trop ferme."
+        "tip": "Retirez les oeufs du feu légèrement sous-cuits, la chaleur résiduelle finira la cuisson."
+      },
+      {
+        "name": "Galettes de pommes de terre aux oeufs",
+        "emoji": "🥔",
+        "kcal": 390,
+        "prot": 31,
+        "carb": 38,
+        "fat": 14,
+        "time": "20min",
+        "ingredients": [
+          {
+            "name": "Pommes de terre",
+            "qty": 300,
+            "unit": "g"
+          },
+          {
+            "name": "Oeufs",
+            "qty": 3,
+            "unit": "u"
+          },
+          {
+            "name": "Farine tout usage",
+            "qty": 30,
+            "unit": "g"
+          },
+          {
+            "name": "Mozzarella râpée",
+            "qty": 50,
+            "unit": "g"
+          },
+          {
+            "name": "Huile d'arachide",
+            "qty": 15,
+            "unit": "ml"
+          }
+        ],
+        "steps": [
+          "Râper les pommes de terre, les essorer dans un linge, mélanger avec 2 oeufs battus, la farine, la mozzarella et le sel.",
+          "Former des galettes et cuire dans l'huile d'arachide à feu moyen 4 minutes par côté sur la plaque de cuisson.",
+          "Dans la même poêle, cuire le dernier oeuf au plat et servir par-dessus les galettes dorées."
+        ],
+        "tip": "Plus vous essorez les pommes de terre, plus les galettes seront croustillantes."
       }
     ],
     "collation_am": [
       {
-        "name": "Œufs brouillés au fromage",
+        "name": "Œufs brouillés au fromage fondant",
         "emoji": "🍳",
         "kcal": 320,
         "prot": 22,
-        "carb": 2,
+        "carb": 4,
         "fat": 24,
         "time": "8min",
         "ingredients": [
@@ -1119,30 +1119,25 @@
           },
           {
             "name": "Sel de mer",
-            "qty": 1,
-            "unit": "g"
-          },
-          {
-            "name": "Cayenne / piment fort",
-            "qty": 0.5,
+            "qty": 2,
             "unit": "g"
           }
         ],
         "steps": [
-          "Battre les 3 œufs avec le sel et une pincée de cayenne jusqu'à homogénéité.",
-          "Faire fondre le beurre dans une poêle à feu moyen-doux, ajouter les œufs et remuer doucement avec une spatule en formant des grumeaux crémeux.",
-          "Hors du feu, incorporer la mozzarella râpée, mélanger et servir immédiatement."
+          "Casser les œufs dans un bol, ajouter le sel et battre vigoureusement à la fourchette.",
+          "Faire fondre le beurre dans une poêle à feu doux, verser les œufs et remuer constamment avec une spatule en silicone.",
+          "Retirer du feu dès que les œufs sont encore légèrement coulants, incorporer la mozzarella et servir immédiatement."
         ],
-        "tip": "Retirer la poêle du feu avant la fin de cuisson car les œufs continuent à cuire avec la chaleur résiduelle."
+        "tip": "Retirer la poêle du feu avant la cuisson complète pour des œufs ultra crémeux."
       },
       {
-        "name": "Gruau protéiné au miel et chia",
+        "name": "Bol de gruau protéiné au miel et chia",
         "emoji": "🥣",
         "kcal": 380,
-        "prot": 15,
-        "carb": 55,
+        "prot": 14,
+        "carb": 58,
         "fat": 9,
-        "time": "5min",
+        "time": "6min",
         "ingredients": [
           {
             "name": "Gruau instantané",
@@ -1151,7 +1146,7 @@
           },
           {
             "name": "Yogourt grec",
-            "qty": 100,
+            "qty": 80,
             "unit": "g"
           },
           {
@@ -1171,104 +1166,104 @@
           }
         ],
         "steps": [
-          "Mélanger le gruau et le lait d'amandes dans un bol, cuire 2 minutes au micro-ondes à puissance maximale.",
-          "Incorporer les graines de chia et le miel, bien mélanger.",
-          "Déposer le yogourt grec sur le dessus et servir."
+          "Mélanger le gruau instantané avec le lait d'amandes dans un bol allant au micro-ondes.",
+          "Cuire au micro-ondes 2 minutes à puissance maximale, mélanger à mi-cuisson.",
+          "Garnir de yogourt grec, saupoudrer les graines de chia et drizzler le miel avant de servir."
         ],
-        "tip": "Préparer la veille en ajoutant tous les ingrédients à froid pour un overnight oat encore plus crémeux."
+        "tip": "Préparer la veille en remplaçant la cuisson micro-ondes par un trempage nocturne au frigo pour un overnight oats."
       },
       {
-        "name": "Toast de tofu pané à l'air fryer",
-        "emoji": "🥙",
+        "name": "Toast au thon et moutarde Dijon",
+        "emoji": "🐟",
         "kcal": 290,
-        "prot": 18,
-        "carb": 22,
-        "fat": 13,
+        "prot": 26,
+        "carb": 28,
+        "fat": 8,
+        "time": "5min",
+        "ingredients": [
+          {
+            "name": "Pain blanc tranché",
+            "qty": 2,
+            "unit": "u"
+          },
+          {
+            "name": "Thon solide blanc en conserve",
+            "qty": 120,
+            "unit": "g"
+          },
+          {
+            "name": "Moutarde de Dijon",
+            "qty": 15,
+            "unit": "g"
+          },
+          {
+            "name": "Yogourt grec",
+            "qty": 30,
+            "unit": "g"
+          },
+          {
+            "name": "Sel de mer",
+            "qty": 1,
+            "unit": "g"
+          }
+        ],
+        "steps": [
+          "Griller les tranches de pain au grille-pain ou à l'air fryer à 180°C pendant 3 minutes.",
+          "Égoutter le thon et le mélanger dans un bol avec le yogourt grec, la moutarde de Dijon et le sel.",
+          "Étaler généreusement la préparation au thon sur les toasts et servir aussitôt."
+        ],
+        "tip": "Ajouter quelques gouttes de sauce piquante Tabasco pour relever le mélange au thon."
+      },
+      {
+        "name": "Mini omelette au four champignons et mozzarella",
+        "emoji": "🍄",
+        "kcal": 310,
+        "prot": 24,
+        "carb": 4,
+        "fat": 22,
         "time": "15min",
         "ingredients": [
           {
-            "name": "Tofu ferme",
-            "qty": 150,
+            "name": "Oeufs",
+            "qty": 3,
+            "unit": "u"
+          },
+          {
+            "name": "Champignons blancs",
+            "qty": 60,
             "unit": "g"
           },
           {
-            "name": "Sauce soya",
-            "qty": 15,
-            "unit": "ml"
+            "name": "Mozzarella râpée",
+            "qty": 40,
+            "unit": "g"
           },
           {
-            "name": "Huile de sésame grillé",
+            "name": "Beurre",
             "qty": 8,
-            "unit": "ml"
-          },
-          {
-            "name": "Poudre d'ail",
-            "qty": 1,
             "unit": "g"
           },
           {
-            "name": "Paprika doux",
-            "qty": 1,
+            "name": "Sel de mer",
+            "qty": 2,
             "unit": "g"
           }
         ],
         "steps": [
-          "Éponger le tofu et le couper en tranches de 1 cm, mélanger la sauce soya, l'huile de sésame, la poudre d'ail et le paprika.",
-          "Mariner les tranches de tofu 5 minutes dans la sauce puis les déposer dans le panier de l'air fryer.",
-          "Cuire à 200°C pendant 10 minutes en retournant à mi-cuisson jusqu'à ce qu'ils soient dorés et croustillants."
+          "Préchauffer le four à 190°C. Émincer les champignons et les faire revenir 3 minutes dans une poêle allant au four avec le beurre et le sel.",
+          "Battre les œufs et les verser directement sur les champignons dans la poêle, parsemer de mozzarella râpée.",
+          "Enfourner 6 à 8 minutes jusqu'à ce que l'omelette soit gonflée et dorée, servir directement dans la poêle."
         ],
-        "tip": "Plus le tofu est bien pressé et épongé, plus il sera croustillant après cuisson à l'air fryer."
-      },
-      {
-        "name": "Crevettes sautées sauce soya-gingembre",
-        "emoji": "🍤",
-        "kcal": 210,
-        "prot": 28,
-        "carb": 5,
-        "fat": 8,
-        "time": "10min",
-        "ingredients": [
-          {
-            "name": "Crevettes cuites décortiquées",
-            "qty": 150,
-            "unit": "g"
-          },
-          {
-            "name": "Sauce soya",
-            "qty": 20,
-            "unit": "ml"
-          },
-          {
-            "name": "Gingembre moulu",
-            "qty": 1,
-            "unit": "g"
-          },
-          {
-            "name": "Huile d'arachide",
-            "qty": 10,
-            "unit": "ml"
-          },
-          {
-            "name": "Miel",
-            "qty": 8,
-            "unit": "g"
-          }
-        ],
-        "steps": [
-          "Mélanger la sauce soya, le miel et le gingembre moulu dans un petit bol pour former la sauce.",
-          "Chauffer l'huile d'arachide dans une poêle à feu vif, ajouter les crevettes et saisir 2 minutes.",
-          "Verser la sauce sur les crevettes, mélanger 1 minute pour bien enrober et servir chaud."
-        ],
-        "tip": "Les crevettes étant déjà cuites, l'objectif est juste de les réchauffer et de les glacer avec la sauce pour éviter qu'elles ne deviennent caoutchouteuses."
+        "tip": "Utiliser une petite poêle en fonte pour une cuisson uniforme et une présentation rustique de style bistro."
       }
     ],
     "dessert": [
       {
-        "name": "Gâteau aux pommes à la française",
+        "name": "Clafoutis aux pommes",
         "emoji": "🍎",
         "kcal": 420,
-        "prot": 8,
-        "carb": 58,
+        "prot": 13,
+        "carb": 52,
         "fat": 18,
         "time": "45min",
         "ingredients": [
@@ -1279,167 +1274,167 @@
           },
           {
             "name": "Oeufs",
-            "qty": 2,
+            "qty": 3,
             "unit": "u"
           },
           {
-            "name": "Beurre",
+            "name": "Farine tout usage",
             "qty": 60,
             "unit": "g"
           },
           {
-            "name": "Sucre blanc",
-            "qty": 80,
+            "name": "Beurre",
+            "qty": 30,
             "unit": "g"
           },
           {
-            "name": "Farine tout usage",
-            "qty": 100,
+            "name": "Sucre blanc",
+            "qty": 60,
             "unit": "g"
           }
         ],
         "steps": [
-          "Préchauffer le four à 180°C. Faire fondre le beurre au micro-ondes, puis fouetter avec les oeufs et le sucre blanc jusqu'à mélange homogène.",
-          "Incorporer la farine tout usage, puis les pommes pelées et coupées en dés. Verser dans un moule beurré.",
-          "Cuire au four 30 minutes jusqu'à ce qu'un cure-dent ressorte propre. Laisser tiédir avant de servir."
+          "Préchauffer le four à 180°C. Beurrer un moule, peler et trancher les pommes et les disposer dans le fond.",
+          "Fouetter les oeufs avec le sucre, incorporer la farine puis le beurre fondu pour obtenir une pâte lisse. Verser sur les pommes.",
+          "Cuire 30 minutes au four jusqu'à ce que le clafoutis soit doré et ferme au centre. Laisser tiédir avant de servir."
         ],
-        "tip": "Ajouter une pincée de cannelle si disponible pour rehausser le goût des pommes."
+        "tip": "Saupoudrer de sucre à glacer au moment de servir pour un effet bistro classique."
       },
       {
-        "name": "Crêpes au beurre et sirop d'érable",
-        "emoji": "🥞",
-        "kcal": 390,
-        "prot": 13,
-        "carb": 52,
-        "fat": 15,
-        "time": "25min",
+        "name": "Gâteau moelleux aux pommes et sirop d'érable",
+        "emoji": "🥧",
+        "kcal": 460,
+        "prot": 12,
+        "carb": 62,
+        "fat": 19,
+        "time": "55min",
         "ingredients": [
+          {
+            "name": "Pommes",
+            "qty": 2,
+            "unit": "u"
+          },
+          {
+            "name": "Oeufs",
+            "qty": 3,
+            "unit": "u"
+          },
           {
             "name": "Farine tout usage",
             "qty": 120,
             "unit": "g"
           },
           {
-            "name": "Oeufs",
-            "qty": 2,
-            "unit": "u"
-          },
-          {
             "name": "Beurre",
-            "qty": 30,
+            "qty": 50,
             "unit": "g"
           },
           {
-            "name": "Lait d'amandes non sucré",
-            "qty": 250,
-            "unit": "ml"
-          },
-          {
             "name": "Sirop d'érable",
-            "qty": 40,
+            "qty": 60,
             "unit": "ml"
           }
         ],
         "steps": [
-          "Fouetter les oeufs avec la farine tout usage, puis incorporer le lait d'amandes petit à petit pour obtenir une pâte lisse sans grumeaux. Laisser reposer 10 minutes.",
-          "Faire fondre le beurre dans une poêle à feu moyen et cuire les crêpes environ 1 minute par côté jusqu'à légère coloration dorée.",
-          "Dresser les crêpes pliées dans une assiette et napper généreusement de sirop d'érable avant de servir."
+          "Préchauffer le four à 175°C. Fouetter les oeufs avec le sirop d'érable et le beurre fondu jusqu'à homogénéité.",
+          "Incorporer la farine à la pâte. Peler et couper les pommes en dés, les plier dans la pâte.",
+          "Verser dans un moule beurré et cuire 35 à 40 minutes. Vérifier la cuisson avec un cure-dent."
         ],
-        "tip": "Une pâte reposée donne des crêpes plus légères et souples."
+        "tip": "Un filet de sirop d'érable chaud sur le gâteau encore tiède intensifie le caractère québécois du dessert."
       },
       {
-        "name": "Financiers aux pommes et miel",
-        "emoji": "🍯",
-        "kcal": 445,
-        "prot": 12,
-        "carb": 55,
+        "name": "Madeleines au beurre noisette",
+        "emoji": "🫘",
+        "kcal": 390,
+        "prot": 13,
+        "carb": 44,
         "fat": 20,
         "time": "35min",
         "ingredients": [
           {
-            "name": "Beurre",
-            "qty": 70,
-            "unit": "g"
-          },
-          {
-            "name": "Sucre blanc",
-            "qty": 90,
-            "unit": "g"
+            "name": "Oeufs",
+            "qty": 3,
+            "unit": "u"
           },
           {
             "name": "Farine tout usage",
+            "qty": 100,
+            "unit": "g"
+          },
+          {
+            "name": "Beurre",
             "qty": 80,
             "unit": "g"
           },
           {
-            "name": "Oeufs",
-            "qty": 3,
-            "unit": "u"
+            "name": "Sucre blanc",
+            "qty": 80,
+            "unit": "g"
           },
           {
             "name": "Miel",
-            "qty": 30,
+            "qty": 20,
             "unit": "g"
           }
         ],
         "steps": [
-          "Préchauffer le four à 190°C. Faire fondre le beurre à la poêle jusqu'à légère coloration noisette, puis laisser tiédir.",
-          "Battre les oeufs avec le sucre blanc et le miel, puis incorporer la farine tout usage et le beurre noisette en mélangeant bien.",
-          "Verser la pâte dans des moules à muffins beurrés et cuire 18 à 20 minutes au four jusqu'à dorure. Laisser refroidir sur grille."
+          "Faire fondre le beurre à feu moyen jusqu'à coloration noisette. Laisser tiédir. Fouetter les oeufs avec le sucre et le miel jusqu'à blanchiment.",
+          "Incorporer la farine tamisée puis le beurre noisette refroidi. Laisser reposer la pâte 15 minutes au réfrigérateur.",
+          "Préchauffer le four à 200°C. Remplir les moules à madeleines aux 3/4 et cuire 10 à 12 minutes jusqu'à la bosse caractéristique."
         ],
-        "tip": "Le beurre noisette est la clé du goût authentique des financiers, ne le sautez pas."
+        "tip": "Le choc thermique (pâte froide, four très chaud) est le secret de la bosse parfaite des madeleines françaises."
       },
       {
-        "name": "Clafoutis aux pommes façon bistro",
-        "emoji": "🍮",
-        "kcal": 380,
+        "name": "Crêpes Suzette aux pommes caramélisées",
+        "emoji": "🥞",
+        "kcal": 480,
         "prot": 14,
-        "carb": 48,
-        "fat": 14,
-        "time": "50min",
+        "carb": 58,
+        "fat": 22,
+        "time": "40min",
         "ingredients": [
-          {
-            "name": "Pommes",
-            "qty": 3,
-            "unit": "u"
-          },
           {
             "name": "Oeufs",
             "qty": 3,
             "unit": "u"
           },
           {
-            "name": "Sucre blanc",
-            "qty": 70,
-            "unit": "g"
-          },
-          {
             "name": "Farine tout usage",
-            "qty": 60,
+            "qty": 100,
             "unit": "g"
           },
           {
             "name": "Beurre",
-            "qty": 30,
+            "qty": 50,
+            "unit": "g"
+          },
+          {
+            "name": "Pommes",
+            "qty": 2,
+            "unit": "u"
+          },
+          {
+            "name": "Cassonade",
+            "qty": 60,
             "unit": "g"
           }
         ],
         "steps": [
-          "Préchauffer le four à 175°C. Beurrer un plat allant au four avec le beurre fondu. Peler et trancher finement les pommes, les disposer dans le fond du plat.",
-          "Battre les oeufs avec le sucre blanc jusqu'à blanchiment, incorporer la farine tout usage, puis verser sur les pommes uniformément.",
-          "Cuire au four 35 minutes jusqu'à ce que le clafoutis soit gonflé et doré. Servir tiède ou à température ambiante."
+          "Préparer la pâte à crêpes en mélangeant oeufs, farine et beurre fondu avec 150ml d'eau. Laisser reposer 10 minutes puis cuire les crêpes à la poêle.",
+          "Peler et trancher les pommes. Dans la même poêle avec un peu de beurre, faire caraméliser les pommes avec la cassonade 5 à 6 minutes.",
+          "Garnir chaque crêpe de pommes caramélisées, plier en quatre et napper du caramel de cuisson. Servir chaud."
         ],
-        "tip": "Saupoudrer de sucre à glacer au moment de servir pour une présentation bistro soignée."
+        "tip": "Déglacer les pommes avec un filet de vinaigre de vin rouge pour équilibrer la douceur du caramel."
       }
     ],
     "diner": [
       {
-        "name": "Bowl de quinoa au poulet et légumes",
+        "name": "Poulet grillé au paprika sur riz",
         "emoji": "🍗",
         "kcal": 520,
         "prot": 42,
-        "carb": 55,
-        "fat": 12,
+        "carb": 58,
+        "fat": 10,
         "time": "25min",
         "ingredients": [
           {
@@ -1448,390 +1443,50 @@
             "unit": "g"
           },
           {
-            "name": "Quinoa",
-            "qty": 80,
+            "name": "Riz blanc long grain",
+            "qty": 150,
             "unit": "g"
           },
           {
-            "name": "Macédoine de légumes surgelée",
-            "qty": 100,
+            "name": "Paprika doux",
+            "qty": 4,
             "unit": "g"
+          },
+          {
+            "name": "Huile d'olive extra-vierge",
+            "qty": 10,
+            "unit": "ml"
           },
           {
             "name": "Bouillon de poulet (poudre)",
             "qty": 5,
             "unit": "g"
-          },
-          {
-            "name": "Huile d'olive extra-vierge",
-            "qty": 10,
-            "unit": "ml"
           }
         ],
         "steps": [
-          "Cuire le quinoa dans le cuiseur à riz avec 160ml d'eau et 5g de bouillon de poulet en poudre pendant 15 minutes.",
-          "Couper le poulet en cubes, assaisonner avec sel et paprika, puis cuire à l'air fryer à 200°C pendant 12 minutes. Faire chauffer la macédoine au micro-ondes 3 minutes.",
-          "Assembler le bowl : quinoa au fond, poulet et légumes par-dessus, arroser d'huile d'olive."
+          "Cuire le riz dans le cuiseur à riz avec de l'eau et la poudre de bouillon de poulet.",
+          "Badigeonner le poulet d'huile d'olive et de paprika, puis cuire à l'air fryer à 200°C pendant 18 minutes.",
+          "Trancher le poulet et servir sur le riz cuit."
         ],
-        "tip": "Préparer une double portion de quinoa la veille pour gagner du temps."
+        "tip": "Laisser reposer le poulet 3 minutes avant de trancher pour garder les jus."
       },
       {
-        "name": "Spaghetti aux crevettes à l'ail et huile",
-        "emoji": "🍤",
-        "kcal": 530,
-        "prot": 38,
-        "carb": 58,
-        "fat": 14,
-        "time": "20min",
-        "ingredients": [
-          {
-            "name": "Spaghetti",
-            "qty": 120,
-            "unit": "g"
-          },
-          {
-            "name": "Crevettes cuites décortiquées",
-            "qty": 200,
-            "unit": "g"
-          },
-          {
-            "name": "Ail (têtes)",
-            "qty": 15,
-            "unit": "g"
-          },
-          {
-            "name": "Huile d'olive extra-vierge",
-            "qty": 20,
-            "unit": "ml"
-          },
-          {
-            "name": "Sauce piquante Tabasco",
-            "qty": 5,
-            "unit": "ml"
-          }
-        ],
-        "steps": [
-          "Faire cuire les spaghetti dans une grande casserole d'eau salée selon les indications du paquet, environ 10 minutes.",
-          "Émincer l'ail et le faire revenir dans l'huile d'olive sur plaque de cuisson à feu moyen 2 minutes, ajouter les crevettes et le tabasco, chauffer 3 minutes.",
-          "Égoutter les pâtes, mélanger avec les crevettes à l'ail, rectifier l'assaisonnement et servir."
-        ],
-        "tip": "Garder un peu d'eau de cuisson des pâtes pour lier la sauce si elle est trop sèche."
-      },
-      {
-        "name": "Bowl de boeuf haché et riz façon bistro",
-        "emoji": "🥩",
-        "kcal": 540,
-        "prot": 40,
-        "carb": 52,
-        "fat": 16,
-        "time": "25min",
-        "ingredients": [
-          {
-            "name": "Boeuf haché maigre",
-            "qty": 150,
-            "unit": "g"
-          },
-          {
-            "name": "Riz blanc long grain",
-            "qty": 90,
-            "unit": "g"
-          },
-          {
-            "name": "Champignons blancs",
-            "qty": 80,
-            "unit": "g"
-          },
-          {
-            "name": "Moutarde de Dijon",
-            "qty": 15,
-            "unit": "g"
-          },
-          {
-            "name": "Bouillon de boeuf (poudre)",
-            "qty": 5,
-            "unit": "g"
-          }
-        ],
-        "steps": [
-          "Cuire le riz dans le cuiseur à riz avec 180ml d'eau et le bouillon de boeuf en poudre.",
-          "Faire revenir le boeuf haché dans une poêle sur plaque de cuisson, ajouter les champignons tranchés et cuire 7 minutes jusqu'à coloration.",
-          "Incorporer la moutarde de Dijon et 30ml d'eau, mélanger pour créer une sauce, servir sur le riz."
-        ],
-        "tip": "Ajouter une pincée de paprika pour rehausser la couleur et la saveur."
-      },
-      {
-        "name": "Pappardelle au thon et coulis de tomates",
-        "emoji": "🐟",
-        "kcal": 490,
-        "prot": 35,
-        "carb": 62,
-        "fat": 10,
-        "time": "20min",
-        "ingredients": [
-          {
-            "name": "Pappardelle",
-            "qty": 120,
-            "unit": "g"
-          },
-          {
-            "name": "Thon solide blanc en conserve",
-            "qty": 120,
-            "unit": "g"
-          },
-          {
-            "name": "Coulis de tomates",
-            "qty": 150,
-            "unit": "g"
-          },
-          {
-            "name": "Ail (têtes)",
-            "qty": 10,
-            "unit": "g"
-          },
-          {
-            "name": "Huile d'olive extra-vierge",
-            "qty": 10,
-            "unit": "ml"
-          }
-        ],
-        "steps": [
-          "Faire cuire les pappardelle dans une grande casserole d'eau bouillante salée environ 8 minutes.",
-          "Faire revenir l'ail haché dans l'huile d'olive 1 minute sur plaque de cuisson, ajouter le coulis de tomates et le thon égoutté, mijoter 5 minutes à feu doux.",
-          "Égoutter les pâtes, mélanger avec la sauce tomate-thon et servir immédiatement."
-        ],
-        "tip": "Un filet de vinaigre de vin rouge dans la sauce apporte une belle acidité équilibrante."
-      }
-    ],
-    "apero": [
-      {
-        "name": "Brochettes de poulet teriyaki sésame",
-        "emoji": "🍢",
-        "kcal": 210,
-        "prot": 28,
-        "carb": 8,
-        "fat": 7,
-        "time": "25min",
-        "ingredients": [
-          {
-            "name": "Poulet breast",
-            "qty": 200,
-            "unit": "g"
-          },
-          {
-            "name": "Sauce soya",
-            "qty": 30,
-            "unit": "ml"
-          },
-          {
-            "name": "Miel",
-            "qty": 15,
-            "unit": "g"
-          },
-          {
-            "name": "Huile de sésame grillé",
-            "qty": 10,
-            "unit": "ml"
-          },
-          {
-            "name": "Ail (têtes)",
-            "qty": 5,
-            "unit": "g"
-          }
-        ],
-        "steps": [
-          "Couper le poulet en cubes de 2 cm. Mélanger sauce soya, miel, huile de sésame et ail haché pour faire la marinade. Laisser mariner 15 min.",
-          "Enfiler les cubes sur des brochettes et cuire à l'air fryer à 200°C pendant 10 min en retournant à mi-cuisson.",
-          "Badigeonner du reste de marinade et servir chaud sur un plateau apéritif."
-        ],
-        "tip": "Faire tremper les brochettes en bois 30 min dans l'eau avant utilisation pour éviter qu'elles brûlent."
-      },
-      {
-        "name": "Bouchées de crevettes à l'ail et paprika",
-        "emoji": "🍤",
-        "kcal": 175,
-        "prot": 24,
-        "carb": 3,
-        "fat": 7,
-        "time": "15min",
-        "ingredients": [
-          {
-            "name": "Crevettes cuites décortiquées",
-            "qty": 200,
-            "unit": "g"
-          },
-          {
-            "name": "Beurre",
-            "qty": 20,
-            "unit": "g"
-          },
-          {
-            "name": "Ail (têtes)",
-            "qty": 8,
-            "unit": "g"
-          },
-          {
-            "name": "Paprika doux",
-            "qty": 3,
-            "unit": "g"
-          },
-          {
-            "name": "Sauce piquante Tabasco",
-            "qty": 5,
-            "unit": "ml"
-          }
-        ],
-        "steps": [
-          "Faire fondre le beurre dans une poêle à feu moyen. Ajouter l'ail émincé et le paprika, faire revenir 1 min jusqu'à ce que l'ail soit doré.",
-          "Ajouter les crevettes et le Tabasco, mélanger et chauffer 2-3 min jusqu'à ce que les crevettes soient bien enrobées.",
-          "Servir sur des cure-dents avec une garniture de paprika pour la présentation."
-        ],
-        "tip": "Les crevettes étant déjà cuites, ne pas les chauffer trop longtemps pour éviter qu'elles deviennent caoutchouteuses."
-      },
-      {
-        "name": "Galettes de quinoa au fromage fondant",
-        "emoji": "🧀",
-        "kcal": 195,
-        "prot": 12,
-        "carb": 18,
-        "fat": 8,
-        "time": "30min",
-        "ingredients": [
-          {
-            "name": "Quinoa",
-            "qty": 100,
-            "unit": "g"
-          },
-          {
-            "name": "Oeufs",
-            "qty": 60,
-            "unit": "g"
-          },
-          {
-            "name": "Mozzarella râpée",
-            "qty": 60,
-            "unit": "g"
-          },
-          {
-            "name": "Poudre d'ail",
-            "qty": 2,
-            "unit": "g"
-          },
-          {
-            "name": "Huile d'olive extra-vierge",
-            "qty": 10,
-            "unit": "ml"
-          }
-        ],
-        "steps": [
-          "Cuire le quinoa selon les instructions puis laisser tiédir. Battre l'oeuf, incorporer la mozzarella, la poudre d'ail et le quinoa cuit. Bien mélanger.",
-          "Former de petites galettes de 4 cm de diamètre. Badigeonner d'huile d'olive et cuire à l'air fryer à 190°C pendant 12 min jusqu'à dorure.",
-          "Laisser reposer 2 min avant de servir pour que les galettes se tiennent bien."
-        ],
-        "tip": "Ajouter une pincée de cayenne au mélange pour une version plus relevée et festive."
-      },
-      {
-        "name": "Dip de pois chiches façon houmous maison",
-        "emoji": "🫘",
-        "kcal": 180,
-        "prot": 11,
-        "carb": 20,
-        "fat": 7,
-        "time": "10min",
-        "ingredients": [
-          {
-            "name": "Pois chiches en conserve",
-            "qty": 250,
-            "unit": "g"
-          },
-          {
-            "name": "Huile de sésame grillé",
-            "qty": 20,
-            "unit": "ml"
-          },
-          {
-            "name": "Ail (têtes)",
-            "qty": 6,
-            "unit": "g"
-          },
-          {
-            "name": "Vinaigre de vin rouge",
-            "qty": 10,
-            "unit": "ml"
-          },
-          {
-            "name": "Paprika doux",
-            "qty": 2,
-            "unit": "g"
-          }
-        ],
-        "steps": [
-          "Égoutter et rincer les pois chiches. Mettre dans le robot culinaire avec l'ail, l'huile de sésame et le vinaigre de vin rouge.",
-          "Mixer 2-3 min jusqu'à obtenir une texture crémeuse et homogène, ajouter un filet d'eau si nécessaire pour ajuster la consistance.",
-          "Verser dans un bol de service, saupoudrer de paprika et arroser d'un filet d'huile de sésame. Servir avec des légumes crus ou craquelins."
-        ],
-        "tip": "Réserver un peu d'eau de la conserve de pois chiches pour fluidifier le houmous tout en conservant son goût."
-      }
-    ],
-    "souper": [
-      {
-        "name": "Poulet rôti au four, riz et brocoli",
-        "emoji": "🍗",
-        "kcal": 520,
-        "prot": 48,
-        "carb": 52,
-        "fat": 12,
-        "time": "35min",
-        "ingredients": [
-          {
-            "name": "Poulet breast",
-            "qty": 225,
-            "unit": "g"
-          },
-          {
-            "name": "Riz blanc long grain",
-            "qty": 90,
-            "unit": "g"
-          },
-          {
-            "name": "Brocoli",
-            "qty": 200,
-            "unit": "g"
-          },
-          {
-            "name": "Huile d'olive extra-vierge",
-            "qty": 15,
-            "unit": "ml"
-          },
-          {
-            "name": "Poudre d'ail",
-            "qty": 3,
-            "unit": "g"
-          }
-        ],
-        "steps": [
-          "Préchauffer le four à 200°C. Badigeonner le poulet breast d'huile d'olive, saupoudrer de poudre d'ail et de sel de mer. Enfourner 22-25 minutes jusqu'à cuisson complète.",
-          "Pendant ce temps, cuire le riz dans le cuiseur à riz avec 180ml d'eau et une pincée de sel de table.",
-          "Couper le brocoli en fleurettes et cuire à l'air fryer à 190°C pendant 10 minutes. Servir le tout ensemble."
-        ],
-        "tip": "Laisser reposer le poulet 5 minutes avant de trancher pour conserver le jus."
-      },
-      {
-        "name": "Spaghetti bolognaise maison",
+        "name": "Spaghetti au boeuf haché façon bistro",
         "emoji": "🍝",
-        "kcal": 580,
-        "prot": 45,
-        "carb": 62,
-        "fat": 16,
+        "kcal": 610,
+        "prot": 38,
+        "carb": 65,
+        "fat": 18,
         "time": "30min",
         "ingredients": [
           {
-            "name": "Boeuf haché maigre",
-            "qty": 200,
+            "name": "Spaghetti",
+            "qty": 120,
             "unit": "g"
           },
           {
-            "name": "Spaghetti",
-            "qty": 120,
+            "name": "Boeuf haché maigre",
+            "qty": 150,
             "unit": "g"
           },
           {
@@ -1851,39 +1506,39 @@
           }
         ],
         "steps": [
-          "Faire revenir l'ail haché dans l'huile d'olive sur plaque de cuisson à feu moyen. Ajouter le boeuf haché et cuire 7 minutes en égrenant bien la viande.",
-          "Verser le coulis de tomates, assaisonner de sel de mer et de paprika doux. Laisser mijoter 10 minutes à feu doux.",
-          "Cuire les spaghetti al dente selon les instructions du paquet, égoutter et mélanger avec la sauce. Servir chaud."
+          "Faire cuire les spaghetti dans une grande casserole d'eau bouillante salée selon les indications du paquet.",
+          "Dans une poêle, faire revenir l'ail émincé dans l'huile d'olive, ajouter le boeuf haché et cuire jusqu'à coloration, puis incorporer le coulis de tomates et mijoter 8 minutes.",
+          "Égoutter les pâtes et mélanger avec la sauce."
         ],
-        "tip": "Ajouter une pincée de cassonade dans la sauce pour équilibrer l'acidité des tomates."
+        "tip": "Ajouter une pincée de cayenne dans la sauce pour relever le goût."
       },
       {
-        "name": "Crevettes sautées au sésame et quinoa",
+        "name": "Bol de crevettes asiatique au riz et sauce soya",
         "emoji": "🍤",
         "kcal": 490,
-        "prot": 46,
-        "carb": 44,
-        "fat": 14,
-        "time": "25min",
+        "prot": 40,
+        "carb": 55,
+        "fat": 9,
+        "time": "20min",
         "ingredients": [
           {
             "name": "Crevettes cuites décortiquées",
-            "qty": 250,
+            "qty": 200,
             "unit": "g"
           },
           {
-            "name": "Quinoa",
-            "qty": 90,
+            "name": "Riz blanc long grain",
+            "qty": 150,
             "unit": "g"
           },
           {
             "name": "Sauce soya",
-            "qty": 30,
+            "qty": 25,
             "unit": "ml"
           },
           {
             "name": "Huile de sésame grillé",
-            "qty": 15,
+            "qty": 8,
             "unit": "ml"
           },
           {
@@ -1893,20 +1548,360 @@
           }
         ],
         "steps": [
-          "Rincer le quinoa et le cuire dans 180ml d'eau avec une pincée de sel de table pendant 15 minutes à couvert sur plaque de cuisson.",
-          "Dans une poêle chaude, verser l'huile de sésame, ajouter les crevettes, le gingembre moulu et la sauce soya. Sauter 3-4 minutes à feu vif.",
-          "Servir les crevettes sur le quinoa cuit. Arroser du jus de cuisson restant dans la poêle."
+          "Cuire le riz dans le cuiseur à riz.",
+          "Dans une poêle chaude, réchauffer les crevettes avec la sauce soya, l'huile de sésame et le gingembre pendant 3 minutes.",
+          "Servir les crevettes sur le riz et napper du jus de cuisson."
         ],
-        "tip": "Ne pas surcuire les crevettes déjà cuites, juste les réchauffer et les enrober de sauce."
+        "tip": "Ajouter quelques gouttes de vinaigre de riz pour équilibrer la sauce soya."
       },
       {
-        "name": "Truite au four, pommes de terre et chou",
+        "name": "Pappardelle au thon et tomates",
         "emoji": "🐟",
-        "kcal": 510,
-        "prot": 44,
-        "carb": 40,
+        "kcal": 535,
+        "prot": 35,
+        "carb": 70,
+        "fat": 11,
+        "time": "20min",
+        "ingredients": [
+          {
+            "name": "Pappardelle",
+            "qty": 130,
+            "unit": "g"
+          },
+          {
+            "name": "Thon solide blanc en conserve",
+            "qty": 120,
+            "unit": "g"
+          },
+          {
+            "name": "Tomates entières pelées",
+            "qty": 200,
+            "unit": "g"
+          },
+          {
+            "name": "Huile d'olive extra-vierge",
+            "qty": 10,
+            "unit": "ml"
+          },
+          {
+            "name": "Ail (têtes)",
+            "qty": 8,
+            "unit": "g"
+          }
+        ],
+        "steps": [
+          "Cuire les pappardelle dans une grande casserole d'eau bouillante salée jusqu'à al dente.",
+          "Faire revenir l'ail dans l'huile d'olive, ajouter les tomates pelées écrasées et cuire 6 minutes, puis incorporer le thon égoutté.",
+          "Mélanger les pâtes égouttées à la sauce et servir immédiatement."
+        ],
+        "tip": "Écraser grossièrement les tomates à la main pour une sauce plus rustique."
+      }
+    ],
+    "apero": [
+      {
+        "name": "Bouchées de poulet teriyaki au sésame",
+        "emoji": "🍗",
+        "kcal": 210,
+        "prot": 24,
+        "carb": 8,
+        "fat": 9,
+        "time": "20min",
+        "ingredients": [
+          {
+            "name": "Poulet breast",
+            "qty": 150,
+            "unit": "g"
+          },
+          {
+            "name": "Sauce soya",
+            "qty": 30,
+            "unit": "ml"
+          },
+          {
+            "name": "Miel",
+            "qty": 15,
+            "unit": "g"
+          },
+          {
+            "name": "Huile de sésame grillé",
+            "qty": 10,
+            "unit": "ml"
+          },
+          {
+            "name": "Poudre d'ail",
+            "qty": 2,
+            "unit": "g"
+          }
+        ],
+        "steps": [
+          "Couper le poulet en cubes de 2 cm. Mélanger sauce soya, miel, huile de sésame et poudre d'ail pour former la marinade.",
+          "Mariner le poulet 10 minutes, puis enfourner à 200°C en air fryer pendant 10 minutes en retournant à mi-cuisson.",
+          "Servir chaud sur des cure-dents avec le reste de sauce teriyaki en trempette."
+        ],
+        "tip": "Pour une texture encore plus croustillante, sécher les cubes de poulet avec du papier absorbant avant de les mariner."
+      },
+      {
+        "name": "Crevettes piquantes à l'ail",
+        "emoji": "🍤",
+        "kcal": 185,
+        "prot": 22,
+        "carb": 3,
+        "fat": 9,
+        "time": "15min",
+        "ingredients": [
+          {
+            "name": "Crevettes cuites décortiquées",
+            "qty": 200,
+            "unit": "g"
+          },
+          {
+            "name": "Ail (têtes)",
+            "qty": 15,
+            "unit": "g"
+          },
+          {
+            "name": "Huile d'olive extra-vierge",
+            "qty": 20,
+            "unit": "ml"
+          },
+          {
+            "name": "Cayenne / piment fort",
+            "qty": 2,
+            "unit": "g"
+          },
+          {
+            "name": "Sel de mer",
+            "qty": 2,
+            "unit": "g"
+          }
+        ],
+        "steps": [
+          "Hacher finement l'ail. Faire chauffer l'huile d'olive dans une poêle à feu moyen et y faire revenir l'ail 1 minute.",
+          "Ajouter les crevettes, le cayenne et le sel. Sauter 2 à 3 minutes jusqu'à légère coloration.",
+          "Disposer sur une assiette de service et piquer chaque crevette d'un cure-dent pour faciliter la dégustation."
+        ],
+        "tip": "Les crevettes étant déjà cuites, éviter de les surcuire pour garder une texture ferme et juteuse."
+      },
+      {
+        "name": "Bouchées de tofu croustillant sauce soya-érable",
+        "emoji": "🟨",
+        "kcal": 195,
+        "prot": 14,
+        "carb": 14,
+        "fat": 10,
+        "time": "25min",
+        "ingredients": [
+          {
+            "name": "Tofu ferme",
+            "qty": 200,
+            "unit": "g"
+          },
+          {
+            "name": "Sauce soya",
+            "qty": 25,
+            "unit": "ml"
+          },
+          {
+            "name": "Sirop d'érable",
+            "qty": 20,
+            "unit": "ml"
+          },
+          {
+            "name": "Huile d'arachide",
+            "qty": 15,
+            "unit": "ml"
+          },
+          {
+            "name": "Gingembre moulu",
+            "qty": 2,
+            "unit": "g"
+          }
+        ],
+        "steps": [
+          "Presser le tofu pour retirer l'excès d'eau, puis couper en cubes de 2 cm. Mélanger sauce soya, sirop d'érable, huile d'arachide et gingembre.",
+          "Mariner les cubes de tofu 10 minutes dans la sauce, puis cuire à l'air fryer à 200°C pendant 12 minutes en retournant à mi-cuisson.",
+          "Badigeonner avec le reste de marinade à la sortie et servir immédiatement sur des cure-dents."
+        ],
+        "tip": "Plus le tofu est pressé longtemps, plus il absorbera la marinade et deviendra croustillant à la cuisson."
+      },
+      {
+        "name": "Mini galettes de bœuf haché au paprika",
+        "emoji": "🥩",
+        "kcal": 230,
+        "prot": 18,
+        "carb": 4,
+        "fat": 16,
+        "time": "20min",
+        "ingredients": [
+          {
+            "name": "Boeuf haché maigre",
+            "qty": 180,
+            "unit": "g"
+          },
+          {
+            "name": "Paprika doux",
+            "qty": 3,
+            "unit": "g"
+          },
+          {
+            "name": "Poudre d'oignon",
+            "qty": 2,
+            "unit": "g"
+          },
+          {
+            "name": "Moutarde de Dijon",
+            "qty": 20,
+            "unit": "g"
+          },
+          {
+            "name": "Sel de mer",
+            "qty": 2,
+            "unit": "g"
+          }
+        ],
+        "steps": [
+          "Mélanger le bœuf haché avec le paprika, la poudre d'oignon, la moutarde de Dijon et le sel jusqu'à homogénéité.",
+          "Former des petites galettes de 3 cm de diamètre et cuire à la poêle à feu moyen-vif 3 minutes par côté.",
+          "Déposer sur du papier absorbant et servir sur des cure-dents avec un filet de ketchup ou moutarde."
+        ],
+        "tip": "Ajouter une pincée de cayenne dans le mélange pour relever davantage ces mini sliders façon BBQ américain."
+      }
+    ],
+    "souper": [
+      {
+        "name": "Poulet rôti aux herbes et pommes de terre",
+        "emoji": "🍗",
+        "kcal": 520,
+        "prot": 48,
+        "carb": 42,
+        "fat": 16,
+        "time": "45min",
+        "ingredients": [
+          {
+            "name": "Poulet breast",
+            "qty": 225,
+            "unit": "g"
+          },
+          {
+            "name": "Pommes de terre",
+            "qty": 400,
+            "unit": "g"
+          },
+          {
+            "name": "Huile d'olive extra-vierge",
+            "qty": 20,
+            "unit": "ml"
+          },
+          {
+            "name": "Poudre d'ail",
+            "qty": 3,
+            "unit": "g"
+          },
+          {
+            "name": "Paprika doux",
+            "qty": 3,
+            "unit": "g"
+          }
+        ],
+        "steps": [
+          "Préchauffer le four à 200°C. Couper les pommes de terre en quartiers, les enrober d'huile d'olive, paprika et poudre d'ail, saler et disposer sur une plaque.",
+          "Badigeonner le poulet d'huile d'olive avec poudre d'ail, paprika et sel. Placer sur la même plaque que les pommes de terre.",
+          "Enfourner 30 à 35 minutes jusqu'à ce que le poulet soit cuit à 74°C à cœur et les pommes de terre dorées."
+        ],
+        "tip": "Couvrir le poulet de papier d'aluminium les 20 premières minutes pour qu'il reste juteux, puis découvrir pour dorer."
+      },
+      {
+        "name": "Spaghetti bolognaise maison",
+        "emoji": "🍝",
+        "kcal": 610,
+        "prot": 45,
+        "carb": 65,
         "fat": 18,
-        "time": "40min",
+        "time": "35min",
+        "ingredients": [
+          {
+            "name": "Boeuf haché maigre",
+            "qty": 200,
+            "unit": "g"
+          },
+          {
+            "name": "Spaghetti",
+            "qty": 120,
+            "unit": "g"
+          },
+          {
+            "name": "Coulis de tomates",
+            "qty": 250,
+            "unit": "g"
+          },
+          {
+            "name": "Oignons jaunes",
+            "qty": 1,
+            "unit": "g"
+          },
+          {
+            "name": "Ail (têtes)",
+            "qty": 10,
+            "unit": "g"
+          }
+        ],
+        "steps": [
+          "Faire revenir l'oignon émincé et l'ail haché dans un filet d'huile d'olive sur plaque de cuisson à feu moyen 3 minutes, puis ajouter le boeuf haché et cuire jusqu'à brunissement.",
+          "Ajouter le coulis de tomates, saler, poivrer et laisser mijoter 15 minutes à feu doux en remuant occasionnellement.",
+          "Cuire les spaghetti selon les indications du paquet, égoutter et servir nappés de la sauce bolognaise."
+        ],
+        "tip": "Une pincée de sucre blanc dans la sauce équilibre l'acidité des tomates."
+      },
+      {
+        "name": "Crevettes sautées au gingembre et riz",
+        "emoji": "🍤",
+        "kcal": 490,
+        "prot": 46,
+        "carb": 55,
+        "fat": 10,
+        "time": "25min",
+        "ingredients": [
+          {
+            "name": "Crevettes cuites décortiquées",
+            "qty": 250,
+            "unit": "g"
+          },
+          {
+            "name": "Riz blanc long grain",
+            "qty": 150,
+            "unit": "g"
+          },
+          {
+            "name": "Sauce soya",
+            "qty": 30,
+            "unit": "ml"
+          },
+          {
+            "name": "Gingembre moulu",
+            "qty": 4,
+            "unit": "g"
+          },
+          {
+            "name": "Huile de sésame grillé",
+            "qty": 10,
+            "unit": "ml"
+          }
+        ],
+        "steps": [
+          "Cuire le riz dans le cuiseur à riz selon les proportions standard (1:1.5 riz/eau).",
+          "Dans une poêle chaude, faire sauter les crevettes avec l'huile de sésame et le gingembre moulu pendant 3 minutes.",
+          "Ajouter la sauce soya, mélanger et servir immédiatement sur le riz cuit."
+        ],
+        "tip": "Ne pas surcuire les crevettes déjà cuites — 2 à 3 minutes suffisent pour les réchauffer sans les rendre caoutchouteuses."
+      },
+      {
+        "name": "Saumon-truite en croûte de moutarde avec quinoa",
+        "emoji": "🐟",
+        "kcal": 480,
+        "prot": 44,
+        "carb": 38,
+        "fat": 17,
+        "time": "30min",
         "ingredients": [
           {
             "name": "Truite arc-en-ciel",
@@ -1914,32 +1909,32 @@
             "unit": "g"
           },
           {
-            "name": "Pommes de terre",
-            "qty": 300,
-            "unit": "g"
-          },
-          {
-            "name": "Chou vert",
-            "qty": 200,
-            "unit": "g"
-          },
-          {
-            "name": "Beurre",
-            "qty": 15,
+            "name": "Quinoa",
+            "qty": 120,
             "unit": "g"
           },
           {
             "name": "Moutarde de Dijon",
-            "qty": 20,
+            "qty": 30,
             "unit": "g"
+          },
+          {
+            "name": "Miel",
+            "qty": 15,
+            "unit": "g"
+          },
+          {
+            "name": "Huile d'olive extra-vierge",
+            "qty": 15,
+            "unit": "ml"
           }
         ],
         "steps": [
-          "Préchauffer le four à 200°C. Couper les pommes de terre en cubes, les disposer sur une plaque, ajouter la moitié du beurre fondu et du sel de mer. Rôtir 25 minutes.",
-          "Badigeonner la truite de moutarde de Dijon et du reste du beurre. Déposer sur la plaque avec les pommes de terre les 12 dernières minutes de cuisson.",
-          "Pendant ce temps, émincer le chou vert et le faire revenir à la poêle avec un filet d'huile d'olive jusqu'à tendreté. Assaisonner et servir avec la truite et les pommes de terre."
+          "Préchauffer le four à 200°C. Mélanger la moutarde de Dijon et le miel pour former une croûte, enduire généreusement les filets de truite et placer sur une plaque huilée.",
+          "Enfourner la truite 15 à 18 minutes jusqu'à ce que la chair se défasse facilement à la fourchette.",
+          "Pendant ce temps, rincer le quinoa et le cuire dans 240ml d'eau salée à ébullition puis à feu doux 15 minutes couvert; servir avec la truite."
         ],
-        "tip": "La moutarde de Dijon forme une croûte savoureuse sur la truite et permet une cuisson uniforme."
+        "tip": "Le mélange miel-moutarde caramélise légèrement en fin de cuisson — surveiller les 3 dernières minutes pour éviter de brûler."
       }
     ],
     "collation_soir": [
@@ -1968,29 +1963,29 @@
             "unit": "ml"
           },
           {
-            "name": "Poudre d'ail",
-            "qty": 1,
+            "name": "Ail (têtes)",
+            "qty": 5,
             "unit": "g"
           },
           {
-            "name": "Vinaigre de riz",
-            "qty": 5,
-            "unit": "ml"
+            "name": "Gingembre moulu",
+            "qty": 1,
+            "unit": "g"
           }
         ],
         "steps": [
-          "Couper le tofu en cubes de 2 cm et les éponger avec du papier absorbant.",
-          "Mélanger la sauce soya, l'huile de sésame, le vinaigre de riz et la poudre d'ail, puis enrober les cubes de tofu.",
-          "Cuire au air fryer à 200°C pendant 10 minutes en retournant à mi-cuisson jusqu'à dorure."
+          "Couper le tofu en cubes de 2 cm, éponger avec du papier absorbant.",
+          "Mélanger la sauce soya, l'huile de sésame, l'ail haché et le gingembre moulu pour former la marinade.",
+          "Faire griller les cubes de tofu à l'air fryer à 200°C pendant 10 min, badigeonner de marinade à mi-cuisson."
         ],
-        "tip": "Bien presser le tofu avant de le mariner pour une texture plus croustillante."
+        "tip": "Bien éponger le tofu avant cuisson pour obtenir une texture croustillante à l'extérieur."
       },
       {
-        "name": "Œufs durs au paprika et moutarde",
+        "name": "Œufs mimosa au yogourt grec",
         "emoji": "🥚",
-        "kcal": 175,
-        "prot": 13,
-        "carb": 2,
+        "kcal": 185,
+        "prot": 14,
+        "carb": 3,
         "fat": 12,
         "time": "15min",
         "ingredients": [
@@ -2000,13 +1995,13 @@
             "unit": "u"
           },
           {
-            "name": "Moutarde de Dijon",
-            "qty": 15,
+            "name": "Yogourt grec",
+            "qty": 40,
             "unit": "g"
           },
           {
-            "name": "Yogourt grec",
-            "qty": 30,
+            "name": "Moutarde de Dijon",
+            "qty": 8,
             "unit": "g"
           },
           {
@@ -2021,29 +2016,29 @@
           }
         ],
         "steps": [
-          "Cuire les œufs dans l'eau bouillante pendant 10 minutes, puis refroidir dans l'eau froide et écaler.",
-          "Couper les œufs en deux et retirer les jaunes; écraser les jaunes avec la moutarde, le yogourt grec, le sel et la moitié du paprika.",
-          "Remplir les blancs avec la préparation de jaune et saupoudrer du reste de paprika avant de servir."
+          "Faire cuire les œufs durs 10 min dans l'eau bouillante, refroidir et écaler.",
+          "Couper en deux, retirer les jaunes et les écraser avec le yogourt grec, la moutarde et le sel.",
+          "Remplir les blancs avec la préparation et saupoudrer de paprika doux."
         ],
-        "tip": "Préparer les œufs à l'avance et réfrigérer jusqu'à 24h pour un snack prêt en un instant."
+        "tip": "Le yogourt grec remplace la mayonnaise pour une version plus protéinée et légère."
       },
       {
-        "name": "Crevettes sautées ail-cayenne",
+        "name": "Crevettes épicées à l'ail",
         "emoji": "🍤",
-        "kcal": 190,
-        "prot": 24,
+        "kcal": 195,
+        "prot": 22,
         "carb": 2,
-        "fat": 9,
-        "time": "10min",
+        "fat": 10,
+        "time": "8min",
         "ingredients": [
           {
             "name": "Crevettes cuites décortiquées",
-            "qty": 150,
+            "qty": 120,
             "unit": "g"
           },
           {
             "name": "Huile d'olive extra-vierge",
-            "qty": 10,
+            "qty": 12,
             "unit": "ml"
           },
           {
@@ -2052,8 +2047,50 @@
             "unit": "g"
           },
           {
-            "name": "Cayenne / piment fort",
+            "name": "Sauce piquante Tabasco",
+            "qty": 5,
+            "unit": "ml"
+          },
+          {
+            "name": "Sel de mer",
             "qty": 1,
+            "unit": "g"
+          }
+        ],
+        "steps": [
+          "Hacher finement l'ail et faire chauffer l'huile d'olive dans une poêle à feu moyen.",
+          "Ajouter l'ail et faire revenir 1 min, puis ajouter les crevettes et le Tabasco.",
+          "Sauter les crevettes 2-3 min jusqu'à ce qu'elles soient bien chaudes, saler et servir."
+        ],
+        "tip": "Les crevettes déjà cuites nécessitent très peu de temps de chauffe pour rester tendres."
+      },
+      {
+        "name": "Thon sur toast au Dijon",
+        "emoji": "🐟",
+        "kcal": 220,
+        "prot": 18,
+        "carb": 22,
+        "fat": 6,
+        "time": "5min",
+        "ingredients": [
+          {
+            "name": "Thon solide blanc en conserve",
+            "qty": 85,
+            "unit": "g"
+          },
+          {
+            "name": "Pain blanc tranché",
+            "qty": 60,
+            "unit": "g"
+          },
+          {
+            "name": "Yogourt grec",
+            "qty": 30,
+            "unit": "g"
+          },
+          {
+            "name": "Moutarde de Dijon",
+            "qty": 10,
             "unit": "g"
           },
           {
@@ -2063,57 +2100,15 @@
           }
         ],
         "steps": [
-          "Hacher finement l'ail et chauffer l'huile d'olive à feu moyen dans une poêle.",
-          "Faire revenir l'ail 1 minute puis ajouter les crevettes, le cayenne et le sel.",
-          "Sauter les crevettes 2-3 minutes jusqu'à ce qu'elles soient bien chaudes et légèrement dorées, servir immédiatement."
+          "Toaster les tranches de pain blanc au grille-pain ou au four jusqu'à dorure.",
+          "Égoutter le thon et le mélanger avec le yogourt grec, la moutarde de Dijon et le sel.",
+          "Étaler généreusement le mélange de thon sur les toasts et servir immédiatement."
         ],
-        "tip": "Les crevettes étant déjà cuites, ne pas les surcuire pour garder une texture tendre et juteuse."
-      },
-      {
-        "name": "Lentilles épicées garam masala",
-        "emoji": "🫘",
-        "kcal": 220,
-        "prot": 14,
-        "carb": 32,
-        "fat": 4,
-        "time": "20min",
-        "ingredients": [
-          {
-            "name": "Lentilles brunes sèches",
-            "qty": 80,
-            "unit": "g"
-          },
-          {
-            "name": "Bouillon de poulet (poudre)",
-            "qty": 5,
-            "unit": "g"
-          },
-          {
-            "name": "Garam masala",
-            "qty": 2,
-            "unit": "g"
-          },
-          {
-            "name": "Huile d'olive extra-vierge",
-            "qty": 8,
-            "unit": "ml"
-          },
-          {
-            "name": "Poudre d'oignon",
-            "qty": 1,
-            "unit": "g"
-          }
-        ],
-        "steps": [
-          "Rincer les lentilles et les cuire dans 300 ml d'eau avec le bouillon de poulet en poudre pendant 15 minutes à feu moyen.",
-          "Égoutter légèrement en conservant un peu de liquide, puis incorporer le garam masala et la poudre d'oignon.",
-          "Arroser d'huile d'olive et servir chaud dans un bol."
-        ],
-        "tip": "Ajouter un filet de vinaigre de vin rouge en fin de cuisson pour rehausser la saveur des lentilles."
+        "tip": "Ajouter un filet de vinaigre de vin rouge dans le mélange pour rehausser la saveur du thon."
       }
     ]
   },
   "plan_date": "2026-06-15",
-  "plan_updated": "2026-06-17T02:32:32.432Z",
-  "updated": "2026-06-17T02:32:52.999Z"
+  "plan_updated": "2026-06-17T02:36:29.475Z",
+  "updated": "2026-06-17T02:36:32.484Z"
 }
