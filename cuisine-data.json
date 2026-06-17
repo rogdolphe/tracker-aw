@@ -867,6 +867,20 @@
       "prot": 9,
       "carb": 49,
       "fat": 3.2
+    },
+    {
+      "id": 1781663549430,
+      "name": "Chocolat noir 70%",
+      "brand": "",
+      "cat": "Pain & viennoiserie",
+      "unit": "g",
+      "unitWt": null,
+      "qty": 60,
+      "low": 0,
+      "kcal": 598,
+      "prot": 8,
+      "carb": 46,
+      "fat": 43
     }
   ],
   "goals": {
@@ -2086,6 +2100,6 @@
     ]
   },
   "plan_date": "2026-06-15",
-  "plan_updated": "2026-06-17T02:29:03.903Z",
-  "updated": "2026-06-17T02:31:29.085Z"
+  "plan_updated": "2026-06-17T02:31:29.085Z",
+  "updated": "2026-06-17T02:32:32.432Z"
 }
