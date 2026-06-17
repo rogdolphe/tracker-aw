@@ -91,7 +91,7 @@
       "cat": "Poissons & fruits de mer",
       "unit": "g",
       "unitWt": null,
-      "qty": 680,
+      "qty": 480,
       "low": 0,
       "kcal": 99,
       "prot": 21,
@@ -245,7 +245,7 @@
       "cat": "Céréales & pâtes",
       "unit": "g",
       "unitWt": null,
-      "qty": 1089,
+      "qty": 939,
       "low": 0,
       "kcal": 130,
       "prot": 2.7,
@@ -413,7 +413,7 @@
       "cat": "Condiments & sauces",
       "unit": "ml",
       "unitWt": null,
-      "qty": 400,
+      "qty": 375,
       "low": 0,
       "kcal": 53,
       "prot": 8,
@@ -525,7 +525,7 @@
       "cat": "Huiles & vinaigres",
       "unit": "ml",
       "unitWt": null,
-      "qty": 325,
+      "qty": 317,
       "low": 0,
       "kcal": 884,
       "prot": 0,
@@ -665,7 +665,7 @@
       "cat": "Épices & herbes",
       "unit": "g",
       "unitWt": null,
-      "qty": 50,
+      "qty": 47,
       "low": 0,
       "kcal": 335,
       "prot": 9,
@@ -2109,6 +2109,6 @@
     ]
   },
   "plan_date": "2026-06-15",
-  "plan_updated": "2026-06-17T02:36:29.475Z",
-  "updated": "2026-06-17T02:36:32.484Z"
+  "plan_updated": "2026-06-17T02:36:32.484Z",
+  "updated": "2026-06-17T02:38:17.576Z"
 }
