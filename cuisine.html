@@ -204,7 +204,7 @@ body{font-family:"DM Sans",system-ui,sans-serif;background:var(--bg);color:var(-
 
 
 <!-- MODAL EDIT ITEM -->
-<div class="modal-bd" id="editModal" onclick="if(event.target===this)closeM('editModal')">
+<div class="modal-bd" id="editModal" onmousedown="if(event.target===this)this.dataset.mdSelf='1'" onclick="if(event.target===this&&this.dataset.mdSelf==='1'){closeM('editModal');}this.dataset.mdSelf='';">
   <div class="modal-box"><div class="mpill"></div>
     <div class="mhd"><div class="mtitle" id="edit-name"></div><div class="msub" id="edit-sub"></div></div>
     <div class="mbody" id="edit-body"></div>
@@ -212,7 +212,7 @@ body{font-family:"DM Sans",system-ui,sans-serif;background:var(--bg);color:var(-
 </div>
 
 <!-- MODAL RECIPE -->
-<div class="modal-bd" id="recipeModal" onclick="if(event.target===this)closeM('recipeModal')">
+<div class="modal-bd" id="recipeModal" onmousedown="if(event.target===this)this.dataset.mdSelf='1'" onclick="if(event.target===this&&this.dataset.mdSelf==='1'){closeM('recipeModal');}this.dataset.mdSelf='';">
   <div class="modal-box"><div class="mpill"></div>
     <div class="mhd"><div class="mtitle" id="rec-title"></div><div class="msub" id="rec-sub"></div></div>
     <div class="mbody" id="rec-body"></div>
@@ -220,7 +220,7 @@ body{font-family:"DM Sans",system-ui,sans-serif;background:var(--bg);color:var(-
 </div>
 
 <!-- MODAL SETTINGS -->
-<div class="modal-bd" id="settingsModal" onclick="if(event.target===this)closeM('settingsModal')">
+<div class="modal-bd" id="settingsModal" onmousedown="if(event.target===this)this.dataset.mdSelf='1'" onclick="if(event.target===this&&this.dataset.mdSelf==='1'){closeM('settingsModal');}this.dataset.mdSelf='';">
   <div class="modal-box">
     <div class="modal-hd"><span>&#x2699;&#xFE0F; Param&egrave;tres</span><button class="modal-close" onclick="closeM('settingsModal')">&#x2715;</button></div>
     
@@ -1675,7 +1675,7 @@ if(localStorage.getItem("km_gh_token"))setTimeout(function(){ghPull(false);},500
 
 </script>
 
-<div class="modal-bd" id="addModal" onclick="if(event.target===this)closeM('addModal')">
+<div class="modal-bd" id="addModal" onmousedown="if(event.target===this)this.dataset.mdSelf='1'" onclick="if(event.target===this&&this.dataset.mdSelf==='1'){closeM('addModal');}this.dataset.mdSelf='';">
   <div class="modal-box"><div class="mpill"></div>
     <div class="mhd"><div class="mtitle">Ajouter un aliment</div><div class="msub" id="add-hint">Tape le nom pour rechercher</div></div>
     <div class="mbody">
