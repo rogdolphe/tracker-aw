@@ -209,8 +209,8 @@ var MILESTONES = [7,14,30,60,90,180,365];
 var ROUTINE = [
   {k:"gym", ic:"🏋️", nom:"Entraînement (gym / nage / bras de fer)", pts:"+3 ⚔"},
   {k:"cul", ic:"🎭", nom:"Culture (roman, musique, lecture)", pts:"+3 🎭"},
-  {k:"soc", ic:"🤝", nom:"Social (sortie, contact, invitation)", pts:"+3 🤝"},
-  {k:"bud", ic:"💵", nom:"Budget du jour respecté (pas de dépense de drogue)", pts:"+5 ⚙"}
+  {k:"soc", ic:"🤝", nom:"Social (sortie, contact, invitation)", pts:"+3 🤝"}
+  /* "bud" retiré — calculé automatiquement à partir des dépenses du jour */
 ];
 
 /* ============ ÉTAT ============ */
@@ -255,7 +255,7 @@ if(!C) C = JSON.parse(JSON.stringify(DEF_STATE));
   else if(d[k]&&typeof d[k]==="object"&&!Array.isArray(d[k])) merge(d[k],c[k]); } })(DEF_STATE,C);
 
 var tab="jour", selTerr=null, calRef=new Date(), qRef=new Date(), planEditDay=null;
-var togg={gym:0,cul:0,soc:0,bud:0};
+var togg={gym:0,cul:0,soc:0};
 
 /* ============ OUTILS ============ */
 function $(id){return document.getElementById(id);}
@@ -315,6 +315,26 @@ function checkRaid(){
     C.menace=35;
   }
 }
+/* Budget auto-calculé : compare les dépenses du jour au budget quotidien */
+function todayBudgetStatus(){
+  var total=0;
+  (C.fin.extras||[]).forEach(function(e){
+    if(e.d===today() && (e.k==="dep-d"||e.k==="dep-c")) total+=e.amt;
+  });
+  var limit=(new Date().getDay()===6? (C.fin.budSat||100) : (C.fin.bud||40));
+  if(total===0) return {st:"neutral", total:0, limit:limit};
+  return {st:total<=limit?"green":"red", total:total, limit:limit};
+}
+/* Appelé après toute entrée de dépense pour recalculer le budget du jour */
+function updateTodayBudget(){
+  var h=ciToday(); if(!h) return;
+  var bs=todayBudgetStatus();
+  var hadBud=h.b.indexOf("bud")>=0;
+  var shouldHave=(bs.st==="green"||bs.st==="neutral");
+  /* neutre = on ne pénalise pas (rien entré) mais on ne crédite pas non plus */
+  if(bs.st==="green" && !hadBud){ h.b.push("bud"); C.pts.prod+=5; save(); }
+  else if(bs.st==="red" && hadBud){ h.b=h.b.filter(function(x){return x!=="bud";}); C.pts.prod=Math.max(0,C.pts.prod-5); save(); }
+}
 
 /* ============ MOTEUR DE JEU ============ */
 window.tgB=function(k,v){ togg[k]=v; render(); };
@@ -343,14 +363,18 @@ window.doCheckin = function(sober){
     checkRaid();
   }
   /* activités du jour : comptent TOUJOURS, sobre ou non (discipline ≠ sobriété) */
-  C.pts.prod += (b.indexOf("bud")>=0?5:0);
   C.pts.cul  += (b.indexOf("cul")>=0?3:0);
   C.pts.soc  += (b.indexOf("soc")>=0?3:0);
   C.pts.mil  += (b.indexOf("gym")>=0?3:0);
-  /* routine complète (3+/4) = discipline → attaque & la menace recule, même un jour de rechute */
-  if(b.length>=3){ C.attack++; C.menace=Math.max(0,C.menace-10); }
-  else if(b.length>0){ C.menace=Math.max(0,C.menace-5); }
-  togg={gym:0,cul:0,soc:0,bud:0};
+  /* budget auto-calculé : si dépenses sous le seuil → +5 ⚙ automatiquement */
+  var bs=todayBudgetStatus();
+  if(bs.st==="green" && b.indexOf("bud")<0){ b.push("bud"); C.pts.prod+=5; }
+  else if(bs.st==="neutral") { /* rien entré → neutre, pas de point mais pas de pénalité */ }
+  /* routine complète (3+/4 dont bud éventuel) = discipline → attaque & la menace recule */
+  var routineCount=b.filter(function(k){return k!=="bud";}).length; /* gym+cul+soc seulement pour le seuil */
+  if(routineCount>=3){ C.attack++; C.menace=Math.max(0,C.menace-10); }
+  else if(routineCount>0){ C.menace=Math.max(0,C.menace-5); }
+  togg={gym:0,cul:0,soc:0};
   save(); render();
 };
 function relapse(){
@@ -391,16 +415,13 @@ window.undoToday = function(){
 };
 window.addActivity = function(k){
   var h=ciToday(); if(!h || h.b.indexOf(k)>=0) return;
-  var ob=ownedBonus();
-  /* créditer les points de cette activité (mêmes valeurs que le check-in) */
-  if(k==="bud") C.pts.prod+=5;
-  else if(k==="cul") C.pts.cul+=3;
+  if(k==="cul") C.pts.cul+=3;
   else if(k==="soc") C.pts.soc+=3;
   else if(k==="gym") C.pts.mil+=3;
-  var before=h.b.length;
+  var before=h.b.filter(function(x){return x!=="bud";}).length;
   h.b.push(k);
-  /* franchir le seuil de routine complète (3/4) en cours de journée → +attaque & menace */
-  if(before<3 && h.b.length>=3){ C.attack++; C.menace=Math.max(0,C.menace-5); }
+  var after=h.b.filter(function(x){return x!=="bud";}).length;
+  if(before<3 && after>=3){ C.attack++; C.menace=Math.max(0,C.menace-5); }
   else if(before===0){ C.menace=Math.max(0,C.menace-5); }
   save(); render();
 };
@@ -461,11 +482,11 @@ window.addExtra = function(){
     else if(k==="dep-c") C.fin.c1+=a;
     else C.fin.des+=a;
   }
-  save(); render();
+  updateTodayBudget(); save(); render();
 };
 window.delExtra = function(i){
-  if(!confirm("Supprimer cette entrée? (les soldes ne sont pas recalculés automatiquement)")) return;
-  C.fin.extras.splice(i,1); save(); render();
+  if(!confirm("Supprimer cette entrée?")) return;
+  C.fin.extras.splice(i,1); updateTodayBudget(); save(); render();
 };
 
 window.uF = function(k,v){ C.fin[k]=(k==="payStart")?v:(parseFloat(v)||0); save(); };
@@ -764,18 +785,22 @@ function rJour(){
   if(h){
     out+='<div class="card"><h2>Le tribunal a siégé</h2><p>Verdict du '+h.d+' : '+
       (h.s?'<b class="g">○ SOBRE</b> — l\'empire produit.':'<b class="r">✕ RECHUTE</b> — la sobriété a flanché, mais la discipline continue.')+
-      '</p><p class="dim">Activités du jour : '+(h.b.length?h.b.map(function(k){var r=ROUTINE.filter(function(x){return x.k===k;})[0];return r?r.ic:k;}).join(" "):"aucune")+' ('+h.b.length+'/4)</p>'+
-      '<button class="ghost" onclick="undoToday()">Annuler le verdict du jour</button></div>';
-    /* éditeur d'activités post-verdict : on peut toujours ajouter ce qu'on a accompli */
-    var rest=ROUTINE.filter(function(r){ return h.b.indexOf(r.k)<0; });
-    if(rest.length){
-      out+='<div class="card"><h3>Ajouter une activité accomplie aujourd\'hui</h3>'+
-       '<p class="dim">La sobriété est jugée, mais tes accomplissements comptent toujours — sobre ou non.</p><div class="routine">'+
-       rest.map(function(r){
-         return '<div class="rrow"><span>'+r.ic+' '+r.nom+' <b class="au">'+r.pts+'</b></span>'+
-           '<button class="yes" style="width:auto;padding:6px 14px;background:var(--green-d);border:1px solid var(--green);color:var(--green);font-family:var(--mono);cursor:pointer" onclick="addActivity(\''+r.k+'\')">+ Ajouter</button></div>';
-       }).join("")+'</div></div>';
-    }
+      '</p><button class="ghost" onclick="undoToday()">Annuler le verdict du jour</button></div>';
+    /* Toutes les activités visibles : faites ✓ ou à ajouter + budget auto */
+    var bs=todayBudgetStatus();
+    var budIc=bs.st==="green"?'<span class="g">✓ sous budget ('+bs.total+'$ / '+bs.limit+'$) +5 ⚙</span>':
+              bs.st==="red"?'<span class="r">✕ budget dépassé ('+bs.total+'$ / '+bs.limit+'$)</span>':
+              '<span class="dim">⚪ aucune dépense enregistrée</span>';
+    out+='<div class="card"><h3>Activités du jour</h3><div class="routine">';
+    ROUTINE.forEach(function(r){
+      var done=h.b.indexOf(r.k)>=0;
+      out+='<div class="rrow"><span>'+r.ic+' '+r.nom+' <b class="au">'+r.pts+'</b></span>'+
+        (done?'<span class="g" style="font-size:13px">✓ fait</span>':
+         '<button style="background:var(--green-d);border:1px solid var(--green);color:var(--green);font-family:var(--mono);font-size:12px;padding:6px 12px;cursor:pointer" onclick="addActivity(\''+r.k+'\')">+ Ajouter</button>')+
+        '</div>';
+    });
+    out+='<div class="rrow"><span>💵 Budget du jour '+budIc+'</span></div>';
+    out+='</div><p class="dim">Le budget compare les dépenses imprévues que tu entres aujourd\'hui au budget quotidien ('+fv(C.fin.bud||40)+' jours de semaine / '+fv(C.fin.budSat||100)+' samedi). Il se recalcule automatiquement à chaque dépense ajoutée.</p></div>';
   } else {
     /* lien GYM.AW : séance complétée aujourd'hui → bonus gym pré-coché */
     if(localStorage.getItem("gym_done_"+today())==="1" && !togg._gymAuto){ togg.gym=1; togg._gymAuto=1; }
@@ -794,8 +819,14 @@ function rJour(){
     '<button class="oui" onclick="doCheckin(true)">○<span>SOBRE</span></button>'+
     '<button class="non" onclick="doCheckin(false)">✕<span>RECHUTE</span></button>'+
     '</div>'+
-    '<p class="dim" style="text-align:center">Jour sobre : +'+fi(10*mult())+' ⚙ (×'+mult()+') + bonus de quartiers. Routine 3+/4 : +1 attaque.<br>'+
-    'Économie réelle : +'+fv(C.fin.save,2)+' répartis C1 / Italie / Bouffe.</p></div>';
+    '<p class="dim" style="text-align:center">Jour sobre : +'+fi(10*mult())+' ⚙ (×'+mult()+') + bonus de quartiers. Routine 3/3 : +1 attaque.<br>'+
+    'Économie réelle : +'+fv(C.fin.save,2)+' répartis C1 / Italie / Bouffe.</p>'+
+    (function(){ var bs=todayBudgetStatus();
+      return '<p style="text-align:center;font-size:12px">💵 Budget du jour : '+
+        (bs.st==="green"?'<span class="g">'+bs.total+'$ / '+bs.limit+'$ — sous budget → +5 ⚙ automatique</span>':
+         bs.st==="red"?'<span class="r">'+bs.total+'$ / '+bs.limit+'$ — dépassé → pas de bonus</span>':
+         '<span class="dim">aucune dépense enregistrée — neutre</span>')+'</p>'; })()+
+    '</div>';
   }
   out+=menaceBar();
   /* ----- check-in financier ----- */
@@ -1060,7 +1091,8 @@ function rPlan(){
   /* ---- plan du quarter (texte libre) ---- */
   var qText=(C.quarters&&C.quarters[qKey])||"";
   out+='<div class="card"><h3>🎯 Plan du quarter ('+qLabel+')</h3>'+
-   '<textarea id="q-plan" rows="3" style="width:100%;resize:vertical" placeholder="Objectifs des 2 mois : pousser C1 sous 4000$, financer l\'Italie à 100%, prendre Mile End et Outremont, 2 sorties sociales/semaine…" onchange="uQuarter(\''+qKey+'\',this.value)">'+esc(qText)+'</textarea></div>';
+   '<textarea id="q-plan" rows="3" style="width:100%;resize:vertical" placeholder="Tes objectifs pour ces 2 mois…" onchange="uQuarter(\''+qKey+'\',this.value)">'+esc(qText)+'</textarea>'+
+   '<p class="dim">Écris ici ce que tu veux accomplir ce quarter : sobriété, finances, gym, social. Libre format, juste pour toi.</p></div>';
 
   /* ---- calendrier 2 mois éditable ---- */
   out+='<div class="card"><h3>Calendrier du quarter — éditable</h3><div class="qmonths">';
@@ -1200,7 +1232,15 @@ function rPred(){
 
 function rParam(){
   var f=C.fin;
-  var out='<div class="grid2">'+
+  window.savePmt=function(){
+    save(); setSyncStatus("pend","mise à jour…"); ghSave(false); render();
+    setTimeout(function(){ var el=$("param-saved"); if(el){el.style.opacity="1"; setTimeout(function(){el.style.opacity="0";},2000);} },200);
+  };
+  var out='<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">'+
+   '<button class="act" onclick="savePmt()">✓ Mettre à jour & sauvegarder</button>'+
+   '<span id="param-saved" style="color:var(--green);font-size:12px;opacity:0;transition:opacity 0.3s">Sauvegardé !</span></div>'+
+   '<p class="dim">Tous les champs se sauvegardent automatiquement à la saisie. Ce bouton force la mise à jour immédiate des calculs et synchronise vers GitHub.</p>';
+  out+='<div class="grid2">'+
   '<div class="card"><h2>Paye & budget</h2>'+
    '<label class="f">Paye CUSM bi-hebdo $</label><input type="number" step="0.01" value="'+f.pay+'" onchange="uF(\'pay\',this.value)">'+
    '<label class="f">Première paye (réf.)</label><input type="date" value="'+f.payStart+'" onchange="uF(\'payStart\',this.value)">'+
