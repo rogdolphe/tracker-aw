@@ -702,36 +702,37 @@ function poseDiagram(kind){
 }
 
 /* ===================== WEEKLY PROGRAM DATA ===================== */
-// Fixed week. 7 days, each with up to 2 slots (matin / soir).
-// Each routine carries: intention (breath/meditative), music (ambiance + reference).
+// Fixed week. 7 days, one calm morning routine each — ancrage and presence,
+// not physical challenge. Music: real recordings by named interpreters,
+// durations checked against Qobuz track listings, within ~1 minute of target.
 
 const WEEK = {
   lun: {
     label:'Lundi',
     slots:{
       matin: {
-        id:'lun-matin', title:'Réveil articulaire', minutes:12,
-        intention:"Respiration carrée : inspire sur 4 temps, retiens 4, expire 4, retiens 4. Ouvre chaque articulation sans jamais forcer le seuil — la semaine commence par l'écoute, pas la performance.",
-        music:{ambiance:'Drone modal continu, sans paroles, tempo très lent.', reference:'Hopkinson Smith — Milán, Fantasía no. 1 (vihuela)', texture:'drone'},
+        id:'lun-matin', title:'Arrivée', minutes:13,
+        intention:"Pas d'objectif aujourd'hui, juste arriver dans ton corps. Respire normalement, sans forcer le rythme, et remarque simplement ce que tu sens — la chaleur d'un muscle, le contact des pieds au sol, la fatigue ou l'énergie du matin. C'est le seul travail de cette séance : être là.",
+        music:{ambiance:'Luth Renaissance, tempo libre et méditatif, sans paroles.', reference:'Hopkinson Smith — Milán : Tento I, Fantasía XI, Fantasía X (vihuela)', texture:'drone'},
         poses:[
+          {name:'Assise simple', fr:'Sukhasana', dur:'1 min', diagram:'seated_twist',
+           steps:['Assieds-toi au sol en tailleur, ou sur le bord d\u2019une chaise si le sol est inconfortable.','Pose les mains sur les genoux, paumes vers le haut ou vers le bas, peu importe.','Allonge doucement la colonne, comme si un fil tirait le sommet de ta tête vers le haut.','Ferme les yeux ou garde un regard bas et flou. Reste simplement assis 1 minute.'],
+           cue:'Il n\u2019y a rien à réussir ici. Le seul travail est de t\u2019asseoir et de remarquer ton souffle tel qu\u2019il est.'},
+          {name:'Posture de la montagne', fr:'Tadasana', dur:'1 min', diagram:'mountain',
+           steps:['Lève-toi, pieds à largeur de hanches, bras le long du corps.','Sens le poids réparti sur les deux pieds, sans pencher d\u2019un côté.','Laisse les épaules descendre loin des oreilles.','Respire trois fois lentement, sans rien changer d\u2019autre dans la posture.'],
+           cue:'C\u2019est la posture la plus simple et la plus négligée — prends-la au sérieux.'},
           {name:'Chat-Vache', fr:'Marjaryasana–Bitilasana', dur:'8 respirations', diagram:'catcow',
-           steps:['À quatre pattes, poignets sous épaules, genoux sous hanches.','Inspire : creuse le dos, ouvre la poitrine vers le haut (Vache).','Expire : arrondis le dos, regarde le nombril (Chat).','Enchaîne au rythme du souffle, sans à-coup.'],
-           cue:'Le mouvement part du bassin, pas des épaules.'},
-          {name:'Chien tête en bas', fr:'Adho Mukha Svanasana', dur:'30–45 sec', diagram:'downdog',
-           steps:['Des quatre pattes, lève les hanches vers le plafond.','Mains à largeur d\u2019épaules, pieds à largeur de bassin.','Plie les genoux autant que nécessaire pour allonger le dos.','Relâche la tête et le cou, regarde vers les pieds.'],
-           cue:'Priorise un dos long plutôt que des jambes droites.'},
-          {name:'Posture de l\u2019enfant', fr:'Balasana', dur:'45 sec', diagram:'childpose',
-           steps:['Assis sur les talons, genoux écartés ou joints.','Penche le buste vers l\u2019avant, bras tendus ou le long du corps.','Front au sol ou sur les mains empilées.','Respire dans le bas du dos.'],
-           cue:'Posture de récupération — y revenir à tout moment.'},
-          {name:'Fente basse', fr:'Anjaneyasana', dur:'30 sec / côté', diagram:'warrior2',
-           steps:['Du chien tête en bas, avance un pied entre les mains.','Genou arrière au sol, bascule légèrement le bassin vers l\u2019avant.','Bras vers le haut si l\u2019équilibre le permet.','Répète de l\u2019autre côté.'],
-           cue:'Sens l\u2019étirement à l\u2019avant de la hanche arrière, pas dans le bas du dos.'},
-          {name:'Torsion assise', fr:'Ardha Matsyendrasana', dur:'30 sec / côté', diagram:'seated_twist',
-           steps:['Assis, jambes tendues, plie un genou et croise le pied à l\u2019extérieur.','Main opposée sur le genou plié, l\u2019autre derrière toi.','Inspire pour t\u2019allonger, expire pour tourner.','Garde les deux ischions au sol.'],
-           cue:'Allonge la colonne avant de tourner, pas l\u2019inverse.'},
+           steps:['Mets-toi à quatre pattes, mains sous les épaules, genoux sous les hanches.','Inspire en creusant doucement le dos, en ouvrant la poitrine vers l\u2019avant.','Expire en arrondissant le dos, en regardant vers ton nombril.','Répète ce mouvement lentement, en laissant le souffle mener le mouvement plutôt que l\u2019inverse.'],
+           cue:'Vise la lenteur plus que l\u2019amplitude — c\u2019est un réveil, pas un étirement maximal.'},
+          {name:'Posture de l\u2019enfant', fr:'Balasana', dur:'1 min 30', diagram:'childpose',
+           steps:['Assieds-toi sur tes talons, genoux écartés à largeur confortable.','Penche le buste vers l\u2019avant et pose le front au sol, ou sur tes mains empilées si tu n\u2019y arrives pas encore.','Laisse les bras se reposer devant toi ou le long du corps.','Reste ici en respirant normalement, sans chercher à descendre plus bas.'],
+           cue:'Cette posture est un point de retour : reviens-y à tout moment si tu en ressens le besoin, même hors séance.'},
+          {name:'Torsion assise douce', fr:'Variation simple', dur:'40 sec / côté', diagram:'seated_twist',
+           steps:['Assis en tailleur, pose une main au sol derrière toi, l\u2019autre sur le genou opposé.','Inspire pour allonger la colonne.','Expire en tournant doucement le buste vers l\u2019arrière, en gardant les deux ischions au sol.','Reviens au centre lentement, puis répète de l\u2019autre côté.'],
+           cue:'La torsion est petite ici — la sensation recherchée est la libération, pas l\u2019amplitude.'},
           {name:'Posture du cadavre', fr:'Savasana', dur:'2 min', diagram:'corpse',
-           steps:['Allongé sur le dos, jambes légèrement écartées.','Bras le long du corps, paumes vers le haut.','Ferme les yeux, laisse le souffle ralentir naturellement.','Reste sans chercher à bouger.'],
-           cue:'C\u2019est une posture, pas une pause — reste présent.'}
+           steps:['Allonge-toi sur le dos, jambes légèrement écartées, bras le long du corps, paumes vers le haut.','Ferme les yeux.','Laisse ta respiration ralentir d\u2019elle-même, sans la contrôler.','Reste sans bouger jusqu\u2019à la fin du temps indiqué.'],
+           cue:'C\u2019est ici que la séance se termine vraiment — ne saute pas cette étape, même si elle semble ne rien faire.'}
         ]
       }
     }
@@ -739,35 +740,26 @@ const WEEK = {
   mar: {
     label:'Mardi',
     slots:{
-      soir: {
-        id:'mar-soir', title:'Tendons & ancrage', minutes:18,
-        intention:"Expiration longue sous tension — deux fois plus longue que l'inspiration. C'est le souffle qui tient la posture, pas le muscle seul. Prépare le corps à la prise, sans l'épuiser avant l'heure.",
-        music:{ambiance:'Pulsation basse régulière, percussion minimale, pas de paroles.', reference:'Karl Richter — Bach, Air (Suite orchestrale n°3, BWV 1068)', texture:'pulse'},
+      matin: {
+        id:'mar-matin', title:'Souffle', minutes:12,
+        intention:"Aujourd'hui, l'attention va au souffle plus qu'aux postures elles-mêmes. À chaque transition, prends un instant pour sentir l'air entrer et sortir avant de bouger. Tu n'as pas besoin de respirer d'une façon particulière — juste de la remarquer.",
+        music:{ambiance:'Orchestre baroque, tempo modéré et stable, sans paroles.', reference:'Karl Richter — Bach : Suite n°3 (Air) et Suite n°2 (Rondeau, Sarabande)', texture:'pulse'},
         poses:[
-          {name:'Posture de la montagne', fr:'Tadasana', dur:'1 min', diagram:'mountain',
-           steps:['Debout, pieds joints ou écartés à largeur de bassin.','Répartis le poids également sur les quatre coins des pieds.','Engage légèrement les quadriceps, allonge la colonne.','Épaules relâchées, regard à l\u2019horizon.'],
-           cue:'Trouve l\u2019immobilité active : rien ne s\u2019affaisse.'},
-          {name:'Guerrier II', fr:'Virabhadrasana II', dur:'45 sec / côté', diagram:'warrior2',
-           steps:['Grande fente latérale, pied avant à 90°, pied arrière à 45°.','Genou avant aligné au-dessus de la cheville.','Bras tendus à l\u2019horizontale, regard par-dessus la main avant.','Pousse activement dans les deux pieds.'],
-           cue:'Le genou ne dépasse jamais l\u2019orteil — c\u2019est une tenue, pas un sprint.'},
-          {name:'Triangle', fr:'Trikonasana', dur:'40 sec / côté', diagram:'triangle',
-           steps:['Jambes écartées, pied avant pointé devant.','Bascule depuis la hanche, pas le dos, pour incliner le buste.','Main avant vers le tibia ou le sol, bras arrière vers le ciel.','Regard vers la main levée si le cou le permet.'],
-           cue:'L\u2019ouverture vient du bassin, le dos reste long et plat.'},
-          {name:'Bras d\u2019aigle', fr:'Garudasana (bras)', dur:'30 sec / côté', diagram:'eaglearms',
-           steps:['Croise un bras sur l\u2019autre devant la poitrine.','Enroule les avant-bras, paumes face à face si possible.','Lève les coudes, étire les omoplates vers l\u2019extérieur.','Respire dans l\u2019espace entre les omoplates.'],
-           cue:'Cible direct pour la mobilité d\u2019épaule utile en bras de fer.'},
-          {name:'Planche', fr:'Phalakasana', dur:'30–40 sec', diagram:'plank',
-           steps:['Position de pompe, mains sous les épaules.','Corps aligné des talons à la tête, pas de bassin qui tombe.','Engage les abdominaux et les avant-bras.','Respire normalement, ne bloque pas le souffle.'],
-           cue:'Tenue isométrique — exactement le type de travail tendineux qui sert tes poignets.'},
-          {name:'Pigeon', fr:'Eka Pada Rajakapotasana (prép.)', dur:'1 min / côté', diagram:'pigeon',
-           steps:['Du chien tête en bas, ramène un genou vers le poignet du même côté.','Étends la jambe arrière derrière toi, hanche au sol si possible.','Buste droit ou penché vers l\u2019avant selon ta souplesse.','Respire profondément dans la hanche en tenue.'],
-           cue:'Ouverture de hanche profonde — patience, pas de force.'},
-          {name:'Pont', fr:'Setu Bandhasana', dur:'45 sec', diagram:'bridge',
-           steps:['Allongé sur le dos, genoux pliés, pieds à plat près du bassin.','Pousse dans les pieds pour lever les hanches.','Mains au sol ou entrelacées sous le bassin.','Garde les genoux parallèles, pas évasés.'],
-           cue:'Tenue isométrique pour les chaînes postérieures — complète bien le bas du corps.'},
-          {name:'Jambes au mur', fr:'Viparita Karani', dur:'3 min', diagram:'legs_up',
-           steps:['Allongé près d\u2019un mur, jambes levées à la verticale contre celui-ci.','Bras relâchés le long du corps.','Laisse le poids des jambes reposer sans effort.','Ferme les yeux, ralentis le souffle.'],
-           cue:'Récupération active — favorise le retour veineux après une tenue intense.'}
+          {name:'Respiration assise', fr:'—', dur:'1 min', diagram:'seated_twist',
+           steps:['Assieds-toi confortablement, dos droit mais non rigide.','Pose une main sur ta poitrine et une sur ton ventre.','Inspire par le nez en sentant la main sur le ventre se soulever en premier.','Expire lentement par le nez ou la bouche, sans forcer la fin de l\u2019expiration.'],
+           cue:'Si ça ne vient pas naturellement, ne force rien — observe simplement ce qui se passe déjà.'},
+          {name:'Lever de bras synchronisé', fr:'—', dur:'6 cycles', diagram:'mountain',
+           steps:['Debout, bras le long du corps.','Inspire en levant lentement les deux bras au-dessus de la tête.','Expire en les redescendant le long du corps.','Répète en laissant chaque mouvement durer exactement le temps d\u2019une respiration complète.'],
+           cue:'Le but est de synchroniser le geste et le souffle, pas d\u2019aller vite.'},
+          {name:'Fente basse', fr:'Anjaneyasana', dur:'45 sec / côté', diagram:'warrior2',
+           steps:['Depuis debout, avance un grand pas avec un pied, genou arrière au sol si confortable.','Pose les mains sur la cuisse avant pour t\u2019équilibrer.','Inspire en allongeant la colonne, expire en laissant le bassin descendre légèrement.','Reste ici plusieurs respirations avant de changer de côté.'],
+           cue:'Sens l\u2019étirement doux à l\u2019avant de la hanche arrière — recule le pied avant si c\u2019est trop intense.'},
+          {name:'Chien tête en bas', fr:'Adho Mukha Svanasana', dur:'45 sec', diagram:'downdog',
+           steps:['Des quatre pattes, lève les hanches vers le haut pour former un V inversé.','Plie les genoux autant que nécessaire pour garder le dos long.','Laisse la tête se relâcher entre les bras.','Respire profondément, en sentant le dos s\u2019étirer à chaque expiration.'],
+           cue:'Un dos long et confortable vaut mieux que des jambes droites mais tendues.'},
+          {name:'Posture du cadavre', fr:'Savasana', dur:'2 min', diagram:'corpse',
+           steps:['Allonge-toi sur le dos, jambes légèrement écartées, paumes vers le haut.','Ferme les yeux.','Observe simplement le rythme naturel de ta respiration, sans le changer.','Reste immobile jusqu\u2019à la fin.'],
+           cue:'Remarque si ta respiration est plus lente qu\u2019au début de la séance.'}
         ]
       }
     }
@@ -776,44 +768,25 @@ const WEEK = {
     label:'Mercredi',
     slots:{
       matin: {
-        id:'mer-matin', title:'Réveil articulaire II', minutes:10,
-        intention:"Même souffle carré que lundi, mais observe ce qui a changé en deux jours — une articulation plus libre, une autre plus raide. Le yoga n'est pas une répétition identique, c'est une lecture du corps présent.",
-        music:{ambiance:'Drone modal continu, sans paroles, tempo très lent.', reference:'Paul O\u2019Dette — Francesco da Milano, Fantasia (luth)', texture:'drone'},
+        id:'mer-matin', title:'Ancrage debout', minutes:14,
+        intention:"Aujourd'hui, le travail se fait surtout debout — sentir l'appui des pieds, la stabilité avant le mouvement. Avant chaque posture debout, prends deux secondes pour sentir le contact entre tes pieds et le sol.",
+        music:{ambiance:'Orchestre baroque, ouverture ample puis dansante, sans paroles.', reference:'Karl Richter — Bach : Suite n°1 (Ouverture, Courante, Gavotte I-II)', texture:'pulse'},
         poses:[
-          {name:'Chat-Vache', fr:'Marjaryasana–Bitilasana', dur:'6 respirations', diagram:'catcow',
-           steps:['À quatre pattes, poignets sous épaules, genoux sous hanches.','Inspire : creuse le dos (Vache).','Expire : arrondis le dos (Chat).','Ralentis le rythme à chaque cycle.'],
-           cue:'Compare l\u2019amplitude à celle de lundi, sans jugement.'},
-          {name:'Fente basse', fr:'Anjaneyasana', dur:'30 sec / côté', diagram:'warrior2',
-           steps:['Du chien tête en bas, avance un pied entre les mains.','Genou arrière au sol, bascule le bassin vers l\u2019avant.','Bras vers le haut si l\u2019équilibre le permet.','Répète de l\u2019autre côté.'],
-           cue:'Étirement de hanche — prépare la torsion qui suit.'},
-          {name:'Torsion assise', fr:'Ardha Matsyendrasana', dur:'30 sec / côté', diagram:'seated_twist',
-           steps:['Assis, jambes tendues, plie un genou et croise le pied à l\u2019extérieur.','Main opposée sur le genou plié, l\u2019autre derrière toi.','Inspire pour t\u2019allonger, expire pour tourner.','Garde les deux ischions au sol.'],
-           cue:'Allonge avant de tourner.'},
-          {name:'Posture de l\u2019enfant', fr:'Balasana', dur:'1 min', diagram:'childpose',
-           steps:['Assis sur les talons, genoux écartés ou joints.','Penche le buste vers l\u2019avant.','Front au sol ou sur les mains empilées.','Respire dans le bas du dos.'],
-           cue:'Termine ici, plus longtemps que d\u2019habitude.'}
-        ]
-      },
-      soir: {
-        id:'mer-soir', title:'Torsions & respiration', minutes:14,
-        intention:"Vide complètement avant de tourner. La torsion ne se force pas avec le bras — elle se crée dans l'espace laissé par une expiration totale. Observe où le souffle bute encore.",
-        music:{ambiance:'Polyphonie vocale lente, plusieurs voix entrelacées.', reference:'András Schiff — Bach, Invention à deux voix n°1, BWV 772', texture:'polyphonic'},
-        poses:[
-          {name:'Posture de la montagne', fr:'Tadasana', dur:'45 sec', diagram:'mountain',
-           steps:['Debout, pieds à largeur de bassin.','Allonge la colonne sur l\u2019inspiration.','Relâche les épaules sur l\u2019expiration.','Stabilise avant de bouger.'],
-           cue:'Point de départ neutre pour sentir la torsion qui suit.'},
-          {name:'Torsion debout', fr:'Parivrtta variation', dur:'40 sec / côté', diagram:'triangle',
-           steps:['Pieds écartés, genoux légèrement fléchis.','Pivote le buste vers un côté en gardant le bassin stable.','Laisse les bras suivre librement le mouvement.','Reviens au centre avant de changer de côté.'],
-           cue:'Le mouvement part de la cage thoracique, pas des bras.'},
-          {name:'Torsion assise', fr:'Ardha Matsyendrasana', dur:'45 sec / côté', diagram:'seated_twist',
-           steps:['Assis, jambes tendues, plie un genou et croise le pied à l\u2019extérieur.','Main opposée sur le genou plié, l\u2019autre derrière toi.','Expire complètement avant de tourner davantage.','Garde les deux ischions au sol.'],
-           cue:'Note où l\u2019expiration butte — c\u2019est là que vit la tension du jour.'},
-          {name:'Torsion couchée', fr:'Jathara Parivartanasana', dur:'1 min / côté', diagram:'bridge',
-           steps:['Allongé sur le dos, genoux pliés vers la poitrine.','Laisse tomber les genoux d\u2019un côté, épaules au sol.','Bras en croix, regard du côté opposé aux genoux.','Respire dans la torsion, sans forcer le retour des épaules.'],
-           cue:'Posture passive — laisse la gravité faire le travail.'},
+          {name:'Posture de la montagne', fr:'Tadasana', dur:'1 min', diagram:'mountain',
+           steps:['Debout, pieds à largeur de hanches.','Balance doucement ton poids d\u2019avant en arrière, puis trouve le centre.','Sens les quatre coins de chaque pied en contact avec le sol.','Laisse les bras pendre, épaules relâchées, et reste ici en respirant calmement.'],
+           cue:'Avant de bouger ailleurs dans la séance, reviens à cette sensation d\u2019appui stable.'},
+          {name:'Demi-flexion avant', fr:'Ardha Uttanasana', dur:'45 sec', diagram:'forwardfold',
+           steps:['Depuis debout, plie légèrement les genoux.','Penche le buste vers l\u2019avant depuis les hanches, pas depuis le dos.','Laisse les bras pendre ou pose les mains sur les tibias.','Respire dans cette position, sans chercher à toucher le sol.'],
+           cue:'Genoux pliés autant que nécessaire pour garder le dos confortable.'},
+          {name:'Guerrier II', fr:'Virabhadrasana II', dur:'40 sec / côté', diagram:'warrior2',
+           steps:['Grand pas sur le côté, pied avant tourné vers l\u2019avant, pied arrière légèrement tourné.','Plie le genou avant sans le laisser dépasser la cheville.','Étends les bras à l\u2019horizontale, regarde par-dessus la main avant.','Sens le poids réparti dans les deux pieds, pas seulement dans la jambe avant.'],
+           cue:'Une posture de stabilité, pas de performance — reste le temps qu\u2019il faut pour sentir l\u2019ancrage.'},
+          {name:'Posture de l\u2019arbre (au mur si besoin)', fr:'Vrksasana', dur:'30 sec / côté', diagram:'mountain',
+           steps:['Debout, transfère ton poids sur une jambe.','Pose le pied de l\u2019autre jambe contre le mollet ou la cheville (jamais sur le genou).','Garde un point fixe devant toi pour t\u2019aider à stabiliser le regard.','Mains jointes devant la poitrine ou bras le long du corps.'],
+           cue:'Reste près d\u2019un mur les premières fois — l\u2019équilibre se développe avec la pratique, pas d\u2019un coup.'},
           {name:'Posture du cadavre', fr:'Savasana', dur:'2 min', diagram:'corpse',
-           steps:['Allongé sur le dos, jambes légèrement écartées.','Bras le long du corps, paumes vers le haut.','Laisse le souffle redevenir naturel.','Reste sans chercher à bouger.'],
-           cue:'Note si le souffle est plus égal des deux côtés qu\u2019au début.'}
+           steps:['Allonge-toi sur le dos, jambes légèrement écartées.','Bras le long du corps, paumes vers le haut.','Laisse tout le poids du corps se relâcher dans le sol.','Reste immobile et respire normalement.'],
+           cue:'Sens la différence entre l\u2019ancrage debout d\u2019il y a un instant et ce relâchement complet.'}
         ]
       }
     }
@@ -821,29 +794,29 @@ const WEEK = {
   jeu: {
     label:'Jeudi',
     slots:{
-      soir: {
-        id:'jeu-soir', title:'Tendons & ancrage II', minutes:16,
-        intention:"Même structure que mardi, mais ralentis chaque transition d'une respiration de plus. La régularité construit l'articulation — pas l'intensité d'un seul jour.",
-        music:{ambiance:'Pulsation basse régulière, percussion minimale, pas de paroles.', reference:'Philippe Herreweghe — Purcell, Music for a While', texture:'pulse'},
+      matin: {
+        id:'jeu-matin', title:'Ouverture douce', minutes:12,
+        intention:"Une légère ouverture de la poitrine et des épaules aujourd'hui — rien de forcé. Avant chaque posture, demande-toi simplement : est-ce que je peux faire ce mouvement à 70% de ce que je pourrais, plutôt qu'à 100% ?",
+        music:{ambiance:'Orchestre baroque, dansant et lumineux, sans paroles.', reference:'Karl Richter — Bach : Suite n°4 (Bourrée, Gavotte, Menuet, Réjouissance)', texture:'chime'},
         poses:[
-          {name:'Guerrier II', fr:'Virabhadrasana II', dur:'45 sec / côté', diagram:'warrior2',
-           steps:['Grande fente latérale, pied avant à 90°.','Genou avant aligné au-dessus de la cheville.','Bras tendus à l\u2019horizontale.','Pousse activement dans les deux pieds.'],
-           cue:'Tenue isométrique — reste stable plus que tu ne bouges.'},
-          {name:'Demi-lune', fr:'Ardha Chandrasana', dur:'30 sec / côté', diagram:'halfmoon',
-           steps:['Du triangle, transfère le poids sur la jambe avant.','Lève la jambe arrière à l\u2019horizontale.','Une main au sol ou sur un support, l\u2019autre vers le ciel.','Regarde devant toi pour stabiliser l\u2019équilibre.'],
-           cue:'L\u2019équilibre vient du regard fixe, pas de la rigidité du corps.'},
-          {name:'Planche', fr:'Phalakasana', dur:'35–45 sec', diagram:'plank',
-           steps:['Position de pompe, mains sous les épaules.','Corps aligné des talons à la tête.','Engage les abdominaux et les avant-bras.','Respire normalement.'],
-           cue:'Vise une seconde de plus que mardi, sans casser la forme.'},
-          {name:'Cobra', fr:'Bhujangasana', dur:'30 sec', diagram:'cobra',
-           steps:['Allongé sur le ventre, mains sous les épaules.','Pousse légèrement pour soulever la poitrine.','Garde les coudes proches du corps.','Bassin au sol, pas de poussée brusque.'],
-           cue:'Extension contrôlée — complète le travail isométrique du dos.'},
-          {name:'Pigeon', fr:'Eka Pada Rajakapotasana (prép.)', dur:'1 min / côté', diagram:'pigeon',
-           steps:['Du chien tête en bas, ramène un genou vers le poignet du même côté.','Étends la jambe arrière derrière toi.','Buste droit ou penché selon ta souplesse.','Respire profondément dans la hanche.'],
-           cue:'Patience — l\u2019ouverture de hanche progresse semaine après semaine.'},
-          {name:'Jambes au mur', fr:'Viparita Karani', dur:'3 min', diagram:'legs_up',
-           steps:['Allongé près d\u2019un mur, jambes levées à la verticale.','Bras relâchés le long du corps.','Laisse le poids des jambes reposer sans effort.','Ferme les yeux, ralentis le souffle.'],
-           cue:'Récupération avant la séance longue de samedi.'}
+          {name:'Roulis d\u2019épaules', fr:'—', dur:'8 cycles', diagram:'mountain',
+           steps:['Assis ou debout, bras relâchés le long du corps.','Inspire en montant les épaules vers les oreilles.','Expire en les roulant vers l\u2019arrière puis vers le bas.','Répète, puis inverse le sens du mouvement après quatre cycles.'],
+           cue:'Mouvement lent et continu — pas de saccade, comme si tes épaules dessinaient un cercle dans l\u2019huile.'},
+          {name:'Bras d\u2019aigle (ouverture)', fr:'Garudasana, variation', dur:'30 sec / côté', diagram:'eaglearms',
+           steps:['Croise un bras sur l\u2019autre devant la poitrine, coudes pliés.','Si possible, enroule les avant-bras pour rapprocher les paumes.','Lève doucement les coudes pour étirer l\u2019espace entre les omoplates.','Respire profondément ici, puis change de bras.'],
+           cue:'Si l\u2019enroulement complet n\u2019est pas confortable, laisse simplement les avant-bras croisés.'},
+          {name:'Posture du chameau (douce)', fr:'Ustrasana, version assise sur les talons', dur:'30 sec', diagram:'cobra',
+           steps:['Agenouillé, mains sur le bas du dos pour te soutenir.','Inspire en ouvrant doucement la poitrine vers le haut et l\u2019avant.','Ne cherche pas à aller loin en arrière — l\u2019ouverture est dans la poitrine, pas dans le cou.','Reviens lentement au centre en expirant.'],
+           cue:'Le menton reste relâché, jamais tiré vers l\u2019arrière de force.'},
+          {name:'Cobra doux', fr:'Bhujangasana', dur:'30 sec', diagram:'cobra',
+           steps:['Allongé sur le ventre, mains sous les épaules.','Inspire en soulevant légèrement la poitrine, coudes encore pliés.','Garde les hanches au sol.','Expire en redescendant lentement.'],
+           cue:'Une petite élévation suffit — ce n\u2019est pas une mesure de souplesse.'},
+          {name:'Posture de l\u2019enfant', fr:'Balasana', dur:'1 min', diagram:'childpose',
+           steps:['Assieds-toi sur les talons, genoux écartés.','Penche le buste vers l\u2019avant, front au sol ou sur les mains.','Laisse le dos s\u2019arrondir complètement après l\u2019ouverture précédente.','Respire profondément dans le dos.'],
+           cue:'Contrepoint naturel après une ouverture — le dos a besoin de ce retour vers l\u2019intérieur.'},
+          {name:'Posture du cadavre', fr:'Savasana', dur:'2 min', diagram:'corpse',
+           steps:['Allonge-toi sur le dos, jambes légèrement écartées, paumes vers le haut.','Ferme les yeux.','Laisse la poitrine et les épaules se relâcher complètement.','Reste immobile jusqu\u2019à la fin du temps indiqué.'],
+           cue:'Sens si la poitrine respire plus librement qu\u2019au début de la séance.'}
         ]
       }
     }
@@ -852,22 +825,25 @@ const WEEK = {
     label:'Vendredi',
     slots:{
       matin: {
-        id:'ven-matin', title:'Pause écran / fluidité', minutes:6,
-        intention:"Souffle bref et rythmé — quatre temps égaux. Pas de profondeur recherchée ici, juste une remise en mouvement après l'immobilité de l'écran.",
-        music:{ambiance:'Tempo modéré, percussion légère, sans paroles.', reference:'Camerata Trajectina — Susato, Pavane (Danserye)', texture:'chime'},
+        id:'ven-matin', title:'Écoute', minutes:12,
+        intention:"La séance la plus lente de la semaine. À chaque posture, reste plus longtemps que tu ne penses en avoir besoin, et observe à quel moment précis ton corps te dit que c'est assez — pas avant, pas après.",
+        music:{ambiance:'Luth Renaissance, tempo libre et méditatif, sans paroles.', reference:'Hopkinson Smith — Milán : Tento II, Pavana V, Fantasía XVIII, Pavana IV (vihuela)', texture:'drone'},
         poses:[
-          {name:'Roulis d\u2019épaules', fr:'—', dur:'8 cycles', diagram:'mountain',
-           steps:['Assis ou debout, bras relâchés.','Monte les épaules vers les oreilles en inspirant.','Roule vers l\u2019arrière et redescends en expirant.','Inverse le sens après 4 cycles.'],
-           cue:'Amplitude lente, pas de saccade.'},
-          {name:'Torsion de chaise', fr:'Bharadvajasana (assise)', dur:'30 sec / côté', diagram:'seated_twist',
-           steps:['Assis sur le bord de la chaise, pieds à plat.','Tourne le buste vers un côté, main sur le dossier.','Allonge la colonne avant de tourner davantage.','Garde les hanches face à l\u2019avant.'],
-           cue:'Idéal entre deux blocs de travail assis.'},
-          {name:'Étirement de poignets', fr:'—', dur:'30 sec / côté', diagram:'plank',
-           steps:['Bras tendu devant toi, paume vers le haut.','Avec l\u2019autre main, tire doucement les doigts vers le bas.','Répète paume vers le bas.','Change de bras.'],
-           cue:'Pertinent après usage prolongé de clavier, souris ou manettes.'},
-          {name:'Flexion avant assise', fr:'Uttanasana (assise)', dur:'45 sec', diagram:'forwardfold',
-           steps:['Assis, penche le buste entre les genoux.','Laisse les bras pendre vers le sol.','Relâche complètement la tête et le cou.','Remonte lentement, vertèbre par vertèbre.'],
-           cue:'Décompresse la colonne après une posture assise prolongée.'}
+          {name:'Assise simple, écoute', fr:'Sukhasana', dur:'1 min 30', diagram:'seated_twist',
+           steps:['Assieds-toi confortablement, en tailleur ou sur une chaise.','Ferme les yeux.','Sans rien changer, remarque où se trouve la tension dans ton corps en ce moment.','Ne cherche pas à la faire partir — contente-toi de la localiser.'],
+           cue:'Cette posture est un scan, pas une relaxation forcée. Le simple fait de remarquer compte.'},
+          {name:'Chat-Vache très lent', fr:'Marjaryasana–Bitilasana', dur:'6 respirations', diagram:'catcow',
+           steps:['À quatre pattes, mains sous les épaules.','Inspire très lentement en creusant le dos.','Expire deux fois plus lentement que l\u2019inspiration en arrondissant le dos.','Répète en allongeant chaque cycle un peu plus que le précédent.'],
+           cue:'L\u2019objectif est la lenteur extrême — un cycle complet peut durer 20 à 30 secondes.'},
+          {name:'Pigeon doux', fr:'Eka Pada Rajakapotasana, version douce', dur:'1 min / côté', diagram:'pigeon',
+           steps:['Du quatre pattes, ramène un genou vers l\u2019avant, tibia incliné.','Étends l\u2019autre jambe derrière toi.','Reste droit, ou penche-toi vers l\u2019avant seulement si c\u2019est confortable.','Respire profondément, en attendant que la hanche se relâche d\u2019elle-même.'],
+           cue:'N\u2019essaie pas d\u2019approfondir avec le temps qui passe — laisse simplement la posture faire son travail.'},
+          {name:'Torsion couchée', fr:'Jathara Parivartanasana', dur:'1 min / côté', diagram:'bridge',
+           steps:['Allongé sur le dos, genoux pliés vers la poitrine.','Laisse tomber les genoux d\u2019un côté, bras en croix.','Tourne la tête du côté opposé aux genoux si c\u2019est confortable pour le cou.','Respire sans chercher à approfondir la torsion.'],
+           cue:'C\u2019est le poids qui travaille ici, pas l\u2019effort musculaire.'},
+          {name:'Posture du cadavre', fr:'Savasana', dur:'2 min', diagram:'corpse',
+           steps:['Allonge-toi sur le dos, jambes légèrement écartées.','Bras le long du corps, paumes vers le haut.','Laisse le souffle devenir complètement naturel.','Reste sans bouger jusqu\u2019à la fin.'],
+           cue:'Compare la tension repérée au début de la séance à ce que tu sens maintenant.'}
         ]
       }
     }
@@ -876,31 +852,31 @@ const WEEK = {
     label:'Samedi',
     slots:{
       matin: {
-        id:'sam-matin', title:'Séance longue — ouverture des hanches', minutes:28,
-        intention:"Pas de chronomètre dans la tête. Chaque posture se tient jusqu'à ce que le souffle redevienne complètement égal — parfois 40 secondes, parfois deux minutes. La patience est la seule variable qui compte aujourd'hui.",
-        music:{ambiance:'Forme longue et méditative, sans rupture de tempo, voix seule ou instrument soliste.', reference:'Pablo Casals — Bach, Sarabande (Suite vlc n°1, BWV 1007)', texture:'longform'},
+        id:'sam-matin', title:'Espace', minutes:16,
+        intention:"La séance la plus longue de la semaine, mais pas la plus intense — plus de transitions, plus d'espace entre les postures. Prends ton temps pour t'installer dans chaque position avant de bouger vers la suivante.",
+        music:{ambiance:'Violoncelle seul, six mouvements enchaînés, tempo varié mais toujours intérieur.', reference:'Pablo Casals — Bach : Suite pour violoncelle n°1, BWV 1007 (intégrale)', texture:'longform'},
         poses:[
-          {name:'Posture de l\u2019enfant', fr:'Balasana', dur:'1 min', diagram:'childpose',
-           steps:['Assis sur les talons, genoux écartés.','Penche le buste vers l\u2019avant, bras tendus.','Front au sol ou sur les mains empilées.','Respire dans le bas du dos.'],
-           cue:'Point de départ — laisse le rythme cardiaque descendre.'},
+          {name:'Assise simple', fr:'Sukhasana', dur:'1 min', diagram:'seated_twist',
+           steps:['Assieds-toi confortablement, dos allongé sans rigidité.','Pose les mains sur les genoux.','Ferme les yeux et prends trois respirations complètes.','Laisse cette minute marquer le début de la séance, sans rien faire d\u2019autre.'],
+           cue:'Un vrai début, pas une formalité — accorde-lui le temps indiqué.'},
+          {name:'Chat-Vache', fr:'Marjaryasana–Bitilasana', dur:'8 respirations', diagram:'catcow',
+           steps:['À quatre pattes, mains sous les épaules, genoux sous les hanches.','Inspire en creusant le dos, poitrine ouverte.','Expire en arrondissant le dos, regard vers le nombril.','Continue au rythme naturel de ta respiration.'],
+           cue:'Réveille la colonne entière, vertèbre par vertèbre si possible.'},
           {name:'Chien tête en bas', fr:'Adho Mukha Svanasana', dur:'1 min', diagram:'downdog',
-           steps:['Des quatre pattes, lève les hanches vers le plafond.','Mains à largeur d\u2019épaules, pieds à largeur de bassin.','Plie les genoux autant que nécessaire.','Relâche la tête et le cou.'],
-           cue:'Alterne légèrement le poids d\u2019un pied à l\u2019autre pour échauffer les mollets.'},
-          {name:'Pigeon', fr:'Eka Pada Rajakapotasana', dur:'2 min / côté', diagram:'pigeon',
-           steps:['Du chien tête en bas, ramène un genou vers le poignet du même côté.','Étends la jambe arrière derrière toi.','Buste droit, puis incline-toi progressivement vers l\u2019avant.','Reste jusqu\u2019à ce que le souffle s\u2019égalise.'],
-           cue:'La tenue longue, pas la profondeur, ouvre la hanche.'},
-          {name:'Grenouille', fr:'Bhekasana (variation douce)', dur:'1 min 30', diagram:'pigeon',
-           steps:['À quatre pattes, écarte progressivement les genoux.','Descends sur les avant-bras si confortable.','Garde les chevilles alignées avec les genoux.','Respire profondément, sans chercher plus large.'],
-           cue:'Travail d\u2019adducteurs — arrête dès qu\u2019une tension vive apparaît.'},
-          {name:'Papillon', fr:'Baddha Konasana', dur:'1 min 30', diagram:'seated_twist',
-           steps:['Assis, plante des pieds jointes, genoux ouverts vers l\u2019extérieur.','Tiens les pieds, allonge la colonne.','Incline doucement le buste vers l\u2019avant si confortable.','Laisse les genoux descendre par leur propre poids.'],
-           cue:'Aucune pression vers le bas avec les coudes — patience seulement.'},
+           steps:['Des quatre pattes, lève les hanches vers le plafond.','Genoux pliés autant que nécessaire pour garder le dos long.','Relâche la tête et le cou complètement.','Respire profondément, en laissant les talons s\u2019alléger vers le sol sans forcer.'],
+           cue:'Une minute complète ici — alterne doucement le poids d\u2019un pied à l\u2019autre si tu en ressens le besoin.'},
+          {name:'Fente basse', fr:'Anjaneyasana', dur:'1 min / côté', diagram:'warrior2',
+           steps:['Avance un pied entre les mains depuis le chien tête en bas.','Genou arrière au sol, bascule légèrement le bassin vers l\u2019avant.','Lève les bras si l\u2019équilibre le permet, sinon garde les mains au sol.','Respire dans l\u2019étirement à l\u2019avant de la hanche arrière.'],
+           cue:'Avec cette durée plus longue, la sensation va probablement changer — observe comment.'},
+          {name:'Pigeon doux', fr:'Eka Pada Rajakapotasana, version douce', dur:'1 min 30 / côté', diagram:'pigeon',
+           steps:['Ramène un genou vers l\u2019avant, tibia incliné, jambe arrière étendue.','Reste droit, buste vertical, mains au sol pour te soutenir.','Penche-toi vers l\u2019avant seulement si la hanche le permet sans tension vive.','Respire profondément, en attendant patiemment l\u2019ouverture.'],
+           cue:'La patience est l\u2019exercice principal de cette posture, pas la flexibilité.'},
           {name:'Torsion couchée', fr:'Jathara Parivartanasana', dur:'1 min / côté', diagram:'bridge',
-           steps:['Allongé sur le dos, genoux pliés vers la poitrine.','Laisse tomber les genoux d\u2019un côté, épaules au sol.','Bras en croix, regard du côté opposé.','Respire dans la torsion.'],
-           cue:'Neutralise le bas du dos après le travail de hanches.'},
-          {name:'Posture du cadavre', fr:'Savasana', dur:'4 min', diagram:'corpse',
-           steps:['Allongé sur le dos, jambes légèrement écartées.','Bras le long du corps, paumes vers le haut.','Laisse le souffle ralentir complètement.','Ne cherche rien — reste.'],
-           cue:'La séance se termine vraiment ici, pas à la dernière posture active.'}
+           steps:['Allongé sur le dos, genoux pliés vers la poitrine.','Laisse tomber les genoux d\u2019un côté, bras en croix.','Garde les deux épaules au sol si possible.','Respire dans la torsion sans chercher à forcer la descente des genoux.'],
+           cue:'Neutralise doucement le bas du dos après le travail de hanche précédent.'},
+          {name:'Posture du cadavre', fr:'Savasana', dur:'3 min', diagram:'corpse',
+           steps:['Allonge-toi sur le dos, jambes légèrement écartées.','Bras le long du corps, paumes vers le haut.','Laisse le souffle ralentir complètement, sans le diriger.','Reste ici aussi longtemps que le temps indiqué le permet.'],
+           cue:'La plus longue Savasana de la semaine — résiste à l\u2019envie de te relever avant la fin.'}
         ]
       }
     }
@@ -909,47 +885,38 @@ const WEEK = {
     label:'Dimanche',
     slots:{
       matin: {
-        id:'dim-matin', title:'Restauratif', minutes:20,
-        intention:"Lâcher complet. Aucune posture active aujourd'hui — seulement des formes soutenues où le corps repose entièrement. Le souffle n'a rien à accomplir, il observe simplement.",
-        music:{ambiance:'Silence quasi-total, ou très léger bruit ambiant naturel, sans structure rythmique.', reference:'John Cage — 4\u203233\u2033 (en silence, ou son absence assumée)', texture:'silence'},
+        id:'dim-matin', title:'Repos actif', minutes:15,
+        intention:"Une préparation calme avant la nouvelle semaine. Rien à accomplir, rien à prouver — seulement remarquer comment ton corps se sent après sept jours, et lui offrir un dernier moment d'attention avant de recommencer le cycle.",
+        music:{ambiance:'Luth Renaissance, tempo libre et méditatif, sans paroles.', reference:'Hopkinson Smith — Milán : Tento IV, Fantasía XV, Fantasía XII, Pavana I, Fantasía X (vihuela)', texture:'drone'},
         poses:[
-          {name:'Posture de l\u2019enfant', fr:'Balasana', dur:'2 min', diagram:'childpose',
-           steps:['Assis sur les talons, genoux écartés ou joints.','Penche le buste vers l\u2019avant.','Front au sol, bras relâchés.','Respire sans chercher à approfondir.'],
-           cue:'Aucun objectif d\u2019étirement — seulement du repos.'},
-          {name:'Jambes au mur', fr:'Viparita Karani', dur:'6 min', diagram:'legs_up',
-           steps:['Allongé près d\u2019un mur, jambes levées à la verticale.','Bras relâchés le long du corps, paumes vers le haut.','Ferme les yeux.','Laisse le poids des jambes reposer entièrement.'],
-           cue:'Si l\u2019esprit s\u2019agite, reviens simplement au contact du dos avec le sol.'},
-          {name:'Torsion couchée', fr:'Jathara Parivartanasana', dur:'2 min / côté', diagram:'bridge',
-           steps:['Allongé sur le dos, genoux pliés vers la poitrine.','Laisse tomber les genoux d\u2019un côté.','Bras en croix, regard du côté opposé.','Reste sans chercher à approfondir la torsion.'],
-           cue:'Forme passive — la gravité fait tout le travail.'},
-          {name:'Posture du poisson', fr:'Matsyasana (douce)', dur:'1 min', diagram:'fish',
-           steps:['Allongé sur le dos, coudes sous les épaules.','Soulève légèrement la poitrine en appui sur les avant-bras.','Laisse la tête s\u2019incliner doucement vers l\u2019arrière si confortable.','Respire dans l\u2019ouverture de la poitrine.'],
-           cue:'Contrepoint doux après les torsions.'},
-          {name:'Posture du cadavre', fr:'Savasana', dur:'8 min', diagram:'corpse',
-           steps:['Allongé sur le dos, jambes légèrement écartées.','Bras le long du corps, paumes vers le haut.','Laisse le souffle devenir complètement naturel.','Reste aussi longtemps que le temps le permet.'],
-           cue:'La séance de la semaine la plus longue à tenir — et la plus simple à exécuter.'}
-        ]
-      },
-      soir: {
-        id:'dim-soir', title:'Pause écran légère', minutes:6,
-        intention:"Clôture de semaine. Un souffle bref pour marquer la transition avant la nouvelle semaine — sans chercher à en faire plus que nécessaire.",
-        music:{ambiance:'Tempo modéré, percussion légère, sans paroles.', reference:'Camerata Trajectina — Susato, Pavane (Danserye)', texture:'chime'},
-        poses:[
-          {name:'Roulis d\u2019épaules', fr:'—', dur:'8 cycles', diagram:'mountain',
-           steps:['Assis ou debout, bras relâchés.','Monte les épaules vers les oreilles en inspirant.','Roule vers l\u2019arrière et redescends en expirant.','Inverse le sens après 4 cycles.'],
-           cue:'Amplitude lente, pas de saccade.'},
-          {name:'Flexion avant assise', fr:'Uttanasana (assise)', dur:'1 min', diagram:'forwardfold',
-           steps:['Assis, penche le buste entre les genoux.','Laisse les bras pendre vers le sol.','Relâche complètement la tête et le cou.','Remonte lentement, vertèbre par vertèbre.'],
-           cue:'Dernier geste de la semaine — sans urgence.'}
+          {name:'Assise simple', fr:'Sukhasana', dur:'1 min 30', diagram:'seated_twist',
+           steps:['Assieds-toi confortablement.','Ferme les yeux.','Repense brièvement à ta semaine — sans jugement, juste un constat.','Laisse cette pensée passer, puis reviens simplement à ta respiration.'],
+           cue:'Un moment de bilan doux, pas une évaluation de performance.'},
+          {name:'Chat-Vache', fr:'Marjaryasana–Bitilasana', dur:'8 respirations', diagram:'catcow',
+           steps:['À quatre pattes, mains sous les épaules.','Inspire en creusant le dos.','Expire en arrondissant le dos.','Continue à ton propre rythme, sans chercher la perfection du mouvement.'],
+           cue:'Après une semaine de pratique, ce mouvement devrait déjà sembler plus familier.'},
+          {name:'Posture de l\u2019enfant', fr:'Balasana', dur:'1 min 30', diagram:'childpose',
+           steps:['Assieds-toi sur les talons, genoux écartés à largeur confortable.','Penche le buste vers l\u2019avant, front au sol ou sur les mains.','Laisse les bras se reposer devant toi.','Respire profondément dans le dos, sans chercher à aller plus loin.'],
+           cue:'La posture la plus utilisée de la semaine — remarque si elle te semble différente aujourd\u2019hui.'},
+          {name:'Torsion assise douce', fr:'Variation simple', dur:'45 sec / côté', diagram:'seated_twist',
+           steps:['Assis en tailleur, une main au sol derrière toi, l\u2019autre sur le genou opposé.','Inspire pour allonger la colonne.','Expire en tournant doucement le buste.','Reviens au centre lentement avant de changer de côté.'],
+           cue:'Une torsion de clôture, pas d\u2019exploration — reste dans une amplitude confortable.'},
+          {name:'Jambes au mur', fr:'Viparita Karani', dur:'3 min', diagram:'legs_up',
+           steps:['Allonge-toi près d\u2019un mur, jambes levées à la verticale contre celui-ci.','Bras relâchés le long du corps, paumes vers le haut.','Ferme les yeux.','Laisse le poids des jambes reposer entièrement, sans effort.'],
+           cue:'Une posture de récupération complète pour clore la semaine de pratique.'},
+          {name:'Posture du cadavre', fr:'Savasana', dur:'3 min', diagram:'corpse',
+           steps:['Allonge-toi sur le dos, jambes légèrement écartées.','Bras le long du corps, paumes vers le haut.','Laisse le souffle devenir complètement naturel.','Reste ici jusqu\u2019à la fin, sans te presser de te relever.'],
+           cue:'La semaine se termine ici. Lundi prochain, tu recommenceras le cycle.'}
         ]
       }
     }
   }
 };
 
+
 const DAY_ORDER = ['lun','mar','mer','jeu','ven','sam','dim'];
-const SLOT_ORDER = ['matin','soir'];
-const SLOT_LABELS = {matin:'Matin', soir:'Soir'};
+const SLOT_ORDER = ['matin'];
+const SLOT_LABELS = {matin:'Matin'};
 
 /* ===================== GITHUB SYNC ===================== */
 const GH_CONFIG_KEY = 'yogaaw_gh_config_v1';
