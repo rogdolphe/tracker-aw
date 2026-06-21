@@ -272,6 +272,35 @@ header.top .sub{
 .music-block .ambiance{font-size:13.5px; color:#E6E1D4; margin:0 0 3px;}
 .music-block .reference{font-size:12.5px; color:var(--paper-dim); margin:0;}
 
+.music-player{
+  margin-top:12px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+.play-btn{
+  width:38px; height:38px;
+  border-radius:50%;
+  border:1px solid var(--ochre);
+  background:transparent;
+  color:var(--ochre);
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0;
+  text-decoration:none;
+  transition:background .15s ease, color .15s ease;
+}
+.play-btn:hover{background:var(--ochre); color:var(--ink);}
+.play-btn svg{width:14px; height:14px;}
+.player-track{flex:1; min-width:0;}
+.player-time{
+  font-size:11px;
+  color:var(--paper-dim);
+  font-variant-numeric: tabular-nums;
+  display:flex;
+  justify-content:space-between;
+}
+.player-time .texture-name{text-transform:uppercase; letter-spacing:0.04em; font-size:10px;}
+
 .progress-track{height:3px; background:var(--line); border-radius:2px; margin-bottom:20px; overflow:hidden;}
 .progress-fill{height:100%; background:var(--sage); width:0%; transition:width .25s ease;}
 
@@ -405,6 +434,17 @@ header.top .sub{
         <div class="eyebrow">Musique</div>
         <p class="ambiance" id="musicAmbiance">—</p>
         <p class="reference" id="musicReference">—</p>
+        <div class="music-player">
+          <a class="play-btn" id="playBtn" href="#" target="_blank" rel="noopener" aria-label="Écouter sur YouTube">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          </a>
+          <div class="player-track">
+            <div class="player-time">
+              <span class="texture-name">YouTube — durée approx.</span>
+              <span id="playerTime">0:00</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
     <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
@@ -672,7 +712,7 @@ const WEEK = {
       matin: {
         id:'lun-matin', title:'Réveil articulaire', minutes:12,
         intention:"Respiration carrée : inspire sur 4 temps, retiens 4, expire 4, retiens 4. Ouvre chaque articulation sans jamais forcer le seuil — la semaine commence par l'écoute, pas la performance.",
-        music:{ambiance:'Drone modal continu, sans paroles, tempo très lent.', reference:'Luis Milán — Fantasía no. 1 (vihuela, El Maestro, 1536)'},
+        music:{ambiance:'Drone modal continu, sans paroles, tempo très lent.', reference:'Hopkinson Smith — Milán, Fantasía no. 1 (vihuela)', texture:'drone'},
         poses:[
           {name:'Chat-Vache', fr:'Marjaryasana–Bitilasana', dur:'8 respirations', diagram:'catcow',
            steps:['À quatre pattes, poignets sous épaules, genoux sous hanches.','Inspire : creuse le dos, ouvre la poitrine vers le haut (Vache).','Expire : arrondis le dos, regarde le nombril (Chat).','Enchaîne au rythme du souffle, sans à-coup.'],
@@ -702,7 +742,7 @@ const WEEK = {
       soir: {
         id:'mar-soir', title:'Tendons & ancrage', minutes:18,
         intention:"Expiration longue sous tension — deux fois plus longue que l'inspiration. C'est le souffle qui tient la posture, pas le muscle seul. Prépare le corps à la prise, sans l'épuiser avant l'heure.",
-        music:{ambiance:'Pulsation basse régulière, percussion minimale, pas de paroles.', reference:'Arvo Pärt — Spiegel im Spiegel'},
+        music:{ambiance:'Pulsation basse régulière, percussion minimale, pas de paroles.', reference:'Karl Richter — Bach, Air (Suite orchestrale n°3, BWV 1068)', texture:'pulse'},
         poses:[
           {name:'Posture de la montagne', fr:'Tadasana', dur:'1 min', diagram:'mountain',
            steps:['Debout, pieds joints ou écartés à largeur de bassin.','Répartis le poids également sur les quatre coins des pieds.','Engage légèrement les quadriceps, allonge la colonne.','Épaules relâchées, regard à l\u2019horizon.'],
@@ -738,7 +778,7 @@ const WEEK = {
       matin: {
         id:'mer-matin', title:'Réveil articulaire II', minutes:10,
         intention:"Même souffle carré que lundi, mais observe ce qui a changé en deux jours — une articulation plus libre, une autre plus raide. Le yoga n'est pas une répétition identique, c'est une lecture du corps présent.",
-        music:{ambiance:'Drone modal continu, sans paroles, tempo très lent.', reference:'Francesco da Milano — Fantasia (luth Renaissance)'},
+        music:{ambiance:'Drone modal continu, sans paroles, tempo très lent.', reference:'Paul O\u2019Dette — Francesco da Milano, Fantasia (luth)', texture:'drone'},
         poses:[
           {name:'Chat-Vache', fr:'Marjaryasana–Bitilasana', dur:'6 respirations', diagram:'catcow',
            steps:['À quatre pattes, poignets sous épaules, genoux sous hanches.','Inspire : creuse le dos (Vache).','Expire : arrondis le dos (Chat).','Ralentis le rythme à chaque cycle.'],
@@ -757,7 +797,7 @@ const WEEK = {
       soir: {
         id:'mer-soir', title:'Torsions & respiration', minutes:14,
         intention:"Vide complètement avant de tourner. La torsion ne se force pas avec le bras — elle se crée dans l'espace laissé par une expiration totale. Observe où le souffle bute encore.",
-        music:{ambiance:'Polyphonie vocale lente, plusieurs voix entrelacées.', reference:'Josquin des Prés — Ave Maria… virgo serena'},
+        music:{ambiance:'Polyphonie vocale lente, plusieurs voix entrelacées.', reference:'András Schiff — Bach, Invention à deux voix n°1, BWV 772', texture:'polyphonic'},
         poses:[
           {name:'Posture de la montagne', fr:'Tadasana', dur:'45 sec', diagram:'mountain',
            steps:['Debout, pieds à largeur de bassin.','Allonge la colonne sur l\u2019inspiration.','Relâche les épaules sur l\u2019expiration.','Stabilise avant de bouger.'],
@@ -784,7 +824,7 @@ const WEEK = {
       soir: {
         id:'jeu-soir', title:'Tendons & ancrage II', minutes:16,
         intention:"Même structure que mardi, mais ralentis chaque transition d'une respiration de plus. La régularité construit l'articulation — pas l'intensité d'un seul jour.",
-        music:{ambiance:'Pulsation basse régulière, percussion minimale, pas de paroles.', reference:'Henry Purcell — Music for a While'},
+        music:{ambiance:'Pulsation basse régulière, percussion minimale, pas de paroles.', reference:'Philippe Herreweghe — Purcell, Music for a While', texture:'pulse'},
         poses:[
           {name:'Guerrier II', fr:'Virabhadrasana II', dur:'45 sec / côté', diagram:'warrior2',
            steps:['Grande fente latérale, pied avant à 90°.','Genou avant aligné au-dessus de la cheville.','Bras tendus à l\u2019horizontale.','Pousse activement dans les deux pieds.'],
@@ -814,7 +854,7 @@ const WEEK = {
       matin: {
         id:'ven-matin', title:'Pause écran / fluidité', minutes:6,
         intention:"Souffle bref et rythmé — quatre temps égaux. Pas de profondeur recherchée ici, juste une remise en mouvement après l'immobilité de l'écran.",
-        music:{ambiance:'Tempo modéré, percussion légère, sans paroles.', reference:'Tielman Susato — Pavane (Danserye, 1551)'},
+        music:{ambiance:'Tempo modéré, percussion légère, sans paroles.', reference:'Camerata Trajectina — Susato, Pavane (Danserye)', texture:'chime'},
         poses:[
           {name:'Roulis d\u2019épaules', fr:'—', dur:'8 cycles', diagram:'mountain',
            steps:['Assis ou debout, bras relâchés.','Monte les épaules vers les oreilles en inspirant.','Roule vers l\u2019arrière et redescends en expirant.','Inverse le sens après 4 cycles.'],
@@ -838,7 +878,7 @@ const WEEK = {
       matin: {
         id:'sam-matin', title:'Séance longue — ouverture des hanches', minutes:28,
         intention:"Pas de chronomètre dans la tête. Chaque posture se tient jusqu'à ce que le souffle redevienne complètement égal — parfois 40 secondes, parfois deux minutes. La patience est la seule variable qui compte aujourd'hui.",
-        music:{ambiance:'Forme longue et méditative, sans rupture de tempo, voix seule ou instrument soliste.', reference:'John Dowland — Flow My Tears (Lachrimae)'},
+        music:{ambiance:'Forme longue et méditative, sans rupture de tempo, voix seule ou instrument soliste.', reference:'Pablo Casals — Bach, Sarabande (Suite vlc n°1, BWV 1007)', texture:'longform'},
         poses:[
           {name:'Posture de l\u2019enfant', fr:'Balasana', dur:'1 min', diagram:'childpose',
            steps:['Assis sur les talons, genoux écartés.','Penche le buste vers l\u2019avant, bras tendus.','Front au sol ou sur les mains empilées.','Respire dans le bas du dos.'],
@@ -871,7 +911,7 @@ const WEEK = {
       matin: {
         id:'dim-matin', title:'Restauratif', minutes:20,
         intention:"Lâcher complet. Aucune posture active aujourd'hui — seulement des formes soutenues où le corps repose entièrement. Le souffle n'a rien à accomplir, il observe simplement.",
-        music:{ambiance:'Silence quasi-total, ou très léger bruit ambiant naturel, sans structure rythmique.', reference:'John Cage — 4\u203233\u2033 (en silence, ou son absence assumée)'},
+        music:{ambiance:'Silence quasi-total, ou très léger bruit ambiant naturel, sans structure rythmique.', reference:'John Cage — 4\u203233\u2033 (en silence, ou son absence assumée)', texture:'silence'},
         poses:[
           {name:'Posture de l\u2019enfant', fr:'Balasana', dur:'2 min', diagram:'childpose',
            steps:['Assis sur les talons, genoux écartés ou joints.','Penche le buste vers l\u2019avant.','Front au sol, bras relâchés.','Respire sans chercher à approfondir.'],
@@ -893,7 +933,7 @@ const WEEK = {
       soir: {
         id:'dim-soir', title:'Pause écran légère', minutes:6,
         intention:"Clôture de semaine. Un souffle bref pour marquer la transition avant la nouvelle semaine — sans chercher à en faire plus que nécessaire.",
-        music:{ambiance:'Tempo modéré, percussion légère, sans paroles.', reference:'Tielman Susato — Pavane (Danserye, 1551)'},
+        music:{ambiance:'Tempo modéré, percussion légère, sans paroles.', reference:'Camerata Trajectina — Susato, Pavane (Danserye)', texture:'chime'},
         poses:[
           {name:'Roulis d\u2019épaules', fr:'—', dur:'8 cycles', diagram:'mountain',
            steps:['Assis ou debout, bras relâchés.','Monte les épaules vers les oreilles en inspirant.','Roule vers l\u2019arrière et redescends en expirant.','Inverse le sens après 4 cycles.'],
@@ -1093,6 +1133,8 @@ function openRoutine(routine){
   document.getElementById('intentionText').textContent = routine.intention;
   document.getElementById('musicAmbiance').textContent = routine.music.ambiance;
   document.getElementById('musicReference').textContent = routine.music.reference;
+  document.getElementById('playerTime').textContent = `≈ ${routine.minutes} min`;
+  document.getElementById('playBtn').href = `https://www.youtube.com/results?search_query=${encodeURIComponent(routine.music.reference)}`;
 
   const poseList = document.getElementById('poseList');
   poseList.innerHTML = '';
