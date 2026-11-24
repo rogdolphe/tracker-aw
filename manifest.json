@@ -1,37 +1,17 @@
 {
-  "name": "Cuisine & Macros",
-  "short_name": "Cuisine",
-  "description": "Inventaire alimentaire et plan de repas hebdomadaire",
-  "start_url": "/tracker-aw/cuisine",
-  "scope": "/tracker-aw/",
+  "name": "Cap 3 jours",
+  "short_name": "Cap 3 jours",
+  "description": "Entraînement, argent et objectifs sur 3 jours",
+  "lang": "fr-CA",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#1e1d1b",
-  "theme_color": "#1e1d1b",
   "orientation": "portrait",
+  "background_color": "#12161d",
+  "theme_color": "#1b2230",
   "icons": [
-    {
-      "src": "icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
-    },
-    {
-      "src": "icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
-    }
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }

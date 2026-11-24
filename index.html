@@ -1,23 +1,858 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr-CA">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TRACKER.AW — Hub</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1b2230">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Cap 3 jours</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
-body{margin:0;background:#0d1117;color:#e7dec8;font-family:ui-monospace,Menlo,Consolas,monospace;
-display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:14px}
-h1{font-family:Georgia,serif;font-variant:small-caps;letter-spacing:.15em;color:#c9a227;margin:0 0 10px}
-a{display:block;width:min(340px,86vw);padding:18px;text-align:center;text-decoration:none;
-color:#e7dec8;background:#151b24;border:1px solid #7a6418;font-size:16px}
-a:hover{background:#1b2330}
-small{color:#8d99ab}
+/* Layout : une colonne mobile, barre d'onglets en bas, feuilles de saisie qui montent du bas. Ton « salle de muscu » : ardoise + orange signal. */
+:root{
+  --bg:#f1f2f4; --surface:#ffffff; --ink:#1b2230; --muted:#5f6878; --line:#dde0e6;
+  --accent:#d9480f; --accent-ink:#ffffff; --accent-soft:#fde8dd;
+  --good:#2b8a3e; --good-soft:#e3f4e6; --warn:#b26a00; --warn-soft:#fff1d6; --bad:#c92a2a; --bad-soft:#fde2e2;
+  --c-desj:#2f9e44; --c-ws:#7048e8; --c-cap:#d9480f;
+  --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#12161d; --surface:#1b212b; --ink:#e8ebf0; --muted:#98a1b0; --line:#2c3440;
+  --accent:#ff7a3d; --accent-ink:#1b0c03; --accent-soft:#3a2216;
+  --good:#5cc06d; --good-soft:#18301d; --warn:#f0ad3c; --warn-soft:#332611; --bad:#ff6b6b; --bad-soft:#3a1c1e;
+  --c-desj:#5cc06d; --c-ws:#a38bff; --c-cap:#ff7a3d; color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#12161d; --surface:#1b212b; --ink:#e8ebf0; --muted:#98a1b0; --line:#2c3440;
+  --accent:#ff7a3d; --accent-ink:#1b0c03; --accent-soft:#3a2216;
+  --good:#5cc06d; --good-soft:#18301d; --warn:#f0ad3c; --warn-soft:#332611; --bad:#ff6b6b; --bad-soft:#3a1c1e;
+  --c-desj:#5cc06d; --c-ws:#a38bff; --c-cap:#ff7a3d; color-scheme:dark;}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 var(--body)}
+body{padding-bottom:84px;padding-top:env(safe-area-inset-top)}
+h1,h2,h3{font-family:var(--display);font-weight:700;letter-spacing:.01em;margin:0;text-wrap:balance}
+h1{font-size:28px;line-height:1.05}
+h2{font-size:21px;text-transform:uppercase;letter-spacing:.04em}
+h3{font-size:17px}
+.num,td.n,.tile b{font-variant-numeric:tabular-nums}
+.wrap{max-width:720px;margin:0 auto;padding:16px;display:grid;gap:14px}
+header.top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px}
+.muted{color:var(--muted)} .small{font-size:13px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;display:grid;gap:10px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.between{justify-content:space-between}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
+.tile{border:1px solid var(--line);border-radius:10px;padding:10px;display:grid;gap:2px}
+.tile b{font-family:var(--display);font-size:24px;line-height:1.1}
+.tile .lab{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.pill{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;padding:2px 8px;border-radius:99px;white-space:nowrap}
+.ok{background:var(--good-soft);color:var(--good)} .open{background:var(--warn-soft);color:var(--warn)} .miss{background:var(--bad-soft);color:var(--bad)} .na{background:var(--bg);color:var(--muted)}
+.obj{display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.obj:first-of-type{border-top:0}
+.obj .ic{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;font-weight:700;font-family:var(--display);font-size:16px}
+.bar{height:6px;border-radius:6px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent)}
+.dots{display:flex;gap:6px;flex-wrap:wrap}
+.dot{width:34px;height:34px;border-radius:8px;display:grid;place-items:center;font:600 12px var(--body)}
+button,.btn{font:600 15px var(--body);border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:10px 14px;cursor:pointer;min-height:44px}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+button.ghost{background:transparent;border-color:transparent;color:var(--accent);padding:6px 8px;min-height:36px}
+button.danger{color:var(--bad);border-color:var(--bad)}
+button.seg{min-height:40px;padding:8px 12px}
+button.seg[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+input,select,textarea{font:16px var(--body);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:9px 10px;min-height:42px;width:100%}
+input.sm{width:78px;text-align:right} input.xs{width:62px;text-align:right}
+label.f{display:grid;gap:4px;font-size:13px;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stepper{display:flex;align-items:center;gap:6px}
+.stepper button{width:44px;padding:0;font-size:20px}
+.stepper b{min-width:34px;text-align:center;font-family:var(--display);font-size:24px}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);padding:6px 6px calc(6px + env(safe-area-inset-bottom));z-index:5}
+nav.tabs a{display:grid;place-items:center;gap:2px;text-decoration:none;color:var(--muted);font-size:12px;font-weight:600;padding:4px 0;border-radius:10px}
+nav.tabs a svg{width:22px;height:22px}
+nav.tabs a[aria-current="page"]{color:var(--accent)}
+nav.tabs button.plus{justify-self:center;width:52px;height:52px;border-radius:16px;background:var(--accent);color:var(--accent-ink);border:0;font-size:30px;line-height:1;margin-top:-18px;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.banner{border-radius:10px;padding:10px 12px;font-size:14px}
+.scrim{position:fixed;inset:0;background:rgba(10,14,20,.45);z-index:10;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--surface);width:100%;max-width:720px;max-height:92%;overflow:auto;border-radius:18px 18px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom));display:grid;gap:12px}
+.sheet header{display:flex;justify-content:space-between;align-items:center;gap:8px;position:sticky;top:-16px;background:var(--surface);padding:8px 0;z-index:1}
+.ex{border:1px solid var(--line);border-radius:12px;padding:10px;display:grid;gap:8px}
+.setrow{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.setrow .k{width:20px;color:var(--muted);font-variant-numeric:tabular-nums}
+.chk{width:44px;padding:0}
+.chk[aria-pressed="true"]{background:var(--good);border-color:var(--good);color:#fff}
+.hint{font-size:13px;color:var(--good);font-weight:600}
+.warmup{background:var(--accent-soft);border-radius:10px;padding:10px 12px;font-size:14px}
+.warmup ul{margin:4px 0 0;padding-left:18px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:600}
+td.n,th.n{text-align:right;white-space:nowrap}
+td:first-child{white-space:nowrap}
+.tablewrap{overflow-x:auto}
+.recline{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line);cursor:pointer}
+.recline.off{opacity:.55}
+.chart{position:relative;height:240px}
+details summary{cursor:pointer;font-weight:600}
+.histitem{display:grid;gap:4px;padding:10px 0;border-top:1px solid var(--line)}
+.kpi-neg{color:var(--bad)} .kpi-pos{color:var(--good)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media (max-width:420px){.grid3{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
-<h1>⚔ TRACKER.AW</h1>
-<a href="gym/">🏋️ GYM.AW <br><small>entraînement · bras de fer</small></a>
-<a href="civ/">⚔ CIV.SOBRE <br><small>l'empire du Plateau</small></a>
-<a href="planner/">🎛 PLANNER <br><small>horaire hebdo</small></a>
+<div class="wrap" id="view"></div>
+<nav class="tabs" aria-label="Sections">
+  <a href="#bloc" data-tab="bloc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M9 4v17M15 4v17"/></svg>Bloc</a>
+  <a href="#entrainement" data-tab="entrainement"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 7v10M18 7v10M3 10v4M21 10v4M6 12h12"/></svg>Muscu</a>
+  <button class="plus" id="plusBtn" aria-label="Ajouter une entrée">+</button>
+  <a href="#argent" data-tab="argent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="13" rx="2"/><path d="M2 10h20M6 15h4"/></svg>Argent</a>
+  <a href="#corps" data-tab="corps"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19l5-7 4 4 7-10"/><circle cx="20" cy="6" r="1.5"/></svg>Corps</a>
+</nav>
+<div id="sheetRoot"></div>
+
+<script>
+// ===== Moteur pur (dates, paye, projection, blocs) =====
+const pad = n => String(n).padStart(2, '0');
+const iso = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+const parseD = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const addDays = (s, n) => { const d = parseD(s); d.setDate(d.getDate() + n); return iso(d); };
+const diffDays = (a, b) => Math.round((parseD(b) - parseD(a)) / 864e5);
+const round2 = v => Math.round(v * 100) / 100;
+const dim = (y, m) => new Date(y, m + 1, 0).getDate();
+
+function budgetFor(cfg, s) {
+  const dow = parseD(s).getDay();
+  const b = cfg.budget;
+  return dow === 6 ? b.sat : dow === 3 ? b.wed : b.other;
+}
+function recurOn(r, s) {
+  if (!r.active) return false;
+  const d = parseD(s);
+  return d.getDate() === Math.min(r.day, dim(d.getFullYear(), d.getMonth()));
+}
+function isPayDay(cfg, s) {
+  const n = cfg.payEvery || 14, k = diffDays(cfg.payAnchor, s);
+  return ((k % n) + n) % n === 0;
+}
+function nextPayAfter(cfg, s) {
+  let d = s;
+  for (let i = 0; i < 40; i++) { d = addDays(d, 1); if (isPayDay(cfg, d)) return d; }
+  return null;
+}
+function nextDom(s, dom) {
+  let d = s;
+  for (let i = 0; i < 40; i++) {
+    d = addDays(d, 1);
+    const x = parseD(d);
+    if (x.getDate() === Math.min(dom, dim(x.getFullYear(), x.getMonth()))) return d;
+  }
+  return null;
+}
+function desjOut(cfg, rec, s) {
+  let t = 0;
+  rec.forEach(r => { if (r.account === 'desj' && recurOn(r, s)) t += r.amount; });
+  if (cfg.wsTransfer && cfg.wsTransfer.amount && parseD(s).getDate() === cfg.wsTransfer.day) t += cfg.wsTransfer.amount;
+  if (cfg.spendAccount !== 'capone') t += budgetFor(cfg, s);
+  return t;
+}
+
+// start: {date, desj, wsc, capone, minDue, dueDate}
+// opt: {days, budget, strategy, fixed}
+function project(cfgIn, rec, start, opt) {
+  const cfg = Object.assign({}, cfgIn, opt.budget ? { budget: opt.budget } : {});
+  const cap = Object.assign({}, cfgIn.capone);
+  if (opt.strategy) cap.strategy = opt.strategy;
+  if (opt.fixed != null) cap.fixed = opt.fixed;
+  let D = start.desj, W = start.wsc, C = start.capone;
+  let minDue = start.minDue || 0, dueDate = start.dueDate || null, paid = start.paidSinceStmt || 0;
+  let interest = 0, paidTotal = 0, zeroDate = C <= 0 ? start.date : null;
+  let low = { v: D, date: start.date }, firstNeg = D < 0 ? start.date : null, overLimit = null;
+  const warns = [];
+  const rows = [{ date: start.date, D, W, C, payIn: 0, payAmt: 0, ev: ['Soldes de départ'] }];
+  let s = start.date;
+  for (let i = 0; i < opt.days; i++) {
+    s = addDays(s, 1);
+    const ev = []; let payIn = 0, payAmt = 0;
+    const pay = isPayDay(cfg, s);
+    if (pay) { D += cfg.payAmount; payIn = cfg.payAmount; ev.push('Paye'); }
+    rec.forEach(r => {
+      if (!recurOn(r, s)) return;
+      if (r.account === 'desj') D -= r.amount;
+      else if (r.account === 'wsc') W -= r.amount;
+      else if (r.account === 'capone') C += r.amount;
+      ev.push(r.name);
+    });
+    if (cfg.wsTransfer && cfg.wsTransfer.amount && parseD(s).getDate() === cfg.wsTransfer.day) {
+      D -= cfg.wsTransfer.amount; W += cfg.wsTransfer.amount; ev.push('Virement → WS');
+    }
+    const sp = (opt.actual && opt.actual[s] != null) ? opt.actual[s] : budgetFor(cfg, s);
+    if (cfg.spendAccount === 'capone') C += sp; else D -= sp;
+    if (parseD(s).getDate() === cap.stmtDay) {
+      if (C > 0.005) { const it = round2(C * cap.apr / 12); C += it; interest += it; ev.push('Intérêts carte'); }
+      minDue = C > 0.005 ? Math.min(round2(C), Math.max(10, round2(C * cap.minPct))) : 0;
+      dueDate = nextDom(s, cap.dueDay); paid = 0;
+    }
+    if (pay && C > 0.005) {
+      const np = nextPayAfter(cfg, s);
+      let needs = 0;
+      for (let x = addDays(s, 1); x < np; x = addDays(x, 1)) needs += desjOut(cfg, rec, x);
+      const avail = Math.max(0, D - needs - (cfg.buffer || 0));
+      let amt = cap.strategy === 'fixed' ? Math.min(cap.fixed, avail) : avail;
+      if (dueDate && dueDate >= s && dueDate < np && paid < minDue) amt = Math.max(amt, minDue - paid);
+      amt = Math.max(0, Math.min(round2(amt), round2(C)));
+      if (amt > 0) { D -= amt; C -= amt; paid += amt; paidTotal += amt; payAmt = amt; ev.push('Paiement carte'); }
+    }
+    if (dueDate === s && paid + 0.005 < minDue)
+      warns.push({ date: s, level: 'bad', msg: 'Paiement minimum Capital One non couvert (' + round2(minDue - paid) + ' $ manquants)' });
+    D = round2(D); W = round2(W); C = round2(C);
+    if (C <= 0.005) { C = 0; if (!zeroDate) zeroDate = s; }
+    if (D < low.v) low = { v: D, date: s };
+    if (D < 0 && !firstNeg) firstNeg = s;
+    if (C > cap.limit + 0.005 && !overLimit) overLimit = s;
+    rows.push({ date: s, D, W, C, payIn, payAmt, ev });
+  }
+  if (firstNeg) warns.unshift({ date: firstNeg, level: 'bad', kind: 'neg', msg: 'Desjardins sous zéro' });
+  if (overLimit) warns.push({ date: overLimit, level: 'bad', msg: 'Capital One dépasse la limite de crédit' });
+  return { rows, interest: round2(interest), paidTotal: round2(paidTotal), zeroDate, low, warns };
+}
+
+function blockOf(anchor, s) {
+  const k = Math.floor(diffDays(anchor, s) / 3);
+  const start = addDays(anchor, 3 * k);
+  return { k, start, end: addDays(start, 2), days: [start, addDays(start, 1), addDays(start, 2)] };
+}
+
+
+</script>
+<script>
+// ===== État =====
+const S = { cfg:null, program:null, recurring:[], balances:[], workouts:[], body:[], days:{}, exlib:[], loaded:{} };
+let db = null, status = 'loading';
+const ACC = { desj:'Desjardins', wsc:'Wealthsimple chèque', capone:'Capital One' };
+const DOW = ['dim.','lun.','mar.','mer.','jeu.','ven.','sam.'];
+const TODAY = () => iso(new Date());
+const money = v => (v==null||isNaN(v)) ? '—' : new Intl.NumberFormat('fr-CA',{style:'currency',currency:'CAD'}).format(v);
+const money0 = v => (v==null||isNaN(v)) ? '—' : new Intl.NumberFormat('fr-CA',{style:'currency',currency:'CAD',maximumFractionDigits:0}).format(v);
+const fnum = (v,d=1) => (v==null||isNaN(v)) ? '—' : new Intl.NumberFormat('fr-CA',{maximumFractionDigits:d}).format(v);
+const num = s => { if (s==null) return null; s = String(s).replace(/\s/g,'').replace(',','.'); if (s==='') return null; const n = Number(s); return isFinite(n) ? n : null; };
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const dshort = s => parseD(s).toLocaleDateString('fr-CA',{weekday:'short',day:'numeric',month:'short'});
+const dday = s => parseD(s).toLocaleDateString('fr-CA',{day:'numeric',month:'short'});
+const dlong = s => parseD(s).toLocaleDateString('fr-CA',{day:'numeric',month:'long',year:'numeric'});
+const uid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+const lsGet = k => { try { return JSON.parse(localStorage.getItem(k)); } catch(e){ return null; } };
+const lsSet = (k,v) => { try { v==null ? localStorage.removeItem(k) : localStorage.setItem(k, JSON.stringify(v)); } catch(e){} };
+
+// ===== Connexion au Google Sheets =====
+const LS = { url:'cap3-url', token:'cap3-token', cache:'cap3-cache', outbox:'cap3-outbox' };
+const conn = { url: lsGet(LS.url), token: lsGet(LS.token) };
+let raw = lsGet(LS.cache), outbox = lsGet(LS.outbox) || [];
+let sync = { state:'idle', err:'', at:null }, flushing = false;
+const EXLIB = ["Pushups", "Rameur", "Escalier (stepper)", "Natation", "Vélo", "Marche / course", "Pulldown bicep léger", "Birdgd band", "Squat light", "Romanian", "Seated Cable Row", "Arm cupping câble", "Back extension KB", "Farmer’s Carry", "Dumbbell Row", "Hanging knee raise", "Neck exercise", "Front pull apart", "External shoulder", "Rise and back pressure", "Pronate + Press and supinate", "Towel hang / pull", "Pronation strap", "Rising strap", "Side pressure", "Lateral raise band", "Pushups windmill", "Band Pull-apart", "EZ Bar Curl", "Hammer Curl", "Finger Curls", "Short curl bicep", "Mountain Climber", "Squat rotation", "Bench Press", "DB Shoulder Press", "Squat complément léger", "Dips", "Plank", "Towel pull", "Assisted pullup", "Facepull"];
+const COMMUTE = { bixi:'Bixi', metro:'Métro', none:'Aucun' };
+const ACCLABEL = { desj:'Desjardins', wsc:'WS chèque', capone:'Capital One' };
+const nv = x => (x===''||x==null) ? null : Number(x);
+const sv = x => (x===''||x==null) ? null : String(x);
+function emptyRaw(){ return { journal:[], seances:[], series:[], cardio:[], pesees:[], soldes:[], recurrents:[], reglages:[], programme:[] }; }
+
+// Même logique que le script : on applique l'opération aux lignes locales, puis on relit.
+function applyRaw(R, op){
+  const up = (rows, key, row) => { const i = rows.findIndex(r => String(r[0])===String(key)); if (i>=0) rows[i] = row; else rows.push(row); };
+  const del = (rows, key) => rows.filter(r => String(r[0])!==String(key));
+  const e = x => x==null ? '' : x;
+  switch(op.t){
+    case 'day': up(R.journal, op.date, [op.date, e(op.spent), e(op.smoke), e(op.commute), e(op.note)]); break;
+    case 'session': if (R.seances.some(r => r[0]===op.id)) break;
+      R.seances.push([op.id, op.date, op.kind, e(op.title), e(op.phase), e(op.note)]);
+      (op.sets||[]).forEach(x => R.series.push([op.id, op.date, x[0], x[1], e(x[2]), e(x[3]), e(x[4])]));
+      (op.cardio||[]).forEach(c => R.cardio.push([op.id, op.date, c.type, e(c.min), 'Pendant la séance '+op.kind])); break;
+    case 'cardio': if (R.cardio.some(r => r[0]===op.id)) break; R.cardio.push([op.id, op.date, op.type, e(op.min), e(op.note)]); break;
+    case 'delWorkout': R.seances = del(R.seances, op.id); R.series = del(R.series, op.id); R.cardio = del(R.cardio, op.id); break;
+    case 'body': up(R.pesees, op.date, [op.date, e(op.weight), e(op.bf), e(op.muscle), e(op.visceral)]); break;
+    case 'delBody': R.pesees = del(R.pesees, op.date); break;
+    case 'balances': R.soldes.push([op.date, e(op.desj), e(op.wsc), e(op.wsi), e(op.capone), e(op.stmtBal), e(op.minDue), e(op.dueDate), 'App '+op.id]); break;
+    case 'rec': up(R.recurrents, op.id, [op.id, op.name, e(op.amount), e(op.day), op.account, op.active, e(op.note)]); break;
+    case 'delRec': R.recurrents = del(R.recurrents, op.id); break;
+    case 'settings': Object.keys(op.values).forEach(k => { const r = R.reglages.find(x => x[0]===k); if (r) r[2] = e(op.values[k]); }); break;
+  }
+}
+function rebuild(){
+  const R = JSON.parse(JSON.stringify(raw || emptyRaw()));
+  outbox.forEach(op => applyRaw(R, op));
+  parseRaw(R);
+}
+function parseRaw(R){
+  const reg = {}; R.reglages.forEach(r => reg[r[0]] = r[2]);
+  const g = k => (reg[k]===''||reg[k]==null) ? null : reg[k];
+  S.cfg = R.reglages.length ? { payAmount:+g('Paye')||0, payAnchor:g('PayeRef')||TODAY(), payEvery:14,
+    budget:{ sat:+g('BudgetSam')||0, wed:+g('BudgetMer')||0, other:+g('BudgetAutre')||0 }, spendAccount:'desj',
+    wsTransfer:{ amount:+g('VirMontant')||0, day:+g('VirJour')||1 },
+    capone:{ apr:+g('Taux')||0, limit:+g('Limite')||0, stmtDay:+g('JourReleve')||15, dueDay:+g('JourEcheance')||11, minPct:0.05, strategy: g('Strategie')==='Montant fixe' ? 'fixed' : 'max', fixed:+g('MontantFixe')||0 },
+    buffer:+g('Coussin')||0, blockAnchor:g('DebutBlocs')||TODAY(), trainingStart:g('DebutMuscu')||TODAY(),
+    smoke:{ startTarget: nv(g('FumeeDepart')) }, goalWeight: nv(g('PoidsVise')) } : null;
+  // Programme
+  const P = { rotation:[], sessions:{}, phases:[] }; let inPh = false;
+  R.programme.forEach(r => {
+    if (r[0]==='Phase'){ inPh = true; return; }
+    if (inPh){ if (r[1]!=='' && r[1]!=null) P.phases.push({ name:String(r[1]), from:+r[2]||0, sets:+r[3]||2, effort:String(r[4]||''), note:String(r[5]||'') }); return; }
+    const k = String(r[0]||'').trim(); if (!k) return;
+    if (!P.sessions[k]){ P.sessions[k] = { name:String(r[1]||k), warmup:[], exercises:[] }; P.rotation.push(k); }
+    if (r[4]==='echauffement' || +r[2]===0) P.sessions[k].warmup.push(String(r[3]).replace(/^Échauffement : /,''));
+    else P.sessions[k].exercises.push({ name:String(r[3]), kind:String(r[4]||'reps'), reps:String(r[5]||''), load:nv(r[6]), minPhase:+r[7]||1, note:String(r[8]||''), unit:'lb' });
+  });
+  P.phases.sort((a,b) => a.from-b.from);
+  S.program = P.rotation.length && P.phases.length ? P : null;
+  // Séances, séries, cardio
+  const map = {}, list = [];
+  R.seances.forEach((r,i) => { const w = { _id:String(r[0]), date:String(r[1]), kind:String(r[2]), title:String(r[3]||''), phase:nv(r[4]), note:String(r[5]||''), exercises:[], ts:'s'+String(i).padStart(5,'0') }; map[w._id] = w; list.push(w); });
+  R.series.forEach(r => { const w = map[String(r[0])]; if (!w) return; const name = String(r[2]); let x = w.exercises.find(e => e.name===name && e.kind!=='cardio');
+    const t = nv(r[6]); if (!x){ x = { name, kind: t!=null ? 'time' : 'reps', sets:[] }; w.exercises.push(x); }
+    x.sets.push(t!=null ? { t } : { w:nv(r[4]), r:nv(r[5]) }); });
+  R.cardio.forEach((r,i) => { const id = String(r[0]); if (map[id]) map[id].exercises.push({ name:'Cardio', kind:'cardio', type:String(r[2]), min:nv(r[3]) });
+    else list.push({ _id:id, date:String(r[1]), kind:'cardio', title:String(r[2]), cardio:{ type:String(r[2]), min:nv(r[3]) }, exercises:[], note:String(r[4]||''), ts:'c'+String(i).padStart(5,'0') }); });
+  S.workouts = list.sort((a,b) => (a.date+a.ts) < (b.date+b.ts) ? -1 : 1);
+  S.body = R.pesees.map(r => ({ _id:String(r[0]), date:String(r[0]), weight:nv(r[1]), bf:nv(r[2]), muscle:nv(r[3]), visceral:nv(r[4]) })).filter(b => b.weight!=null).sort((a,b) => a.date<b.date?-1:1);
+  S.balances = R.soldes.map((r,i) => ({ _id:'b'+i, date:String(r[0]), ts:String(r[0])+String(i).padStart(5,'0'), desj:nv(r[1]), wsc:nv(r[2]), wsi:nv(r[3]), capone:nv(r[4]), stmtBal:nv(r[5]), minDue:nv(r[6]), dueDate:sv(r[7]), src:sv(r[8]) })).sort((a,b) => a.ts<b.ts?-1:1);
+  const accKey = Object.fromEntries(Object.entries(ACCLABEL).map(([k,v]) => [v,k]));
+  S.recurring = R.recurrents.map(r => ({ _id:String(r[0]), name:String(r[1]), amount:+r[2]||0, day:+r[3]||1, account:accKey[r[4]]||'desj', active:String(r[5]).toLowerCase()!=='non', note:String(r[6]||'') }));
+  const comKey = Object.fromEntries(Object.entries(COMMUTE).map(([k,v]) => [v,k]));
+  S.days = {}; R.journal.forEach(r => { const d = String(r[0]); S.days[d] = { _id:d, date:d, spent:nv(r[1]), smoke:nv(r[2]), commute: comKey[r[3]] || null, note:String(r[4]||'') }; });
+  S.exlib = Array.from(new Set([...EXLIB, ...R.series.map(r => String(r[2]))]));
+}
+function enqueue(op){ op.qid = uid('q'); outbox.push(op); lsSet(LS.outbox, outbox); rebuild(); scheduleRender(); flush(); }
+async function flush(){
+  if (flushing || !conn.url || !conn.token) return;
+  flushing = true; const batch = outbox.slice(); sync.state = 'sync'; renderSync();
+  try {
+    const res = await fetch(conn.url, { method:'POST', body: JSON.stringify({ token:conn.token, action: batch.length ? 'ops' : 'load', ops: batch }) });
+    const j = await res.json();
+    if (!j.ok) throw new Error(j.error || 'refus du script');
+    const sent = new Set(batch.map(o => o.qid)); outbox = outbox.filter(o => !sent.has(o.qid)); lsSet(LS.outbox, outbox);
+    raw = j.data; lsSet(LS.cache, raw); rebuild();
+    sync = { state:'ok', err:'', at:new Date() };
+  } catch(e){
+    sync.state = 'err'; sync.err = (navigator.onLine === false || (e && e.name==='TypeError')) ? 'pas de réseau, réessai automatique' : (e && e.message || 'erreur réseau');
+  }
+  flushing = false; sim = null; scheduleRender();
+  if (sync.state==='ok' && outbox.length) flush();
+}
+function renderSync(){ const el = document.getElementById('syncLine'); if (el) el.outerHTML = syncLine(); }
+function syncLine(){
+  const n = outbox.length;
+  const t = sync.state==='sync' ? 'Synchronisation…' : sync.state==='err' ? 'Pas envoyé ('+esc(sync.err)+')'+(n?' · '+n+' entrée'+(n>1?'s':'')+' en attente':'') : sync.at ? 'Synchronisé à '+sync.at.toLocaleTimeString('fr-CA',{hour:'2-digit',minute:'2-digit'}) : 'Données de l’appareil';
+  return `<div id="syncLine" class="row between small"><span class="pill ${sync.state==='err'?'miss':sync.state==='ok'?'ok':'na'}">${t}</span>${sync.state==='err'?'<button class="ghost" data-act="retry">Réessayer</button>':''}</div>`;
+}
+
+// ===== Calculs dérivés =====
+const cfg = () => S.cfg || { payAmount:0, payAnchor:TODAY(), payEvery:14, budget:{sat:0,wed:0,other:0}, spendAccount:'desj', wsTransfer:{amount:0,day:1}, capone:{apr:0.19,limit:0,stmtDay:15,dueDay:11,minPct:0.05,strategy:'max',fixed:0}, buffer:100, blockAnchor:TODAY(), trainingStart:TODAY(), smoke:{startTarget:null}, goalWeight:null };
+const activeRec = () => S.recurring.filter(r => r.active);
+function latestBal(){
+  const out = { date:null, ts:null };
+  ['desj','wsc','wsi','capone','stmtBal','minDue','dueDate'].forEach(k => { out[k] = null; });
+  S.balances.forEach(b => {
+    ['desj','wsc','wsi','capone'].forEach(k => { if (b[k]!=null){ out[k] = b[k]; out[k+'Date'] = b.date; } });
+    if (b.minDue!=null){ out.minDue=b.minDue; out.dueDate=b.dueDate; out.stmtBal=b.stmtBal; }
+    out.date = b.date; out.ts = b.ts;
+  });
+  return out;
+}
+function actualSpend(){ const m = {}; Object.values(S.days).forEach(d => { if (d.spent!=null) m[d._id] = d.spent; }); return m; }
+function runProjection(opt){
+  const b = latestBal(); if (!b.date || b.desj==null || b.capone==null) return null;
+  return project(cfg(), activeRec(), { date:b.date, desj:b.desj, wsc:b.wsc||0, capone:b.capone, minDue:b.minDue, dueDate:(b.dueDate && b.dueDate>=b.date)?b.dueDate:null }, Object.assign({ actual:actualSpend() }, opt));
+}
+const isStrength = w => ['A','B','C','libre'].includes(w.kind);
+const isCardio = w => w.kind==='cardio' || (w.exercises||[]).some(e => e.kind==='cardio' && (e.min||0) > 0);
+function sessionsSinceStart(){ const st = cfg().trainingStart; return S.workouts.filter(w => isStrength(w) && w.date >= st).length; }
+function phaseNow(){ const P = S.program; if (!P) return null; const n = sessionsSinceStart(); let ph = P.phases[0], idx = 0; P.phases.forEach((p,i) => { if (n >= p.from){ ph = p; idx = i; } }); return Object.assign({ idx:idx+1, count:n, next:P.phases[idx+1] }, ph); }
+function nextSessionKind(){ const P = S.program; if (!P) return 'A'; const rot = P.rotation; const last = S.workouts.filter(w => rot.includes(w.kind)).pop(); return last ? rot[(rot.indexOf(last.kind)+1) % rot.length] : rot[0]; }
+function lastExercise(name){ for (let i=S.workouts.length-1;i>=0;i--){ const e = (S.workouts[i].exercises||[]).find(x => x.name===name); if (e) return { ex:e, date:S.workouts[i].date }; } return null; }
+const rangeNums = s => (String(s||'').match(/\d+/g)||[]).map(Number);
+function smokeTarget(block){
+  const prev = blockOf(cfg().blockAnchor, addDays(block.start,-1));
+  const vals = prev.days.map(d => S.days[d] && S.days[d].smoke).filter(v => v!=null);
+  if (vals.length >= 2){ const avg = vals.reduce((a,b)=>a+b,0)/vals.length; return Math.max(0, Math.ceil(avg) - 1); }
+  const st = cfg().smoke && cfg().smoke.startTarget; return st==null ? null : st;
+}
+function smokeFreeStreak(){ let n = 0, d = TODAY(); if (!(S.days[d] && S.days[d].smoke!=null)) d = addDays(d,-1); while (S.days[d] && S.days[d].smoke===0){ n++; d = addDays(d,-1); } return n; }
+function evalBlock(block){
+  const t = TODAY(), ended = t > block.end, inB = d => block.days.includes(d);
+  const st = (ok, miss) => ok ? 'ok' : (miss ? 'miss' : 'open');
+  const nStr = S.workouts.filter(w => inB(w.date) && isStrength(w)).length;
+  const nCar = S.workouts.filter(w => inB(w.date) && isCardio(w)).length;
+  const env = block.days.reduce((a,d) => a + budgetFor(cfg(), d), 0);
+  const spentVals = block.days.map(d => S.days[d] && S.days[d].spent);
+  const spent = spentVals.reduce((a,v) => a + (v||0), 0), nSpent = spentVals.filter(v => v!=null).length;
+  const tgt = smokeTarget(block);
+  const smokeVals = block.days.map(d => S.days[d] && S.days[d].smoke);
+  const nSmoke = smokeVals.filter(v => v!=null).length;
+  const smokeOver = tgt!=null && smokeVals.some(v => v!=null && v > tgt);
+  const weighed = S.body.some(b => inB(b.date)), balUp = S.balances.some(b => inB(b.date));
+  const bixi = block.days.filter(d => S.days[d] && S.days[d].commute==='bixi').length;
+  const o = [
+    { key:'force', ic:'F', label:'2 séances de force', detail: nStr+' / 2 faites', state: st(nStr>=2, ended), pct: Math.min(1,nStr/2) },
+    { key:'cardio', ic:'C', label:'1 cardio (nage, corde ou mountain climber)', detail: nCar+' / 1' + (bixi ? ' · Bixi '+bixi+' j en bonus' : ''), state: st(nCar>=1, ended), pct: Math.min(1,nCar) },
+    { key:'budget', ic:'$', label:'Dépenses ≤ '+money0(env)+' pour les 3 jours', detail: money(spent)+' notés sur '+nSpent+' jour'+(nSpent>1?'s':'')+' · reste '+money(env-spent), state: spent > env ? 'miss' : st(ended && nSpent===3, ended && nSpent<3), pct: Math.min(1, env? spent/env : 0) },
+    { key:'smoke', ic:'~', label: tgt==null ? 'Fumée : noter chaque jour combien' : (tgt===0 ? 'Fumée : 0 par jour' : 'Fumée : '+tgt+' max par jour'), detail: nSmoke ? smokeVals.map((v,i)=> DOW[parseD(block.days[i]).getDay()]+' '+(v==null?'·':v)).join('  ') : 'Rien de noté encore', state: tgt==null ? st(nSmoke===3, ended && nSmoke<3) : (smokeOver ? 'miss' : st(ended && nSmoke===3, ended && nSmoke<3)), pct: nSmoke/3 },
+    { key:'checkin', ic:'✓', label:'Pesée + soldes à jour', detail: (weighed?'pesée ✓':'pesée à faire')+' · '+(balUp?'soldes ✓':'soldes à mettre à jour'), state: st(weighed && balUp, ended), pct: (weighed+balUp)/2 },
+  ];
+  return { o, score: o.filter(x => x.state==='ok').length, env, spent, tgt, ended };
+}
+const stateLabel = { ok:'Atteint', open:'En cours', miss:'Manqué', na:'—' };
+
+// ===== Rendu =====
+let renderPending = false;
+function scheduleRender(){ if (renderPending) return; renderPending = true; requestAnimationFrame(() => { renderPending = false; render(); }); }
+function currentTab(){ const h = location.hash.replace('#',''); return ['bloc','entrainement','argent','corps'].includes(h) ? h : 'bloc'; }
+let charts = [];
+function render(){
+  const view = document.getElementById('view');
+  const ae = document.activeElement;
+  if (ae && view.contains(ae) && /INPUT|TEXTAREA|SELECT/.test(ae.tagName)){ ae.addEventListener('blur', scheduleRender, { once:true }); return; }
+  charts.forEach(c => c.destroy()); charts = [];
+  const tab = currentTab();
+  document.querySelectorAll('nav.tabs a').forEach(a => a.setAttribute('aria-current', a.dataset.tab===tab ? 'page' : 'false'));
+  let html = statusBanner();
+  if (!conn.url || !conn.token || (!S.cfg && sync.state==='err' && !raw)) html = setupView();
+  else if (!S.cfg) html += '<div class="card muted">'+(sync.state==='sync'?'Chargement de ton Google Sheets…':'Aucune donnée reçue. Vérifie que le fichier a bien les onglets Réglages, Programme, etc.')+'</div>';
+  else html += ({ bloc:viewBloc, entrainement:viewTrain, argent:viewMoney, corps:viewBody }[tab])();
+  view.innerHTML = html;
+  if (S.cfg) ({ bloc:afterBloc, entrainement:afterTrain, argent:afterMoney, corps:afterBody }[tab] || (()=>{}))();
+}
+function statusBanner(){
+  if (!conn.url || !conn.token) return '';
+  return syncLine();
+}
+function setupView(){
+  return `<header class="top"><div><div class="muted small">Première ouverture sur cet appareil</div><h1>Connecter ton Google Sheets</h1></div></header>
+  <section class="card"><p>Colle l’URL du déploiement de ton script (elle finit par <b>/exec</b>) et le code secret que tu as écrit dans <b>CODE_SECRET</b>. Ils restent sur cet appareil seulement.</p>
+  <label class="f" for="cuUrl">URL du script<input id="cuUrl" inputmode="url" placeholder="https://script.google.com/macros/s/…/exec" value="${esc(conn.url||'')}"></label>
+  <label class="f" for="cuTok">Code secret<input id="cuTok" type="password" value="${esc(conn.token||'')}"></label>
+  <button class="primary" data-act="connect">Connecter</button>
+  ${sync.state==='err'?`<div class="banner miss small">Échec : ${esc(sync.err)}. Vérifie l’URL, le code, et que le déploiement est « Tout le monde ».</div>`:''}</section>`;
+}
+
+// ---- Bloc ----
+let dayCursor = null;
+function viewBloc(){
+  const t = TODAY(), c = cfg(), bl = blockOf(c.blockAnchor, t), ev = evalBlock(bl);
+  const left = diffDays(t, bl.end);
+  const next = nextSessionKind(), P = S.program, ph = phaseNow();
+  const sess = P && P.sessions[next];
+  let h = `<header class="top"><div><div class="muted small">Bloc ${bl.k+1} · ${dshort(bl.start)} → ${dshort(bl.end)}</div><h1>${left===0?'Dernier jour du bloc':left+1+' jours restants'}</h1></div><span class="pill ${ev.score>=4?'ok':ev.score>=2?'open':'na'}">${ev.score} / 5</span></header>`;
+  h += `<section class="card" aria-label="Objectifs du bloc">${ev.o.map(o => `
+    <div class="obj"><div class="ic ${o.state}">${o.ic}</div>
+      <div><div style="font-weight:600">${esc(o.label)}</div><div class="muted small">${esc(o.detail)}</div><div class="bar" style="margin-top:6px"><i style="width:${Math.round(o.pct*100)}%"></i></div></div>
+      <span class="pill ${o.state}">${stateLabel[o.state]}</span></div>`).join('')}</section>`;
+  if (sess) h += `<section class="card"><div class="row between"><div><div class="muted small">Prochaine séance · phase ${ph?ph.idx:1} ${ph?esc(ph.name):''}</div><h3>${next} — ${esc(sess.name)}</h3></div><button class="primary" data-act="startSession" data-kind="${next}">Commencer</button></div>
+    <div class="muted small">${ph?ph.sets+' séries · effort '+esc(ph.effort):''} · ${sess.exercises.filter(e => (e.minPhase||1) <= (ph?ph.idx:1)).map(e=>esc(e.name)).join(' · ')}</div></section>`;
+  h += todayCard();
+  const pj = runProjection({ days: 60 });
+  if (pj){
+    const np = nextPayAfter(c, addDays(t,-1)) ; const row = pj.rows.find(r => r.date===np);
+    const b = latestBal(); const w0 = pj.warns[0];
+    h += `<section class="card"><div class="row between"><h2>Argent en bref</h2><a class="btn ghost" href="#argent">Détails</a></div>
+      <div class="tiles"><div class="tile"><span class="lab">Desjardins</span><b class="${b.desj<0?'kpi-neg':''}">${money(b.desj)}</b></div><div class="tile"><span class="lab">Capital One</span><b>${money(b.capone)}</b></div><div class="tile"><span class="lab">Prochaine paye</span><b>${np?dday(np):'—'}</b></div></div>
+      ${(() => { const n2 = pj.rows.find(r => r.payAmt > 0); return n2 ? `<div class="small">Prochain paiement de carte prévu : <b>${money(n2.payAmt)}</b> le ${dday(n2.date)}.</div>` : ''; })()}
+      ${false ? `<div class="small">À la paye du ${dday(np)} : payer <b>${money(row.payAmt)}</b> sur la carte.</div>` : ''}
+      ${w0 ? warnHtml(w0, pj) : ''}</section>`;
+  }
+  const hist = []; for (let k = Math.max(0, bl.k-9); k < bl.k; k++){ const b = blockOf(c.blockAnchor, addDays(c.blockAnchor, 3*k)); hist.push({ k, ev: evalBlock(b) }); }
+  if (hist.length) h += `<section class="card"><h2>Blocs précédents</h2><div class="dots">${hist.map(x => `<div class="dot ${x.ev.score>=4?'ok':x.ev.score>=2?'open':'miss'}" title="Bloc ${x.k+1}">${x.ev.score}/5</div>`).join('')}</div></section>`;
+  return h;
+}
+function todayCard(){
+  const t = TODAY(); const d = dayCursor || t; const rec = S.days[d] || {};
+  const bud = budgetFor(cfg(), d); const smk = rec.smoke;
+  return `<section class="card" aria-label="Journée"><div class="row between"><button class="ghost" data-act="dayPrev" aria-label="Jour précédent">‹</button><h2>${d===t?'Aujourd’hui':esc(dshort(d))}</h2><button class="ghost" data-act="dayNext" aria-label="Jour suivant" ${d>=t?'disabled':''}>›</button></div>
+    <div class="grid2">
+      <label class="f" for="dSpent">Dépensé (${money0(bud)} prévu)<input id="dSpent" inputmode="decimal" placeholder="0,00" value="${rec.spent!=null?esc(String(rec.spent).replace('.',',')):''}"></label>
+      <div class="f" style="display:grid;gap:4px"><span class="small muted">Fumée (nombre)</span><div class="stepper"><button data-act="smoke" data-d="-1" aria-label="Moins">−</button><b>${smk==null?'·':smk}</b><button data-act="smoke" data-d="1" aria-label="Plus">+</button></div></div>
+    </div>
+    <div class="row"><span class="small muted">Trajet :</span>${[['bixi','Bixi'],['metro','Métro'],['none','Aucun']].map(([k,l]) => `<button class="seg" data-act="commute" data-v="${k}" aria-pressed="${rec.commute===k}">${l}</button>`).join('')}</div>
+  </section>`;
+}
+function afterBloc(){
+  const inp = document.getElementById('dSpent');
+  if (inp) inp.addEventListener('change', () => saveDay(dayCursor||TODAY(), { spent: num(inp.value) }));
+}
+function saveDay(d, patch){ const cur = Object.assign({ spent:null, smoke:null, commute:null, note:'' }, S.days[d] || {}, patch);
+  enqueue({ t:'day', date:d, spent:cur.spent, smoke:cur.smoke, commute: cur.commute ? COMMUTE[cur.commute] : null, note:cur.note||'' }); }
+
+// ---- Entraînement ----
+function viewTrain(){
+  const P = S.program, ph = phaseNow(); if (!P) return '<div class="card muted">Programme non chargé.</div>';
+  const next = nextSessionKind();
+  let h = `<header class="top"><div><div class="muted small">Phase ${ph.idx} sur ${P.phases.length} · ${ph.count} séance${ph.count>1?'s':''} depuis le ${dday(cfg().trainingStart)}</div><h1>${esc(ph.name)}</h1></div></header>
+  <section class="card"><div>${ph.sets} séries · effort ${esc(ph.effort)}. ${esc(ph.note)}</div>${ph.next?`<div class="muted small">Phase suivante (${esc(ph.next.name)}) après ${ph.next.from} séances. Les jours manqués ne font pas avancer la phase.</div>`:''}
+  <div class="row">${P.rotation.map(k => `<button class="${k===next?'primary':''}" data-act="startSession" data-kind="${k}">${k} — ${esc(P.sessions[k].name)}</button>`).join('')}<button data-act="startSession" data-kind="libre">Séance libre</button><button data-act="cardio">Cardio</button></div></section>`;
+  h += `<section class="card"><h2>Programme</h2>${P.rotation.map(k => { const s = P.sessions[k]; return `<details><summary>${k} — ${esc(s.name)}</summary><div class="warmup"><b>Échauffement</b><ul>${s.warmup.map(w=>`<li>${esc(w)}</li>`).join('')}</ul></div><table><tbody>${s.exercises.map(e => `<tr><td>${esc(e.name)}${(e.minPhase||1)>1?` <span class="pill na">dès phase ${e.minPhase}</span>`:''}<div class="muted small">${esc(e.note||'')}</div></td><td class="n">${esc(e.reps)}</td><td class="n">${e.load?e.load+' lb':''}</td></tr>`).join('')}</tbody></table></details>`; }).join('')}</section>`;
+  const recent = S.workouts.slice(-25).reverse();
+  h += `<section class="card"><h2>Historique</h2>${recent.length ? recent.map(w => `<div class="histitem"><div class="row between"><b>${esc(dshort(w.date))} · ${esc(w.kind==='cardio'?'Cardio':w.kind==='libre'?'Libre':w.kind+' — '+(w.title||''))}</b><button class="ghost" data-act="delWorkout" data-id="${w._id}">Supprimer</button></div><div class="muted small">${esc(summarizeWorkout(w))}</div></div>`).join('') : '<p class="muted">Aucune séance encore.</p>'}</section>`;
+  const rec = {}; S.workouts.forEach(w => (w.exercises||[]).forEach(e => { if (e.kind!=='reps') return; (e.sets||[]).forEach(s => { if (s.w==null) return; const r = rec[e.name] || (rec[e.name] = { best:0, bestR:0, last:null }); if (s.w > r.best || (s.w===r.best && s.r > r.bestR)){ r.best = s.w; r.bestR = s.r; } r.last = { w:s.w, r:s.r, date:w.date }; }); }));
+  const names = Object.keys(rec).sort((a,b) => rec[b].last.date.localeCompare(rec[a].last.date));
+  if (names.length) h += `<section class="card"><h2>Charges</h2><div class="tablewrap"><table><thead><tr><th>Exercice</th><th class="n">Dernière</th><th class="n">Meilleure</th></tr></thead><tbody>${names.map(n => `<tr><td>${esc(n)}</td><td class="n">${rec[n].last.w} × ${rec[n].last.r}<div class="muted small">${dday(rec[n].last.date)}</div></td><td class="n">${rec[n].best} × ${rec[n].bestR}</td></tr>`).join('')}</tbody></table></div></section>`;
+  return h;
+}
+function summarizeWorkout(w){
+  if (w.kind==='cardio' && w.cardio) return w.cardio.type+' · '+w.cardio.min+' min'+(w.note?' · '+w.note:'');
+  return (w.exercises||[]).map(e => {
+    if (e.kind==='cardio') return (e.type||'Cardio')+' '+(e.min||0)+' min';
+    if (e.kind==='time') return e.name+' '+(e.sets||[]).map(s=>s.t+' s').join('/');
+    if (e.kind==='skill') return e.name+' '+(e.sets||[]).length+' rondes';
+    const ws = (e.sets||[]).map(s => s.w==null ? '' : s.w).filter(x=>x!=='');
+    const rs = (e.sets||[]).map(s => s.r);
+    return e.name+' '+(ws.length? ws.join('/')+' × ' : '')+rs.join('/');
+  }).join(' · ') + (w.note ? ' — '+w.note : '');
+}
+function afterTrain(){}
+
+// ---- Argent ----
+let sim = null;
+function viewMoney(){
+  const c = cfg(), b = latestBal();
+  if (!sim) sim = { budget: Object.assign({}, c.budget), strategy: c.capone.strategy, fixed: c.capone.fixed, months: 6 };
+  const pj = runProjection({ days: Math.round(sim.months*30.5), budget: sim.budget, strategy: sim.strategy, fixed: sim.fixed });
+  lastPj = pj;
+  const net = (b.desj||0) + (b.wsc||0) + (b.wsi||0) - (b.capone||0);
+  let h = `<header class="top"><div><div class="muted small">Soldes au ${b.date?dlong(b.date):'—'}</div><h1>Argent</h1></div><button class="primary" data-act="balances">Mettre à jour les soldes</button></header>
+  <section class="card"><div class="tiles">
+    <div class="tile"><span class="lab">Desjardins</span><b class="${b.desj<0?'kpi-neg':''}">${money(b.desj)}</b></div>
+    <div class="tile"><span class="lab">WS chèque</span><b>${money(b.wsc)}</b></div>
+    <div class="tile"><span class="lab">WS placements</span><b>${money(b.wsi)}</b></div>
+    <div class="tile"><span class="lab">Capital One</span><b>${money(b.capone)}</b><span class="small muted">${c.capone.limit?Math.round(b.capone/c.capone.limit*100)+' % de la limite':''}</span></div>
+  </div><div class="row between small"><span class="muted">Valeur nette (comptes − carte)</span><b class="num ${net<0?'kpi-neg':'kpi-pos'}">${money(net)}</b></div>
+  ${b.minDue?`<div class="small muted">Relevé carte : ${money(b.stmtBal)} · minimum ${money(b.minDue)} avant le ${b.dueDate?dlong(b.dueDate):'—'}</div>`:''}</section>`;
+  if (!pj) return h + '<div class="card muted">Entre tes soldes pour voir la projection.</div>';
+  const pays = pj.rows.filter(r => r.payIn);
+  const np = pays[0];
+  h += `<section class="card"><h2>Prochaine paye : ${np?dshort(np.date):'—'}</h2>
+    ${np ? (np.payAmt > 0 ? `<div class="obj"><div class="ic open">$</div><div><b>Payer ${money(np.payAmt)} sur Capital One</b><div class="muted small">Calculé pour garder ${money(c.buffer)} de coussin après le loyer, les prélèvements et ton budget jusqu’à la paye suivante.</div></div><span></span></div>`
+      : (() => { const n2 = pays.find(r => r.payAmt > 0); return `<div class="obj"><div class="ic na">$</div><div><b>Rien sur la carte à cette paye</b><div class="muted small">La paye sert au découvert, au loyer et à ton budget jusqu’à la suivante.${n2 ? ' Prochain paiement de carte : <b>'+money(n2.payAmt)+'</b> le '+dday(n2.date)+'.' : ''}</div></div><span></span></div>`; })()) : ''}
+    ${pj.warns.slice(0,4).map(warnHtml).join('')}</section>`;
+  h += `<section class="card"><div class="row between"><h2>Simulation</h2><button class="ghost" data-act="settings">Réglages</button></div>
+    <div class="grid3">
+      <label class="f" for="sOther">Lun-ven, dim.<input id="sOther" inputmode="decimal" value="${sim.budget.other}"></label>
+      <label class="f" for="sWed">Mercredi<input id="sWed" inputmode="decimal" value="${sim.budget.wed}"></label>
+      <label class="f" for="sSat">Samedi<input id="sSat" inputmode="decimal" value="${sim.budget.sat}"></label>
+    </div>
+    <div class="small muted">Budget de la semaine : <b>${money0(sim.budget.other*5 + sim.budget.wed + sim.budget.sat)}</b></div>
+    <div class="row"><span class="small muted">Carte :</span><button class="seg" data-act="simStrat" data-v="max" aria-pressed="${sim.strategy==='max'}">Tout le surplus</button><button class="seg" data-act="simStrat" data-v="fixed" aria-pressed="${sim.strategy==='fixed'}">Montant fixe</button>${sim.strategy==='fixed'?`<input id="sFixed" class="sm" inputmode="decimal" value="${sim.fixed}" aria-label="Montant fixe par paye"> $ / paye`:''}</div>
+    <div class="row"><span class="small muted">Horizon :</span>${[3,6,12].map(m => `<button class="seg" data-act="simMonths" data-v="${m}" aria-pressed="${sim.months===m}">${m} mois</button>`).join('')}</div>
+    <div class="tiles">
+      <div class="tile"><span class="lab">Carte à zéro</span><b>${pj.zeroDate?dday(pj.zeroDate):'Pas dans l’horizon'}</b><span class="small muted">${pj.zeroDate?parseD(pj.zeroDate).getFullYear():''}</span></div>
+      <div class="tile"><span class="lab">Intérêts payés</span><b>${money0(pj.interest)}</b><span class="small muted">sur l’horizon</span></div>
+      <div class="tile"><span class="lab">Point bas Desjardins</span><b class="${pj.low.v<0?'kpi-neg':''}">${money0(pj.low.v)}</b><span class="small muted">${dday(pj.low.date)}</span></div>
+    </div>
+    <div class="chart"><canvas id="cMoney" aria-label="Projection des soldes"></canvas></div>
+    ${budgetsDiffer()?`<div class="row"><button class="primary" data-act="simSave">Garder ce budget</button><button data-act="simReset">Revenir au budget actuel</button></div>`:''}
+  </section>`;
+  h += `<section class="card"><h2>Paye par paye</h2><div class="tablewrap"><table><thead><tr><th>Paye</th><th class="n">Desjardins après</th><th class="n">Vers la carte</th><th class="n">Solde carte</th><th class="n">WS chèque</th></tr></thead><tbody>${pays.slice(0,14).map(r => `<tr><td>${dday(r.date)}</td><td class="n">${money0(r.D)}</td><td class="n">${money0(r.payAmt)}</td><td class="n">${money0(r.C)}</td><td class="n">${money0(r.W)}</td></tr>`).join('')}</tbody></table></div><div class="muted small">Projection à partir des soldes du ${b.date?dday(b.date):'—'}, des paiements récurrents actifs et du budget quotidien. Les dépenses notées au jour le jour remplacent le budget pour ces jours-là.</div></section>`;
+  const groups = ['desj','wsc','capone'];
+  h += `<section class="card"><div class="row between"><h2>Paiements récurrents</h2><button class="ghost" data-act="recEdit" data-id="">+ Ajouter</button></div>
+    ${groups.map(g => { const list = S.recurring.filter(r => r.account===g && r.active).sort((a,b)=>a.day-b.day); const tot = list.reduce((a,r)=>a+r.amount,0); return `<div><div class="row between" style="margin-top:6px"><h3>${ACC[g]}</h3><span class="num small"><b>${money(tot)}</b> / mois</span></div>${list.map(recLine).join('') || '<div class="muted small">Aucun.</div>'}</div>`; }).join('')}
+    ${(() => { const off = S.recurring.filter(r => !r.active); return off.length ? `<details><summary>Inactifs (${off.length})</summary>${off.map(recLine).join('')}</details>` : ''; })()}
+    <div class="muted small">Virement automatique Desjardins → WS : ${money(c.wsTransfer.amount)} le ${c.wsTransfer.day} du mois.</div></section>`;
+  return h;
+}
+const recLine = r => `<div class="recline ${r.active?'':'off'}" data-act="recEdit" data-id="${r._id}" role="button" tabindex="0"><div><div>${esc(r.name)}</div>${r.note?`<div class="muted small">${esc(r.note)}</div>`:''}</div><span class="muted small">le ${r.day}</span><span class="num">${money(r.amount)}</span></div>`;
+let lastPj = null;
+function warnHtml(w, pj){ pj = pj || lastPj; const extra = (w.kind==='neg' && pj) ? ' (point bas '+money0(pj.low.v)+' le '+dday(pj.low.date)+')' : ''; return `<div class="banner ${w.level==='bad'?'miss':'open'} small"><b>${dshort(w.date)}</b> : ${esc(w.msg)}${extra}</div>`; }
+function budgetsDiffer(){ const a = cfg().budget, b = sim.budget; return a.sat!==b.sat || a.wed!==b.wed || a.other!==b.other || sim.strategy!==cfg().capone.strategy || (sim.strategy==='fixed' && sim.fixed!==cfg().capone.fixed); }
+function css(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+const dayNum = s => Math.round(parseD(s).getTime()/864e5);
+const fromDayNum = n => iso(new Date(n*864e5 + 12*3600e3));
+function afterMoney(){
+  const bind = (id, k) => { const el = document.getElementById(id); if (el) el.addEventListener('change', () => { const v = num(el.value); if (v!=null){ sim.budget[k] = v; render(); } }); };
+  bind('sOther','other'); bind('sWed','wed'); bind('sSat','sat');
+  const fx = document.getElementById('sFixed'); if (fx) fx.addEventListener('change', () => { const v = num(fx.value); if (v!=null){ sim.fixed = v; render(); } });
+  const cv = document.getElementById('cMoney'); if (!cv || typeof Chart==='undefined') return;
+  const pj = runProjection({ days: Math.round(sim.months*30.5), budget: sim.budget, strategy: sim.strategy, fixed: sim.fixed }); if (!pj) return;
+  const histFrom = addDays(pj.rows[0].date, -45);
+  const hist = k => S.balances.filter(b => b[k]!=null && b.date >= histFrom).map(b => ({ x: dayNum(b.date), y: b[k] }));
+  const proj = k => pj.rows.map(r => ({ x: dayNum(r.date), y: r[k] }));
+  const ds = (label, data, color, dash, pts) => ({ label, data, borderColor: color, backgroundColor: color, borderWidth: 2, borderDash: dash?[5,4]:[], pointRadius: pts?3:0, tension: 0, fill:false });
+  charts.push(new Chart(cv, { type:'line', data:{ datasets:[
+    ds('Desjardins (réel)', hist('desj'), css('--c-desj'), false, true), ds('Desjardins (projeté)', proj('D'), css('--c-desj'), true, false),
+    ds('Capital One (réel)', hist('capone'), css('--c-cap'), false, true), ds('Capital One (projeté)', proj('C'), css('--c-cap'), true, false),
+    ds('WS chèque (projeté)', proj('W'), css('--c-ws'), true, false) ]},
+    options:{ responsive:true, maintainAspectRatio:false, animation:false, interaction:{ mode:'nearest', intersect:false },
+      scales:{ x:{ type:'linear', min: dayNum(histFrom), max: dayNum(pj.rows[pj.rows.length-1].date), ticks:{ color:css('--muted'), maxTicksLimit:6, callback: v => dday(fromDayNum(v)) }, grid:{ color:css('--line') } },
+               y:{ ticks:{ color:css('--muted'), callback: v => money0(v) }, grid:{ color:css('--line') } } },
+      plugins:{ legend:{ labels:{ color:css('--ink'), boxWidth:12 } }, tooltip:{ callbacks:{ title: it => dshort(fromDayNum(it[0].parsed.x)), label: it => it.dataset.label+' : '+money(it.parsed.y) } } } } }));
+}
+
+// ---- Corps ----
+function viewBody(){
+  const B = S.body, g = cfg().goalWeight, last = B[B.length-1], first = B[0];
+  let h = `<header class="top"><div><div class="muted small">${last?'Dernière pesée : '+dlong(last.date):'Aucune pesée'}</div><h1>Corps</h1></div><button class="primary" data-act="body">Nouvelle pesée</button></header>`;
+  if (!last) return h;
+  const wk = B.filter(b => b.date >= addDays(last.date, -28));
+  let rate = null; if (wk.length >= 2){ const a = wk[0], z = wk[wk.length-1]; const dd = diffDays(a.date, z.date); if (dd >= 7) rate = (z.weight - a.weight) / dd * 7; }
+  const eta = (rate && rate < 0 && g) ? addDays(last.date, Math.round((last.weight - g) / -rate * 7)) : null;
+  h += `<section class="card"><div class="tiles">
+    <div class="tile"><span class="lab">Poids</span><b>${fnum(last.weight)} lb</b><span class="small muted">${first!==last?(last.weight-first.weight>0?'+':'')+fnum(last.weight-first.weight)+' lb depuis le '+dday(first.date):'point de départ'}</span></div>
+    <div class="tile"><span class="lab">% gras</span><b>${fnum(last.bf)} %</b></div>
+    <div class="tile"><span class="lab">Masse musc.</span><b>${fnum(last.muscle)} lb</b></div>
+    <div class="tile"><span class="lab">Objectif</span><b>${g?fnum(g)+' lb':'—'}</b><span class="small muted">${g?fnum(last.weight-g)+' lb à perdre':''}</span></div>
+  </div>
+  <div class="small">${rate==null ? 'Le rythme s’affiche après deux pesées à au moins 7 jours d’écart.' : `Rythme des 4 dernières semaines : <b>${(rate>0?'+':'')+fnum(rate)} lb / semaine</b>${eta?` · objectif atteint vers le ${dlong(eta)}`:''}.`} Visée : −1 à −2 lb par semaine, en gardant la masse musculaire.</div>
+  <div class="chart"><canvas id="cBody" aria-label="Évolution du poids"></canvas></div></section>`;
+  h += `<section class="card"><h2>Pesées</h2><div class="tablewrap"><table><thead><tr><th>Date</th><th class="n">Poids</th><th class="n">% gras</th><th class="n">Muscle</th><th></th></tr></thead><tbody>${B.slice().reverse().slice(0,20).map(b => `<tr><td>${dday(b.date)}</td><td class="n">${fnum(b.weight)}</td><td class="n">${fnum(b.bf)}</td><td class="n">${fnum(b.muscle)}</td><td class="n"><button class="ghost" data-act="delBody" data-id="${b._id}" aria-label="Supprimer la pesée">×</button></td></tr>`).join('')}</tbody></table></div></section>`;
+  return h;
+}
+function afterBody(){
+  const cv = document.getElementById('cBody'); if (!cv || typeof Chart==='undefined' || !S.body.length) return;
+  const g = cfg().goalWeight, pts = S.body.map(b => ({ x: dayNum(b.date), y: b.weight }));
+  const x0 = pts[0].x, x1 = Math.max(pts[pts.length-1].x, x0 + 56);
+  const sets = [{ label:'Poids', data:pts, borderColor:css('--accent'), backgroundColor:css('--accent'), pointRadius:3, borderWidth:2, tension:0 }];
+  if (g) sets.push({ label:'Objectif', data:[{x:x0,y:g},{x:x1,y:g}], borderColor:css('--good'), borderDash:[5,4], pointRadius:0, borderWidth:1.5 });
+  charts.push(new Chart(cv, { type:'line', data:{ datasets:sets }, options:{ responsive:true, maintainAspectRatio:false, animation:false,
+    scales:{ x:{ type:'linear', min:x0-2, max:x1, ticks:{ color:css('--muted'), maxTicksLimit:6, callback: v => dday(fromDayNum(v)) }, grid:{ color:css('--line') } }, y:{ ticks:{ color:css('--muted'), callback: v => v+' lb' }, grid:{ color:css('--line') } } },
+    plugins:{ legend:{ labels:{ color:css('--ink'), boxWidth:12 } }, tooltip:{ callbacks:{ title: it => dshort(fromDayNum(it[0].parsed.x)), label: it => it.dataset.label+' : '+fnum(it.parsed.y)+' lb' } } } } }));
+}
+
+// ===== Feuilles de saisie =====
+function openSheet(title, bodyHtml, onMount){
+  const root = document.getElementById('sheetRoot');
+  root.innerHTML = `<div class="scrim" id="scrim"><div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(title)}"><header><h2>${esc(title)}</h2><button class="ghost" data-close aria-label="Fermer">Fermer</button></header><div id="sheetBody" style="display:grid;gap:12px">${bodyHtml}</div></div></div>`;
+  root.querySelector('[data-close]').onclick = closeSheet;
+  root.querySelector('#scrim').addEventListener('click', e => { if (e.target.id==='scrim') closeSheet(); });
+  if (onMount) onMount(root.querySelector('#sheetBody'));
+  const f = root.querySelector('input,select,button:not([data-close])'); if (f && f.tagName!=='BUTTON') f.focus({ preventScroll:true });
+}
+function closeSheet(){ document.getElementById('sheetRoot').innerHTML = ''; scheduleRender(); }
+let toastT; function toast(msg){ let el = document.getElementById('toast'); if (!el){ el = document.createElement('div'); el.id='toast'; el.className='banner'; el.setAttribute('role','status'); el.style.cssText='position:fixed;left:16px;right:16px;bottom:96px;z-index:20;max-width:680px;margin:0 auto;background:var(--ink);color:var(--surface)'; document.body.appendChild(el); } el.textContent = msg; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => el.hidden = true, 3500); }
+function confirmIn(btn, label, fn){ if (btn.dataset.armed){ fn(); return; } btn.dataset.armed = '1'; const old = btn.textContent; btn.textContent = label; btn.classList.add('danger'); setTimeout(() => { if (btn.isConnected){ delete btn.dataset.armed; btn.textContent = old; btn.classList.remove('danger'); } }, 3000); }
+
+function openChooser(){
+  const next = nextSessionKind(), P = S.program;
+  openSheet('Ajouter', `<div class="grid2">
+    <button class="primary" data-pick="session">Séance ${next}${P?' — '+esc(P.sessions[next].name):''}</button>
+    <button data-pick="cardio">Cardio</button>
+    <button data-pick="day">Journée (dépenses, fumée, trajet)</button>
+    <button data-pick="body">Pesée</button>
+    <button data-pick="balances">Soldes des comptes</button>
+    <button data-pick="rec">Paiement récurrent</button>
+    <button data-pick="libre">Séance libre</button>
+  </div>`, el => el.addEventListener('click', e => { const b = e.target.closest('[data-pick]'); if (!b) return; const p = b.dataset.pick;
+    if (p==='session') openSession(next); else if (p==='libre') openSession('libre'); else if (p==='cardio') openCardio(); else if (p==='day') openDay(TODAY()); else if (p==='body') openBody(); else if (p==='balances') openBalances(); else if (p==='rec') openRec(null); }));
+}
+
+// ---- Séance ----
+let sess = null;
+function buildSession(kind){
+  const P = S.program, ph = phaseNow() || { sets:2, idx:1 };
+  const base = kind==='libre' ? { name:'Séance libre', warmup:(P && P.sessions.A.warmup)||[], exercises:[] } : P.sessions[kind];
+  const ex = base.exercises.filter(e => (e.minPhase||1) <= ph.idx).map(e => newEx(e, ph.sets));
+  return { kind, date: TODAY(), title: base.name, warmup: base.warmup, exercises: ex, note:'', phase: ph.idx };
+}
+function newEx(e, nSets){
+  const x = { name:e.name, kind:e.kind||'reps', target:e.reps||'', note:e.note||'', unit:e.unit||'lb', sets:[] };
+  const rn = rangeNums(e.reps); const lo = rn[0]||null, hi = rn[1]||rn[0]||null;
+  const last = lastExercise(e.name);
+  if (x.kind==='cardio'){ x.type = 'Natation'; x.min = lo || 20; x.done = false; return x; }
+  let w = e.load || null; x.hint = '';
+  if (last && last.ex.sets && last.ex.sets.length){
+    const ls = last.ex.sets; const lw = ls[ls.length-1].w; if (lw!=null) w = lw;
+    if (x.kind==='reps' && hi && ls.every(s => (s.r||0) >= hi) && lw!=null){ w = lw + 5; x.hint = 'Toutes les séries au haut de la fourchette le '+dday(last.date)+' : +5 lb proposé'; }
+    else x.hint = 'Dernière fois ('+dday(last.date)+') : '+ls.map(s => (s.w!=null?s.w+'×':'')+(s.r!=null?s.r:(s.t!=null?s.t+' s':''))).join(', ');
+  }
+  for (let i=0;i<(nSets||2);i++) x.sets.push(x.kind==='time' ? { t: lo||30, done:false } : { w, r: lo, done:false });
+  return x;
+}
+function openSession(kind){
+  const draft = lsGet('cap3-draft');
+  sess = (draft && draft.kind===kind && draft.date===TODAY()) ? draft : buildSession(kind);
+  openSheet(kind==='libre' ? 'Séance libre' : 'Séance '+kind+' — '+sess.title, '', el => { renderSession(el); });
+}
+function renderSession(el){
+  el = el || document.getElementById('sheetBody'); if (!el) return;
+  const datalist = `<datalist id="exlib">${Array.from(new Set([...(S.exlib||[]), ...S.workouts.flatMap(w => (w.exercises||[]).map(e=>e.name))])).map(n => `<option value="${esc(n)}">`).join('')}</datalist>`;
+  el.innerHTML = `<label class="f" for="sDate">Date<input id="sDate" type="date" value="${sess.date}"></label>
+   ${sess.warmup && sess.warmup.length ? `<div class="warmup"><b>Échauffement d’abord</b><ul>${sess.warmup.map(w=>`<li>${esc(w)}</li>`).join('')}</ul></div>` : ''}
+   ${sess.exercises.map((x,i) => exHtml(x,i)).join('')}
+   <div class="row"><input id="newEx" list="exlib" placeholder="Ajouter un exercice" style="flex:1"><button data-s="addEx">Ajouter</button></div>${datalist}
+   <label class="f" for="sNote">Note (douleur, énergie, modifs)<textarea id="sNote" rows="2">${esc(sess.note)}</textarea></label>
+   <div class="row"><button data-s="allDone">Tout marquer fait</button><button class="primary" data-s="save" style="flex:1">Enregistrer la séance</button></div>
+   <button class="ghost" data-s="discard">Abandonner ce brouillon</button>`;
+  el.oninput = e => { const t = e.target; const i = +t.dataset.i, j = +t.dataset.j, f = t.dataset.f;
+    if (t.id==='sDate') sess.date = t.value; else if (t.id==='sNote') sess.note = t.value;
+    else if (f && !isNaN(i)){ const x = sess.exercises[i]; if (f==='type') x.type = t.value; else if (f==='min') x.min = num(t.value); else if (!isNaN(j)) x.sets[j][f] = num(t.value); }
+    lsSet('cap3-draft', sess); };
+  el.onchange = el.oninput;
+  el.onclick = e => { const b = e.target.closest('[data-s]'); if (!b) return; const a = b.dataset.s, i = +b.dataset.i, j = +b.dataset.j;
+    if (a==='done'){ const s = sess.exercises[i].sets[j]; s.done = !s.done; b.setAttribute('aria-pressed', s.done); lsSet('cap3-draft', sess); return; }
+    if (a==='cdone'){ const x = sess.exercises[i]; x.done = !x.done; b.setAttribute('aria-pressed', x.done); lsSet('cap3-draft', sess); return; }
+    if (a==='addSet'){ const x = sess.exercises[i]; const l = x.sets[x.sets.length-1] || {}; x.sets.push(Object.assign({}, l, { done:false })); }
+    if (a==='delSet'){ sess.exercises[i].sets.splice(j,1); }
+    if (a==='delEx'){ sess.exercises.splice(i,1); }
+    if (a==='addEx'){ const n = document.getElementById('newEx').value.trim(); if (!n) return; const isC = /natation|nage|corde|mountain|vélo|rameur|marche|course|escalier/i.test(n); sess.exercises.push(newEx({ name:n, kind: isC?'cardio':'reps', reps: isC?'20':'10' }, (phaseNow()||{sets:2}).sets)); if (isC) sess.exercises[sess.exercises.length-1].type = n; }
+    if (a==='allDone'){ sess.exercises.forEach(x => { if (x.kind==='cardio') x.done = true; else x.sets.forEach(s => s.done = true); }); }
+    if (a==='discard'){ lsSet('cap3-draft', null); closeSheet(); return; }
+    if (a==='save'){ saveSession(); return; }
+    lsSet('cap3-draft', sess); renderSession(); };
+}
+function exHtml(x,i){
+  const head = `<div class="row between"><div><b>${esc(x.name)}</b> <span class="muted small">${esc(x.target)}${x.kind==='reps'&&x.sets[0]&&x.sets[0].w?' · '+x.sets[0].w+' '+x.unit:''}</span></div><button class="ghost" data-s="delEx" data-i="${i}" aria-label="Retirer ${esc(x.name)}">Retirer</button></div>${x.note?`<div class="muted small">${esc(x.note)}</div>`:''}${x.hint?`<div class="hint">${esc(x.hint)}</div>`:''}`;
+  if (x.kind==='cardio'){
+    const mcWarn = S.workouts.some(w => w.date >= addDays(sess.date,-6) && ((w.cardio && /mountain/i.test(w.cardio.type)) || (w.exercises||[]).some(e => e.kind==='cardio' && /mountain/i.test(e.type||''))));
+    return `<div class="ex">${head}<div class="row"><select data-i="${i}" data-f="type" aria-label="Activité" style="flex:1">${['Natation','Corde à sauter','Mountain Climber','Vélo / Bixi (hors trajet)','Rameur','Marche rapide','Autre'].map(o => `<option ${o===x.type?'selected':''}>${o}</option>`).join('')}</select><input class="xs" data-i="${i}" data-f="min" inputmode="numeric" value="${x.min??''}" aria-label="Minutes"> min <button class="chk" data-s="cdone" data-i="${i}" aria-pressed="${!!x.done}" aria-label="Fait">✓</button></div>
+      ${/corde/i.test(x.type)?'<div class="small" style="color:var(--warn)">Corde : surface souple, 6 × 1 min max, arrêt dès que le pied gauche se plaint.</div>':''}${/mountain/i.test(x.type)&&mcWarn?'<div class="small" style="color:var(--bad)">Déjà fait des mountain climbers dans les 7 derniers jours : choisis la nage.</div>':''}</div>`;
+  }
+  const rows = x.sets.map((s,j) => x.kind==='time'
+    ? `<div class="setrow"><span class="k">${j+1}</span><input class="sm" data-i="${i}" data-j="${j}" data-f="t" inputmode="numeric" value="${s.t??''}" aria-label="Secondes série ${j+1}"> s <button class="chk" data-s="done" data-i="${i}" data-j="${j}" aria-pressed="${!!s.done}" aria-label="Série ${j+1} faite">✓</button><button class="ghost" data-s="delSet" data-i="${i}" data-j="${j}" aria-label="Retirer la série">×</button></div>`
+    : x.kind==='skill'
+    ? `<div class="setrow"><span class="k">${j+1}</span><span class="small muted">ronde</span><button class="chk" data-s="done" data-i="${i}" data-j="${j}" aria-pressed="${!!s.done}" aria-label="Ronde ${j+1} faite">✓</button><button class="ghost" data-s="delSet" data-i="${i}" data-j="${j}" aria-label="Retirer">×</button></div>`
+    : `<div class="setrow"><span class="k">${j+1}</span><input class="sm" data-i="${i}" data-j="${j}" data-f="w" inputmode="decimal" value="${s.w??''}" placeholder="poids" aria-label="Charge série ${j+1}"> ${x.unit} × <input class="xs" data-i="${i}" data-j="${j}" data-f="r" inputmode="numeric" value="${s.r??''}" aria-label="Reps série ${j+1}"> <button class="chk" data-s="done" data-i="${i}" data-j="${j}" aria-pressed="${!!s.done}" aria-label="Série ${j+1} faite">✓</button><button class="ghost" data-s="delSet" data-i="${i}" data-j="${j}" aria-label="Retirer la série">×</button></div>`).join('');
+  return `<div class="ex">${head}${rows}<button class="ghost" data-s="addSet" data-i="${i}">+ série</button></div>`;
+}
+function saveSession(){
+  const exs = [];
+  sess.exercises.forEach(x => {
+    if (x.kind==='cardio'){ if (x.done && x.min) exs.push({ name:x.name, kind:'cardio', type:x.type, min:x.min }); return; }
+    const sets = x.sets.filter(s => s.done).map(s => x.kind==='time' ? { t:s.t } : x.kind==='skill' ? { r:1 } : { w:s.w, r:s.r });
+    if (sets.length) exs.push({ name:x.name, kind:x.kind, sets });
+  });
+  if (!exs.length){ toast('Coche au moins une série (✓) avant d’enregistrer.'); return; }
+  const id = uid('S'); const sets = [], cardio = [];
+  exs.forEach(x => { if (x.kind==='cardio') cardio.push({ type:x.type, min:x.min }); else x.sets.forEach((s,k) => sets.push([x.name, k+1, x.kind==='time'?null:s.w, x.kind==='time'?null:s.r, x.kind==='time'?s.t:null])); });
+  enqueue({ t:'session', id, date:sess.date, kind:sess.kind, title:sess.title, phase:sess.phase, note:sess.note, sets, cardio });
+  lsSet('cap3-draft', null); closeSheet(); toast('Séance enregistrée.');
+}
+function openCardio(){
+  openSheet('Cardio', `<label class="f" for="cDate">Date<input id="cDate" type="date" value="${TODAY()}"></label>
+    <label class="f" for="cType">Activité<select id="cType">${['Natation','Corde à sauter','Mountain Climber','Vélo / Bixi (hors trajet)','Rameur','Marche rapide','Autre'].map(o=>`<option>${o}</option>`).join('')}</select></label>
+    <label class="f" for="cMin">Minutes<input id="cMin" inputmode="numeric" value="20"></label>
+    <div id="cWarn" class="small"></div>
+    <label class="f" for="cNote">Note<input id="cNote" placeholder="ex. 20 longueurs, pied OK"></label>
+    <button class="primary" id="cSave">Enregistrer</button>`, el => {
+      const warn = () => { const t = el.querySelector('#cType').value, d = el.querySelector('#cDate').value; let m = '';
+        if (/corde/i.test(t)) m = '<span style="color:var(--warn)">Surface souple, 6 × 1 min max, arrêt dès que le pied gauche se plaint.</span>';
+        if (/mountain/i.test(t) && S.workouts.some(w => w.date >= addDays(d,-6) && w.date <= d && ((w.cardio && /mountain/i.test(w.cardio.type)) || (w.exercises||[]).some(e => /mountain/i.test(e.type||''))))) m = '<span style="color:var(--bad)">Mountain climbers déjà faits cette semaine. Une fois par semaine max : choisis la nage.</span>';
+        el.querySelector('#cWarn').innerHTML = m; };
+      el.querySelector('#cType').onchange = warn; el.querySelector('#cDate').onchange = warn;
+      el.querySelector('#cSave').onclick = () => { const min = num(el.querySelector('#cMin').value); if (!min){ toast('Indique les minutes.'); return; }
+        enqueue({ t:'cardio', id:uid('C'), date: el.querySelector('#cDate').value, type: el.querySelector('#cType').value, min, note: el.querySelector('#cNote').value });
+        closeSheet(); toast('Cardio enregistré.'); };
+    });
+}
+function openDay(d){
+  const r = S.days[d] || {};
+  openSheet('Journée', `<label class="f" for="yDate">Date<input id="yDate" type="date" value="${d}" max="${TODAY()}"></label>
+    <label class="f" for="ySpent">Dépensé ce jour-là ($)<input id="ySpent" inputmode="decimal" value="${r.spent!=null?String(r.spent).replace('.',','):''}"></label>
+    <label class="f" for="ySmoke">Fumée (nombre)<input id="ySmoke" inputmode="numeric" value="${r.smoke??''}"></label>
+    <label class="f" for="yCom">Trajet<select id="yCom"><option value="">—</option>${[['bixi','Bixi'],['metro','Métro'],['none','Aucun']].map(([k,l])=>`<option value="${k}" ${r.commute===k?'selected':''}>${l}</option>`).join('')}</select></label>
+    <label class="f" for="yNote">Note<input id="yNote" value="${esc(r.note||'')}"></label>
+    <button class="primary" id="ySave">Enregistrer</button>`, el => {
+      el.querySelector('#yDate').onchange = e => { closeSheet(); openDay(e.target.value); };
+      el.querySelector('#ySave').onclick = () => { saveDay(el.querySelector('#yDate').value, { spent:num(el.querySelector('#ySpent').value), smoke:num(el.querySelector('#ySmoke').value), commute:el.querySelector('#yCom').value||null, note:el.querySelector('#yNote').value }); closeSheet(); toast('Journée enregistrée.'); };
+    });
+}
+function openBody(){
+  const last = S.body[S.body.length-1] || {};
+  openSheet('Pesée', `<label class="f" for="bDate">Date<input id="bDate" type="date" value="${TODAY()}"></label>
+    <div class="grid2"><label class="f" for="bW">Poids (lb)<input id="bW" inputmode="decimal" placeholder="${last.weight||''}"></label><label class="f" for="bBf">% gras<input id="bBf" inputmode="decimal" placeholder="${last.bf||''}"></label>
+    <label class="f" for="bM">Masse musculaire (lb)<input id="bM" inputmode="decimal" placeholder="${last.muscle||''}"></label><label class="f" for="bV">Graisse viscérale<input id="bV" inputmode="decimal" placeholder="${last.visceral||''}"></label></div>
+    <div class="muted small">Même balance, même moment (le matin à jeun) pour que les chiffres se comparent.</div>
+    <button class="primary" id="bSave">Enregistrer</button>`, el => {
+      el.querySelector('#bSave').onclick = () => { const w = num(el.querySelector('#bW').value); if (!w){ toast('Indique le poids.'); return; }
+        enqueue({ t:'body', date: el.querySelector('#bDate').value, weight:w, bf:num(el.querySelector('#bBf').value), muscle:num(el.querySelector('#bM').value), visceral:num(el.querySelector('#bV').value) });
+        closeSheet(); toast('Pesée enregistrée.'); };
+    });
+}
+function openBalances(){
+  const b = latestBal(), f = v => v==null ? '' : String(v).replace('.',',');
+  openSheet('Soldes des comptes', `<label class="f" for="kDate">Date<input id="kDate" type="date" value="${TODAY()}"></label>
+    <div class="grid2"><label class="f" for="kD">Desjardins<input id="kD" inputmode="decimal" value="${f(b.desj)}"></label><label class="f" for="kC">Capital One (solde + en attente)<input id="kC" inputmode="decimal" value="${f(b.capone)}"></label>
+    <label class="f" for="kW">WS chèque<input id="kW" inputmode="decimal" value="${f(b.wsc)}"></label><label class="f" for="kI">WS placements<input id="kI" inputmode="decimal" value="${f(b.wsi)}"></label></div>
+    <div class="muted small">Desjardins à découvert : mets un signe moins (ex. −11,70). Capital One : solde actuel + transactions en attente.</div>
+    <details><summary>Nouveau relevé Capital One</summary><div class="grid3" style="margin-top:8px"><label class="f" for="kS">Nouveau solde<input id="kS" inputmode="decimal" value="${f(b.stmtBal)}"></label><label class="f" for="kM">Paiement minimum<input id="kM" inputmode="decimal" value="${f(b.minDue)}"></label><label class="f" for="kDue">Échéance<input id="kDue" type="date" value="${b.dueDate||''}"></label></div></details>
+    <button class="primary" id="kSave">Enregistrer les soldes</button>`, el => {
+      el.querySelector('#kSave').onclick = () => { const g = id => num(el.querySelector(id).value.replace('−','-'));
+        const doc = { t:'balances', id:uid('B'), date: el.querySelector('#kDate').value, desj:g('#kD'), capone:g('#kC'), wsc:g('#kW'), wsi:g('#kI'), stmtBal:g('#kS'), minDue:g('#kM'), dueDate: el.querySelector('#kDue').value || null };
+        if (doc.desj==null || doc.capone==null){ toast('Desjardins et Capital One sont nécessaires.'); return; }
+        sim = null; enqueue(doc); closeSheet(); toast('Soldes enregistrés.'); };
+    });
+}
+function openRec(id){
+  const r = S.recurring.find(x => x._id===id) || { name:'', amount:'', day:1, account:'desj', active:true, note:'' };
+  openSheet(id ? 'Modifier le paiement' : 'Nouveau paiement récurrent', `<label class="f" for="rN">Nom<input id="rN" value="${esc(r.name)}"></label>
+    <div class="grid3"><label class="f" for="rA">Montant<input id="rA" inputmode="decimal" value="${String(r.amount).replace('.',',')}"></label><label class="f" for="rD">Jour du mois<input id="rD" inputmode="numeric" value="${r.day}"></label>
+    <label class="f" for="rC">Compte<select id="rC">${Object.entries(ACC).map(([k,l]) => `<option value="${k}" ${r.account===k?'selected':''}>${l}</option>`).join('')}</select></label></div>
+    <label class="row" for="rOn"><input id="rOn" type="checkbox" style="width:auto;min-height:0" ${r.active?'checked':''}> Actif (compté dans la projection)</label>
+    <label class="f" for="rNote">Note<input id="rNote" value="${esc(r.note||'')}"></label>
+    <div class="row"><button class="primary" id="rSave" style="flex:1">Enregistrer</button>${id?'<button id="rDel">Supprimer</button>':''}</div>`, el => {
+      el.querySelector('#rSave').onclick = () => { const doc = { name: el.querySelector('#rN').value.trim(), amount: num(el.querySelector('#rA').value), day: Math.min(31, Math.max(1, num(el.querySelector('#rD').value)||1)), account: el.querySelector('#rC').value, active: el.querySelector('#rOn').checked, note: el.querySelector('#rNote').value };
+        if (!doc.name || doc.amount==null){ toast('Nom et montant sont nécessaires.'); return; }
+        enqueue({ t:'rec', id: id || uid('r'), name:doc.name, amount:doc.amount, day:doc.day, account:ACCLABEL[doc.account], active: doc.active ? 'Oui' : 'Non', note:doc.note }); closeSheet(); };
+      const del = el.querySelector('#rDel'); if (del) del.onclick = () => confirmIn(del, 'Confirmer', () => { enqueue({ t:'delRec', id }); closeSheet(); });
+    });
+}
+function openSettings(){
+  const c = cfg(), np = nextPayAfter(c, addDays(TODAY(),-1));
+  openSheet('Réglages', `<h3>Paye</h3><div class="grid2"><label class="f" for="gPay">Paye nette ($)<input id="gPay" inputmode="decimal" value="${c.payAmount}"></label><label class="f" for="gNext">Prochaine paye<input id="gNext" type="date" value="${np}"></label></div>
+    <h3>Budget quotidien</h3><div class="grid3"><label class="f" for="gO">Lun-ven, dim.<input id="gO" inputmode="decimal" value="${c.budget.other}"></label><label class="f" for="gW">Mercredi<input id="gW" inputmode="decimal" value="${c.budget.wed}"></label><label class="f" for="gS">Samedi<input id="gS" inputmode="decimal" value="${c.budget.sat}"></label></div>
+    <label class="f" for="gBuf">Coussin gardé dans Desjardins à chaque paye ($)<input id="gBuf" inputmode="decimal" value="${c.buffer}"></label>
+    <h3>Virement Desjardins → WS</h3><div class="grid2"><label class="f" for="gTa">Montant / mois<input id="gTa" inputmode="decimal" value="${c.wsTransfer.amount}"></label><label class="f" for="gTd">Jour du mois<input id="gTd" inputmode="numeric" value="${c.wsTransfer.day}"></label></div>
+    <h3>Capital One</h3><div class="grid2"><label class="f" for="gApr">Taux annuel (%)<input id="gApr" inputmode="decimal" value="${String(round2(c.capone.apr*100)).replace('.',',')}"></label><label class="f" for="gLim">Limite<input id="gLim" inputmode="decimal" value="${c.capone.limit}"></label><label class="f" for="gSd">Jour du relevé<input id="gSd" inputmode="numeric" value="${c.capone.stmtDay}"></label><label class="f" for="gDd">Jour d’échéance<input id="gDd" inputmode="numeric" value="${c.capone.dueDay}"></label></div>
+    <h3>Objectifs</h3><div class="grid2"><label class="f" for="gGoal">Poids visé (lb)<input id="gGoal" inputmode="decimal" value="${c.goalWeight??''}"></label><label class="f" for="gSm">Fumée : maximum par jour pour commencer<input id="gSm" inputmode="numeric" value="${c.smoke&&c.smoke.startTarget!=null?c.smoke.startTarget:''}" placeholder="vide = on observe d’abord"></label></div>
+    <div class="muted small">Ensuite, la cible de fumée baisse de 1 par bloc à partir de ta moyenne du bloc précédent.</div>
+    <button class="primary" id="gSave">Enregistrer les réglages</button>
+    <h3>Connexion</h3><div class="muted small">Script : ${esc((conn.url||'').replace(/^https:\/\/script.google.com\/macros\/s\//,'').slice(0,18))}…</div>
+    <button id="gDisc">Changer l’URL ou le code secret</button>`, el => {
+      el.querySelector('#gDisc').onclick = () => { conn.url = null; conn.token = null; lsSet(LS.url, null); lsSet(LS.token, null); closeSheet(); };
+      el.querySelector('#gSave').onclick = () => { const g = id => num(el.querySelector(id).value);
+        const nd = el.querySelector('#gNext').value;
+        const apr = g('#gApr');
+        const values = { Paye: g('#gPay') ?? c.payAmount, BudgetAutre: g('#gO') ?? c.budget.other, BudgetMer: g('#gW') ?? c.budget.wed, BudgetSam: g('#gS') ?? c.budget.sat,
+          Coussin: g('#gBuf') ?? c.buffer, VirMontant: g('#gTa') ?? 0, VirJour: g('#gTd') || 1, Taux: apr==null ? c.capone.apr : apr/100, Limite: g('#gLim') ?? c.capone.limit,
+          JourReleve: g('#gSd') || c.capone.stmtDay, JourEcheance: g('#gDd') || c.capone.dueDay, PoidsVise: g('#gGoal'), FumeeDepart: g('#gSm') };
+        if (nd) values.PayeRef = nd;
+        sim = null; enqueue({ t:'settings', values }); closeSheet(); toast('Réglages enregistrés.'); };
+    });
+}
+
+// ===== Événements =====
+document.getElementById('plusBtn').onclick = openChooser;
+window.addEventListener('hashchange', render);
+document.getElementById('view').addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b) return; const a = b.dataset.act;
+  if (a==='startSession') openSession(b.dataset.kind);
+  else if (a==='cardio') openCardio();
+  else if (a==='balances') openBalances();
+  else if (a==='body') openBody();
+  else if (a==='settings') openSettings();
+  else if (a==='recEdit') openRec(b.dataset.id || null);
+  else if (a==='dayPrev'){ dayCursor = addDays(dayCursor||TODAY(), -1); render(); }
+  else if (a==='dayNext'){ const n = addDays(dayCursor||TODAY(), 1); dayCursor = n >= TODAY() ? null : n; render(); }
+  else if (a==='smoke'){ const d = dayCursor||TODAY(); const cur = S.days[d] && S.days[d].smoke; const step = +b.dataset.d; saveDay(d, { smoke: cur==null ? (step>0 ? 1 : 0) : Math.max(0, cur + step) }); }
+  else if (a==='commute'){ const d = dayCursor||TODAY(); const cur = S.days[d] && S.days[d].commute; saveDay(d, { commute: cur===b.dataset.v ? null : b.dataset.v }); }
+  else if (a==='simStrat'){ sim.strategy = b.dataset.v; render(); }
+  else if (a==='simMonths'){ sim.months = +b.dataset.v; render(); }
+  else if (a==='simReset'){ sim = null; render(); }
+  else if (a==='simSave'){ const v = { BudgetAutre:sim.budget.other, BudgetMer:sim.budget.wed, BudgetSam:sim.budget.sat, Strategie: sim.strategy==='fixed' ? 'Montant fixe' : 'Tout le surplus', MontantFixe:sim.fixed }; sim = null; enqueue({ t:'settings', values:v }); toast('Budget enregistré.'); }
+  else if (a==='retry') flush();
+  else if (a==='connect'){ const u = document.getElementById('cuUrl').value.trim(), k = document.getElementById('cuTok').value.trim(); if (!/^https:\/\/script\.google(usercontent)?\.com\//.test(u)){ toast('L’URL doit commencer par https://script.google.com/'); return; } if (!k){ toast('Entre le code secret.'); return; } conn.url = u; conn.token = k; lsSet(LS.url, u); lsSet(LS.token, k); sync.state = 'sync'; render(); flush(); }
+  else if (a==='delWorkout') confirmIn(b, 'Confirmer', () => enqueue({ t:'delWorkout', id:b.dataset.id }));
+  else if (a==='delBody') confirmIn(b, 'Sûr ?', () => enqueue({ t:'delBody', date:b.dataset.id }));
+});
+document.getElementById('view').addEventListener('keydown', e => { if ((e.key==='Enter'||e.key===' ') && e.target.matches('.recline')){ e.preventDefault(); e.target.click(); } });
+
+// ===== Démarrage =====
+rebuild(); render();
+flush();
+window.addEventListener('online', flush);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState==='visible') flush(); });
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+</script>
 </body>
 </html>
