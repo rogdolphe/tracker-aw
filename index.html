@@ -183,7 +183,10 @@ function project(cfgIn, rec, start, opt) {
     s = addDays(s, 1);
     const ev = []; let payIn = 0, payAmt = 0;
     const pay = isPayDay(cfg, s);
-    if (pay) { D += cfg.payAmount; payIn = cfg.payAmount; ev.push('Paye'); }
+    const ov = opt.payOverride ? opt.payOverride[s] : null;
+    if (pay) { const amt = ov != null ? ov : cfg.payAmount; D += amt; payIn = amt; ev.push('Paye'); }
+    const ex = opt.extra ? opt.extra[s] : null;
+    if (ex) { D += ex.desj || 0; W += ex.wsc || 0; ev.push('Revenu'); }
     rec.forEach(r => {
       if (!recurOn(r, s)) return;
       if (r.account === 'desj') D -= r.amount;
@@ -262,7 +265,7 @@ const COMMUTE = { bixi:'Bixi', metro:'Métro', none:'Aucun' };
 const ACCLABEL = { desj:'Desjardins', wsc:'WS chèque', capone:'Capital One' };
 const nv = x => (x===''||x==null) ? null : Number(x);
 const sv = x => (x===''||x==null) ? null : String(x);
-function emptyRaw(){ return { journal:[], seances:[], series:[], cardio:[], pesees:[], soldes:[], recurrents:[], reglages:[], programme:[] }; }
+function emptyRaw(){ return { journal:[], seances:[], series:[], cardio:[], pesees:[], soldes:[], recurrents:[], reglages:[], programme:[], revenus:[] }; }
 
 // Même logique que le script : on applique l'opération aux lignes locales, puis on relit.
 function applyRaw(R, op){
@@ -283,6 +286,8 @@ function applyRaw(R, op){
     case 'rec': up(R.recurrents, op.id, [op.id, op.name, e(op.amount), e(op.day), op.account, op.active, e(op.note)]); break;
     case 'delRec': R.recurrents = del(R.recurrents, op.id); break;
     case 'settings': Object.keys(op.values).forEach(k => { const r = R.reglages.find(x => x[0]===k); if (r) r[2] = e(op.values[k]); }); break;
+    case 'income': R.revenus = R.revenus || []; if (R.revenus.some(r => r[0]===op.id)) break; R.revenus.push([op.id, op.date, op.type, e(op.amount), op.account, e(op.note)]); break;
+    case 'delIncome': R.revenus = del(R.revenus || [], op.id); break;
   }
 }
 function rebuild(){
@@ -329,6 +334,7 @@ function parseRaw(R){
     if (typeof sm==='number') cig = sm > 0; else if (logged){ const t = String(sm).toLowerCase(); cig = /cig/.test(t); weed = /weed|pot|cannabis/.test(t); }
     S.days[d] = { _id:d, date:d, spent:nv(r[1]), smokeLogged:logged, cig, weed, commute: comKey[r[3]] || null, note:String(r[4]||'') }; });
   S.exlib = Array.from(new Set([...EXLIB, ...R.series.map(r => String(r[2]))]));
+  S.incomes = (R.revenus || []).map(r => ({ _id:String(r[0]), date:String(r[1]), type:String(r[2]||'Contrat'), amount:+r[3]||0, account: accKey[r[4]] || 'desj', note:String(r[5]||'') })).filter(i => i.amount).sort((a,b) => a.date<b.date?-1:1);
 }
 function enqueue(op){ op.qid = uid('q'); outbox.push(op); lsSet(LS.outbox, outbox); rebuild(); scheduleRender(); flush(); }
 async function flush(){
@@ -337,7 +343,7 @@ async function flush(){
   try {
     const res = await fetch(conn.url, { method:'POST', body: JSON.stringify({ token:conn.token, action: batch.length ? 'ops' : 'load', ops: batch }) });
     const j = await res.json();
-    if (!j.ok) throw new Error(j.error || 'refus du script');
+    if (!j.ok) throw new Error(/opération inconnue/.test(j.error||'') ? 'le script doit être mis à jour (nouvelle version du Code.gs)' : (j.error || 'refus du script'));
     const sent = new Set(batch.map(o => o.qid)); outbox = outbox.filter(o => !sent.has(o.qid)); lsSet(LS.outbox, outbox);
     raw = j.data; lsSet(LS.cache, raw); rebuild();
     sync = { state:'ok', err:'', at:new Date() };
@@ -391,7 +397,13 @@ function comparePerf(cur){
   const days = diffDays(prev.date, cur.date);
   let stmt = null; S.balances.forEach(b => { if (b.ts <= prev.ts && b.minDue!=null) stmt = b; });
   const wsPrev = lastKnown('wsc', prev) || 0;
-  const pj = project(cfg(), activeRec(), { date:prev.date, desj:prev.desj, wsc:wsPrev, capone:prev.capone, minDue: stmt && stmt.dueDate >= prev.date ? stmt.minDue : 0, dueDate: stmt && stmt.dueDate >= prev.date ? stmt.dueDate : null }, { days });
+  const inc = (S.incomes||[]).filter(i => i.date > prev.date && i.date <= cur.date);
+  const payOverride = {}, extra = {}, used = new Set(); let payPlanned = 0, payReal = 0, contracts = 0;
+  for (let x = addDays(prev.date,1); x <= cur.date; x = addDays(x,1)) if (isPayDay(cfg(), x)){
+    const m = inc.find(i => i.type==='Paye' && !used.has(i) && Math.abs(diffDays(i.date, x)) <= 3);
+    payPlanned += cfg().payAmount; if (m){ used.add(m); payOverride[x] = m.amount; payReal += m.amount; } else payReal += cfg().payAmount; }
+  inc.forEach(i => { if (used.has(i)) return; const e = extra[i.date] || (extra[i.date] = { desj:0, wsc:0 }); e[i.account==='wsc'?'wsc':'desj'] += i.amount; contracts += i.amount; });
+  const pj = project(cfg(), activeRec(), { date:prev.date, desj:prev.desj, wsc:wsPrev, capone:prev.capone, minDue: stmt && stmt.dueDate >= prev.date ? stmt.minDue : 0, dueDate: stmt && stmt.dueDate >= prev.date ? stmt.dueDate : null }, { days, payOverride, extra });
   const P = pj.rows[pj.rows.length-1];
   const wsAct = cur.wsc!=null ? cur.wsc : P.W;
   const predNet = P.D + P.W - P.C, actNet = cur.desj + wsAct - cur.capone;
@@ -404,7 +416,7 @@ function comparePerf(cur){
   if (cur.wsc!=null) cats.push(mk('ws','Wealthsimple (chèque)', P.W, cur.wsc, cur.wsc - P.W));
   cats.push(mk('net','Général', predNet, actNet, actNet - predNet, 'Desjardins + WS chèque − carte'));
   const wsiPrev = lastKnown('wsi', prev);
-  return { prev, cur, days, cats, net: cats[cats.length-1], budget, spentEst: budget - (actNet - predNet), paidMore: (cur.desj - P.D) < -TOL && (P.C - cur.capone) > TOL,
+  return { prev, cur, days, cats, net: cats[cats.length-1], budget, income:{ payPlanned, payReal, contracts, any: inc.length>0 }, spentEst: budget - (actNet - predNet), paidMore: (cur.desj - P.D) < -TOL && (P.C - cur.capone) > TOL, paidLess: (P.C - cur.capone) < -TOL && (cur.desj - P.D) > TOL,
     wsi: (cur.wsi!=null && wsiPrev!=null) ? { prev:wsiPrev, cur:cur.wsi, delta:cur.wsi - wsiPrev } : null };
 }
 function lastPerf(){ const s = snapsFull(); return s.length ? comparePerf(s[s.length-1]) : null; }
@@ -416,7 +428,9 @@ function perfCard(p){
     <div class="muted small">Soldes du ${dshort(p.cur.date)} comparés à la prévision faite depuis ceux du ${dshort(p.prev.date)} (${p.days} jour${p.days>1?'s':''}).</div>
     ${p.cats.map(c => `<div class="obj"><div class="ic ${c.state}">${c.state==='ok'?'✓':'!'}</div><div><b>${esc(c.label)}</b>${c.note?` <span class="muted small">${esc(c.note)}</span>`:''}<div class="small num">Prévu ${money0(c.pred)} · réel ${money0(c.act)} · <b style="color:var(--${c.state==='ok'?'good':'bad'})">${Math.abs(c.gap)<TOL?'≈ 0 $':sign(c.gap)}</b></div></div><span class="pill ${c.state}">${c.state==='ok'?'Atteint':'Manqué'}</span></div>`).join('')}
     <div class="obj"><div class="ic ${p.spentEst <= p.budget + TOL ? 'ok' : 'miss'}">$</div><div><b>Dépenses estimées : ${money0(Math.max(0,p.spentEst))}</b> <span class="muted">sur ${money0(p.budget)} prévus</span><div class="muted small">Calculé à partir de l’écart général : ce que tes soldes disent de tes dépenses depuis le ${dday(p.prev.date)}</div></div><span></span></div>
+    ${p.paidLess ? '<div class="banner open small">Capital One plus haut que prévu, mais l’argent est encore dans Desjardins : le paiement de carte prévu n’est pas fait (ou pas encore passé). Regarde « Général ».</div>' : ''}
     ${p.paidMore ? '<div class="banner ok small">Desjardins plus bas que prévu, mais la carte a baissé d’autant : tu as payé la carte plus que prévu.</div>' : ''}
+    ${p.income.any ? `<div class="small">Revenus pris en compte : ${p.income.payPlanned ? 'paye '+money0(p.income.payReal)+(Math.abs(p.income.payReal-p.income.payPlanned)>=1?' (prévue '+money0(p.income.payPlanned)+')':'') : ''}${p.income.payPlanned && p.income.contracts ? ' · ' : ''}${p.income.contracts ? 'autres revenus '+money0(p.income.contracts) : ''}. Une paye plus basse ne compte pas comme une dépense.</div>` : ''}
     ${p.wsi ? `<div class="small">Placements WS : ${money(p.wsi.cur)} <span style="color:var(--${p.wsi.delta>=0?'good':'bad'})">(${sign(p.wsi.delta)} depuis le ${dday(p.prev.date)})</span></div>` : ''}
   </section>`;
 }
@@ -513,14 +527,33 @@ function viewJour(){
   const snapToday = snapsFull().filter(x => x.date===d).pop();
   let h = `<header class="top"><div><div class="muted small">Bloc ${bl.k+1} · jour ${diffDays(bl.start,d)+1} sur 3</div><div class="row" style="gap:4px"><button class="ghost" data-act="dayPrev" aria-label="Jour précédent">‹</button><h1>${d===t?'Aujourd’hui':esc(dshort(d))}</h1><button class="ghost" data-act="dayNext" aria-label="Jour suivant" ${d>=t?'disabled':''}>›</button></div></div></header>`;
   // Entraînement
+  const gym = todays.some(isStrength), car = todays.some(isCardio), rest = todays.some(w => w.kind==='repos');
+  const detailed = todays.filter(w => (isStrength(w) || isCardio(w)) && !/^[GK]\d{4}-/.test(w._id));
   h += `<section class="card" aria-label="Entraînement du jour"><h2>Entraînement</h2>
-    ${todays.length ? todays.map(w => `<div class="obj"><div class="ic ok">✓</div><div><b>${esc(w.kind==='cardio'?'Cardio — '+w.title:w.kind==='libre'?'Séance libre':w.kind+' — '+w.title)}</b><div class="muted small">${esc(summarizeWorkout(w))}</div></div><span></span></div>`).join('') : '<div class="muted small">Rien d’entré pour cette journée.</div>'}
-    <div class="row">${P ? `<button class="${todays.some(isStrength)?'':'primary'}" data-act="startSession" data-kind="${next}">Séance ${next} — ${esc(P.sessions[next].name)}</button>` : ''}<button data-act="cardio">Cardio</button><button data-act="startSession" data-kind="libre">Libre</button></div></section>`;
+    <div class="row"><button class="seg" data-act="train" data-v="gym" aria-pressed="${gym}">Gym</button><button class="seg" data-act="train" data-v="cardio" aria-pressed="${car}">Cardio</button><button class="seg" data-act="train" data-v="rien" aria-pressed="${rest}">Rien</button></div>
+    ${detailed.length ? `<div class="muted small">${detailed.map(w => esc(summarizeWorkout(w))).join(' · ')}</div>` : ''}
+    ${P && gym && !todays.some(w => P.rotation.includes(w.kind)) ? `<button class="ghost" data-act="startSession" data-kind="${next}" style="justify-self:start">Noter le détail (séance ${next} — ${esc(P.sessions[next].name)}) ›</button>` : ''}
+    ${!gym && !car && !rest ? '<div class="muted small">Pas encore indiqué pour cette journée.</div>' : ''}</section>`;
   // Fumée
   const sel = rec.smokeLogged;
   h += `<section class="card" aria-label="Fumée du jour"><div class="row between"><h2>Fumée</h2><span class="small muted">${smokeStreak('cig')} j sans cigarette · ${smokeStreak('weed')} j sans weed</span></div>
     <div class="row"><button class="seg" data-act="smokeNone" aria-pressed="${!!(sel && !rec.cig && !rec.weed)}">Rien fumé</button><button class="seg" data-act="smokeToggle" data-v="cig" aria-pressed="${!!rec.cig}">Cigarette</button><button class="seg" data-act="smokeToggle" data-v="weed" aria-pressed="${!!rec.weed}">Weed</button></div>
     ${sel ? '' : '<div class="muted small">Pas encore indiqué pour cette journée.</div>'}</section>`;
+  // Revenus
+  const incToday = (S.incomes||[]).filter(i => i.date===d);
+  const payNear = (S.incomes||[]).some(i => i.type==='Paye' && Math.abs(diffDays(i.date, d)) <= 3);
+  const payDay = isPayDay(c, d), lastPay = incToday.filter(i => i.type==='Paye').pop();
+  h += `<section class="card" aria-label="Revenus"><div class="row between"><h2>Revenus</h2><span class="small muted">${payDay ? 'jour de paye' : 'prochaine paye : '+dday(nextPayAfter(c, d))}</span></div>
+    ${payDay && !payNear ? `<div class="banner open small">C’est jour de paye. Combien as-tu reçu ?</div><div class="row"><input id="iPay" class="sm" style="width:120px" inputmode="decimal" value="${String(c.payAmount).replace('.',',')}" aria-label="Paye reçue"> $<button class="primary" data-act="addPay">Enregistrer la paye</button></div>` : ''}
+    ${incToday.map(i => `<div class="obj"><div class="ic ok">$</div><div><b>${esc(i.type)} : ${money(i.amount)}</b><div class="muted small">${ACC[i.account]}${i.note?' · '+esc(i.note):''}</div></div><button class="ghost" data-act="delIncome" data-id="${esc(i._id)}" aria-label="Supprimer ce revenu">×</button></div>`).join('')}
+    ${lastPay && Math.abs(lastPay.amount - c.payAmount) >= 1 ? `<div class="small">Ta paye prévue est de ${money(c.payAmount)}. <button class="ghost" data-act="setPay" data-v="${lastPay.amount}">Prévoir ${money(lastPay.amount)} pour les prochaines payes</button></div>` : ''}
+    ${incomeAdvice(incToday.filter(i => i.type!=='Paye'))}
+    <details><summary>Ajouter un revenu de contrat ou autre</summary><div class="grid3" style="margin-top:8px">
+      <label class="f" for="iAmt">Montant<input id="iAmt" inputmode="decimal"></label>
+      <label class="f" for="iType">Type<select id="iType"><option>Contrat</option><option>Paye</option><option>Autre</option></select></label>
+      <label class="f" for="iAcc">Reçu dans<select id="iAcc"><option value="desj">Desjardins</option><option value="wsc">WS chèque</option></select></label></div>
+      <label class="f" for="iNote" style="margin-top:8px">Note<input id="iNote" placeholder="ex. contrat sonorisation"></label>
+      <button data-act="addIncome" style="margin-top:8px">Ajouter</button></details></section>`;
   // Montants
   h += `<section class="card" aria-label="Montants du jour"><div class="row between"><h2>Montants du jour</h2><span class="small muted">${snapToday ? 'entrés ✓' : 'derniers : '+(b.date?dday(b.date):'—')}</span></div>
     <div class="grid2"><label class="f" for="jD">Desjardins<input id="jD" inputmode="decimal" value="${f(b.desj)}"></label><label class="f" for="jC">Capital One (solde + en attente)<input id="jC" inputmode="decimal" value="${f(b.capone)}"></label>
@@ -532,6 +565,13 @@ function viewJour(){
   return h;
 }
 function afterJour(){}
+function incomeAdvice(list){
+  const tot = list.reduce((a,i) => a + i.amount, 0); if (!tot) return '';
+  const pj = runProjection({ days: 45 }); let keep = 0, when = null;
+  if (pj && pj.low.v < 0){ keep = Math.ceil(-pj.low.v + (cfg().buffer||0)); when = pj.low.date; }
+  keep = Math.min(keep, tot); const toCard = tot - keep;
+  return `<div class="banner ok small">Suggestion pour ${money0(tot)} : ${toCard > 0 ? '<b>'+money0(toCard)+' sur Capital One</b> (la dette à '+fnum(cfg().capone.apr*100)+' %)' : ''}${toCard > 0 && keep > 0 ? ', et ' : ''}${keep > 0 ? '<b>'+money0(keep)+' à garder dans Desjardins</b> pour éviter le découvert prévu le '+dday(when) : ''}.</div>`;
+}
 function saveDay(d, patch){ const cur = Object.assign({ spent:null, smokeLogged:false, cig:false, weed:false, commute:null, note:'' }, S.days[d] || {}, patch);
   const smoke = !cur.smokeLogged ? null : cur.cig && cur.weed ? 'Cigarette + weed' : cur.cig ? 'Cigarette' : cur.weed ? 'Weed' : 'Non';
   enqueue({ t:'day', date:d, spent:cur.spent, smoke, commute: cur.commute ? COMMUTE[cur.commute] : null, note:cur.note||'' }); }
@@ -544,7 +584,7 @@ function viewTrain(){
   <section class="card"><div>${ph.sets} séries · effort ${esc(ph.effort)}. ${esc(ph.note)}</div>${ph.next?`<div class="muted small">Phase suivante (${esc(ph.next.name)}) après ${ph.next.from} séances. Les jours manqués ne font pas avancer la phase.</div>`:''}
   <div class="row">${P.rotation.map(k => `<button class="${k===next?'primary':''}" data-act="startSession" data-kind="${k}">${k} — ${esc(P.sessions[k].name)}</button>`).join('')}<button data-act="startSession" data-kind="libre">Séance libre</button><button data-act="cardio">Cardio</button></div></section>`;
   h += `<section class="card"><h2>Programme</h2>${P.rotation.map(k => { const s = P.sessions[k]; return `<details><summary>${k} — ${esc(s.name)}</summary><div class="warmup"><b>Échauffement</b><ul>${s.warmup.map(w=>`<li>${esc(w)}</li>`).join('')}</ul></div><table><tbody>${s.exercises.map(e => `<tr><td>${esc(e.name)}${(e.minPhase||1)>1?` <span class="pill na">dès phase ${e.minPhase}</span>`:''}<div class="muted small">${esc(e.note||'')}</div></td><td class="n">${esc(e.reps)}</td><td class="n">${e.load?e.load+' lb':''}</td></tr>`).join('')}</tbody></table></details>`; }).join('')}</section>`;
-  const recent = S.workouts.slice(-25).reverse();
+  const recent = S.workouts.filter(w => w.kind!=='repos').slice(-25).reverse();
   h += `<section class="card"><h2>Historique</h2>${recent.length ? recent.map(w => `<div class="histitem"><div class="row between"><b>${esc(dshort(w.date))} · ${esc(w.kind==='cardio'?'Cardio':w.kind==='libre'?'Libre':w.kind+' — '+(w.title||''))}</b><button class="ghost" data-act="delWorkout" data-id="${w._id}">Supprimer</button></div><div class="muted small">${esc(summarizeWorkout(w))}</div></div>`).join('') : '<p class="muted">Aucune séance encore.</p>'}</section>`;
   const rec = {}; S.workouts.forEach(w => (w.exercises||[]).forEach(e => { if (e.kind!=='reps') return; (e.sets||[]).forEach(s => { if (s.w==null) return; const r = rec[e.name] || (rec[e.name] = { best:0, bestR:0, last:null }); if (s.w > r.best || (s.w===r.best && s.r > r.bestR)){ r.best = s.w; r.bestR = s.r; } r.last = { w:s.w, r:s.r, date:w.date }; }); }));
   const names = Object.keys(rec).sort((a,b) => rec[b].last.date.localeCompare(rec[a].last.date));
@@ -552,7 +592,8 @@ function viewTrain(){
   return h;
 }
 function summarizeWorkout(w){
-  if (w.kind==='cardio' && w.cardio) return w.cardio.type+' · '+w.cardio.min+' min'+(w.note?' · '+w.note:'');
+  if (w.kind==='cardio' && w.cardio) return w.cardio.type+(w.cardio.min!=null?' · '+w.cardio.min+' min':'')+(w.note?' · '+w.note:'');
+  if (w.kind==='repos') return 'Repos';
   return (w.exercises||[]).map(e => {
     if (e.kind==='cardio') return (e.type||'Cardio')+' '+(e.min||0)+' min';
     if (e.kind==='time') return e.name+' '+(e.sets||[]).map(s=>s.t+' s').join('/');
@@ -883,6 +924,22 @@ document.getElementById('view').addEventListener('click', e => {
   else if (a==='recEdit') openRec(b.dataset.id || null);
   else if (a==='dayPrev'){ dayCursor = addDays(dayCursor||TODAY(), -1); render(); }
   else if (a==='dayNext'){ const n = addDays(dayCursor||TODAY(), 1); dayCursor = n >= TODAY() ? null : n; render(); }
+  else if (a==='train'){ const d = dayCursor||TODAY(), v = b.dataset.v, todays = S.workouts.filter(w => w.date===d);
+    const has = id => todays.some(w => w._id===id), ph = phaseNow();
+    const addGym = () => enqueue({ t:'session', id:'G'+d, date:d, kind:'libre', title:'Gym', phase: ph ? ph.idx : 1, note:'Entrée rapide', sets:[], cardio:[] });
+    const addCar = () => enqueue({ t:'cardio', id:'K'+d, date:d, type:'Cardio', min:null, note:'Entrée rapide' });
+    const addRest = () => enqueue({ t:'session', id:'R'+d, date:d, kind:'repos', title:'Repos', phase:'', note:'', sets:[], cardio:[] });
+    const del = id => enqueue({ t:'delWorkout', id });
+    if (v==='gym'){ if (has('G'+d)) del('G'+d); else if (todays.some(isStrength)) toast('Une séance détaillée est déjà notée pour ce jour.'); else { if (has('R'+d)) del('R'+d); addGym(); } }
+    else if (v==='cardio'){ if (has('K'+d)) del('K'+d); else if (todays.some(isCardio)) toast('Un cardio détaillé est déjà noté pour ce jour.'); else { if (has('R'+d)) del('R'+d); addCar(); } }
+    else { if (has('R'+d)) del('R'+d); else { if (has('G'+d)) del('G'+d); if (has('K'+d)) del('K'+d); addRest(); } } }
+  else if (a==='addPay'){ const v = num((document.getElementById('iPay')||{}).value); if (!v){ toast('Indique le montant reçu.'); return; }
+    if (document.activeElement) document.activeElement.blur(); enqueue({ t:'income', id:uid('I'), date: dayCursor||TODAY(), type:'Paye', amount:v, account:'Desjardins', note:'' }); toast('Paye enregistrée.'); }
+  else if (a==='addIncome'){ const v = num(document.getElementById('iAmt').value); if (!v){ toast('Indique le montant.'); return; }
+    if (document.activeElement) document.activeElement.blur(); const acc = document.getElementById('iAcc').value;
+    enqueue({ t:'income', id:uid('I'), date: dayCursor||TODAY(), type: document.getElementById('iType').value, amount:v, account: ACCLABEL[acc], note: document.getElementById('iNote').value }); toast('Revenu enregistré.'); }
+  else if (a==='delIncome') confirmIn(b, 'Sûr ?', () => enqueue({ t:'delIncome', id:b.dataset.id }));
+  else if (a==='setPay'){ enqueue({ t:'settings', values:{ Paye: +b.dataset.v } }); sim = null; toast('Paye prévue mise à jour.'); }
   else if (a==='smokeNone') saveDay(dayCursor||TODAY(), { smokeLogged:true, cig:false, weed:false });
   else if (a==='smokeToggle'){ const d = dayCursor||TODAY(), r = S.days[d] || {}, k = b.dataset.v; saveDay(d, { smokeLogged:true, [k]: !r[k] }); }
   else if (a==='saveAmounts'){ const g = id => { const el = document.getElementById(id); return el ? num(el.value.replace('−','-')) : null; };
