@@ -303,7 +303,7 @@ function parseRaw(R){
     wsTransfer:{ amount:+g('VirMontant')||0, day:+g('VirJour')||1 },
     capone:{ apr:+g('Taux')||0, limit:+g('Limite')||0, stmtDay:+g('JourReleve')||15, dueDay:+g('JourEcheance')||11, minPct:0.05, strategy: g('Strategie')==='Montant fixe' ? 'fixed' : 'max', fixed:+g('MontantFixe')||0 },
     buffer:+g('Coussin')||0, blockAnchor:g('DebutBlocs')||TODAY(), trainingStart:g('DebutMuscu')||TODAY(),
-    smoke:{ startTarget: nv(g('FumeeDepart')) }, goalWeight: nv(g('PoidsVise')) } : null;
+    smoke:{ startTarget: nv(g('FumeeDepart')) }, goalWeight: nv(g('PoidsVise')), carteZero: g('CarteZeroVisee') ? String(g('CarteZeroVisee')).slice(0,10) : null } : null;
   // Programme
   const P = { rotation:[], sessions:{}, phases:[] }; let inPh = false;
   R.programme.forEach(r => {
@@ -527,13 +527,14 @@ function viewJour(){
   const snapToday = snapsFull().filter(x => x.date===d).pop();
   let h = `<header class="top"><div><div class="muted small">Bloc ${bl.k+1} · jour ${diffDays(bl.start,d)+1} sur 3</div><div class="row" style="gap:4px"><button class="ghost" data-act="dayPrev" aria-label="Jour précédent">‹</button><h1>${d===t?'Aujourd’hui':esc(dshort(d))}</h1><button class="ghost" data-act="dayNext" aria-label="Jour suivant" ${d>=t?'disabled':''}>›</button></div></div></header>`;
   // Entraînement
+  const co = coach(d);
   const gym = todays.some(isStrength), car = todays.some(isCardio), rest = todays.some(w => w.kind==='repos');
   const detailed = todays.filter(w => (isStrength(w) || isCardio(w)) && !/^[GK]\d{4}-/.test(w._id));
   h += `<section class="card" aria-label="Entraînement du jour"><h2>Entraînement</h2>
     <div class="row"><button class="seg" data-act="train" data-v="gym" aria-pressed="${gym}">Gym</button><button class="seg" data-act="train" data-v="cardio" aria-pressed="${car}">Cardio</button><button class="seg" data-act="train" data-v="rien" aria-pressed="${rest}">Rien</button></div>
     ${detailed.length ? `<div class="muted small">${detailed.map(w => esc(summarizeWorkout(w))).join(' · ')}</div>` : ''}
-    ${P && gym && !todays.some(w => P.rotation.includes(w.kind)) ? `<button class="ghost" data-act="startSession" data-kind="${next}" style="justify-self:start">Noter le détail (séance ${next} — ${esc(P.sessions[next].name)}) ›</button>` : ''}
-    ${!gym && !car && !rest ? '<div class="muted small">Pas encore indiqué pour cette journée.</div>' : ''}</section>`;
+    ${!gym && !rest && P ? `<div class="small">Suggestion : ${co.mode==='recup' ? 'récupération (nage douce ou repos)' : 'séance '+co.kind+' — '+esc(P.sessions[co.kind].name)}${co.why[0] ? '. '+esc(co.why[0]) : ''} <a href="#entrainement">Voir dans Muscu</a></div>` : ''}
+    ${!car && !rest && !co.cardioRecent ? `<div class="muted small">${esc(co.cardioTip)}</div>` : ''}</section>`;
   // Fumée
   const sel = rec.smokeLogged;
   h += `<section class="card" aria-label="Fumée du jour"><div class="row between"><h2>Fumée</h2><span class="small muted">${smokeStreak('cig')} j sans cigarette · ${smokeStreak('weed')} j sans weed</span></div>
@@ -576,16 +577,71 @@ function saveDay(d, patch){ const cur = Object.assign({ spent:null, smokeLogged:
   const smoke = !cur.smokeLogged ? null : cur.cig && cur.weed ? 'Cigarette + weed' : cur.cig ? 'Cigarette' : cur.weed ? 'Weed' : 'Non';
   enqueue({ t:'day', date:d, spent:cur.spent, smoke, commute: cur.commute ? COMMUTE[cur.commute] : null, note:cur.note||'' }); }
 
+// ---- Coach : séance suggérée à partir des derniers jours ----
+const PAIN_OPTS = ['Coude','Poignet','Épaule','Dos','Pied gauche'];
+const CARDIO_TYPES = ['Natation','Corde à sauter','Mountain Climber','Vélo / Bixi','Rameur','Marche rapide','Autre'];
+const AW_EX = /strap|cupping|side pressure|rise and back|towel|armwrestling|pronat/i;
+const PRESS_EX = /shoulder press|dips/i;
+const BACK_EX = /romanian|deadlift/i;
+const round5 = v => Math.round(v/5)*5;
+const NOADJ = () => ({ factor:1, setDelta:0, skip:[], factorBy:[], noProgress:false, easy:false });
+function feelOf(w){ const m = /Ressenti\s*:\s*(Facile|Correct|Dur)/i.exec(w.note||''); return m ? m[1].charAt(0).toUpperCase()+m[1].slice(1).toLowerCase() : null; }
+function painsOf(w){ const m = /Douleur\s*:\s*([^·—\n]+)/i.exec(w.note||''); return m ? m[1].split(',').map(s => s.trim()).filter(s => s && !/aucune/i.test(s)) : []; }
+function isMC(w){ return (w.cardio && /mountain/i.test(w.cardio.type)) || (w.exercises||[]).some(e => e.kind==='cardio' && /mountain/i.test(e.type||'')); }
+function coach(d){
+  d = d || TODAY();
+  const past = S.workouts.filter(w => w.date <= d);
+  const str = past.filter(isStrength).filter(w => w.date < d), last = str[str.length-1];
+  const gap = last ? diffDays(last.date, d) : null;
+  const doneToday = past.filter(w => w.date===d);
+  const pains = Array.from(new Set(past.filter(w => w.date >= addDays(d,-7)).flatMap(painsOf)));
+  const pain = p => pains.some(x => x.toLowerCase().includes(p));
+  const feel = last ? feelOf(last) : null;
+  const adj = NOADJ(), why = [];
+  let mode = doneToday.some(isStrength) ? 'done' : 'session';
+  if (mode!=='done' && str.some(w => w.date===addDays(d,-1)) && str.some(w => w.date===addDays(d,-2))){ mode = 'recup'; why.push('Deux jours de force d’affilée : aujourd’hui, récupération (nage douce ou repos).'); }
+  if (gap == null) why.push('Première séance de ton retour : on commence léger.');
+  else if (gap >= 10){ const ph = phaseNow(); adj.factor = 0.9; adj.setDelta = ph && ph.sets > 2 ? -1 : 0; why.push(gap+' jours depuis ta dernière séance : reprise douce, charges −10 %'+(adj.setDelta ? ' et une série de moins.' : '.')); }
+  else if (gap >= 5){ adj.noProgress = true; why.push(gap+' jours depuis ta dernière séance : mêmes charges que la dernière fois.'); }
+  if (feel==='Dur'){ adj.noProgress = true; why.push('Dernière séance notée « Dur » : on garde les mêmes charges.'); }
+  if (feel==='Facile' && !adj.noProgress){ adj.easy = true; why.push('Dernière séance notée « Facile » : +5 lb là où tu as été proche du haut de la fourchette.'); }
+  if (pain('coude') || pain('poignet')){ adj.skip.push(AW_EX); why.push('Coude ou poignet signalé cette semaine : pas de straps, de cupping ni de table cette fois.'); }
+  if (pain('paule')){ adj.skip.push(PRESS_EX); adj.factorBy.push([/bench/i, 0.8]); why.push('Épaule signalée : pas de développé épaules ni de dips, bench −20 %.'); }
+  if (pain('dos')){ adj.skip.push(BACK_EX); adj.factorBy.push([/squat/i, 0.8]); why.push('Dos signalé : pas de Romanian, squat −20 %.'); }
+  const footPain = pain('pied');
+  const cardioRecent = past.some(w => isCardio(w) && w.date >= addDays(d,-2));
+  const mcWeek = past.some(w => isMC(w) && w.date >= addDays(d,-6));
+  const cardioTip = footPain ? 'Pied gauche signalé : cardio en nage seulement.'
+    : !cardioRecent ? 'Pas de cardio depuis 3 jours : 20 à 30 min de nage'+(mcWeek ? ' (mountain climbers déjà faits cette semaine).' : ', ou corde 6 × 1 min.')
+    : 'Cardio fait récemment.';
+  return { kind: nextSessionKind(), mode, gap, last, feel, pains, adj, why, cardioTip, footPain, mcWeek, cardioRecent };
+}
+
 // ---- Entraînement ----
 function viewTrain(){
   const P = S.program, ph = phaseNow(); if (!P) return '<div class="card muted">Programme non chargé.</div>';
-  const next = nextSessionKind();
-  let h = `<header class="top"><div><div class="muted small">Phase ${ph.idx} sur ${P.phases.length} · ${ph.count} séance${ph.count>1?'s':''} depuis le ${dday(cfg().trainingStart)}</div><h1>${esc(ph.name)}</h1></div></header>
-  <section class="card"><div>${ph.sets} séries · effort ${esc(ph.effort)}. ${esc(ph.note)}</div>${ph.next?`<div class="muted small">Phase suivante (${esc(ph.next.name)}) après ${ph.next.from} séances. Les jours manqués ne font pas avancer la phase.</div>`:''}
-  <div class="row">${P.rotation.map(k => `<button class="${k===next?'primary':''}" data-act="startSession" data-kind="${k}">${k} — ${esc(P.sessions[k].name)}</button>`).join('')}<button data-act="startSession" data-kind="libre">Séance libre</button><button data-act="cardio">Cardio</button></div></section>`;
-  h += `<section class="card"><h2>Programme</h2>${P.rotation.map(k => { const s = P.sessions[k]; return `<details><summary>${k} — ${esc(s.name)}</summary><div class="warmup"><b>Échauffement</b><ul>${s.warmup.map(w=>`<li>${esc(w)}</li>`).join('')}</ul></div><table><tbody>${s.exercises.map(e => `<tr><td>${esc(e.name)}${(e.minPhase||1)>1?` <span class="pill na">dès phase ${e.minPhase}</span>`:''}<div class="muted small">${esc(e.note||'')}</div></td><td class="n">${esc(e.reps)}</td><td class="n">${e.load?e.load+' lb':''}</td></tr>`).join('')}</tbody></table></details>`; }).join('')}</section>`;
+  const co = coach(TODAY()), t = TODAY();
+  let h = `<header class="top"><div><div class="muted small">Phase ${ph.idx} sur ${P.phases.length} · ${esc(ph.name)} · ${ph.count} séance${ph.count>1?'s':''} depuis le ${dday(cfg().trainingStart)}</div><h1>Muscu</h1></div></header>`;
+  if (co.mode==='done'){
+    const w = S.workouts.filter(x => x.date===t && isStrength(x));
+    h += `<section class="card"><h2>Aujourd’hui</h2><div class="obj"><div class="ic ok">✓</div><div><b>Séance faite</b><div class="muted small">${w.map(x => esc(summarizeWorkout(x))).join(' · ')}</div></div><span></span></div>
+      ${!co.cardioRecent ? `<div class="small">${esc(co.cardioTip)}</div><button data-act="cardio">Noter un cardio</button>` : ''}</section>`;
+  } else if (co.mode==='recup'){
+    h += `<section class="card"><h2>Aujourd’hui : récupération</h2>${co.why.map(x => `<div class="small">• ${esc(x)}</div>`).join('')}
+      <div class="row"><button class="primary" data-act="cardio">Noter un cardio</button><button data-act="startSession" data-kind="${co.kind}">Faire quand même la séance ${co.kind}</button></div></section>`;
+  } else {
+    const pv = buildSession(co.kind);
+    h += `<section class="card" aria-label="Séance suggérée"><div class="muted small">Suggestion pour aujourd’hui</div><h2>Séance ${co.kind} — ${esc(P.sessions[co.kind].name)}</h2>
+      ${(co.why.length ? co.why : ['Rien de spécial : on suit la progression normale.']).map(x => `<div class="small">• ${esc(x)}</div>`).join('')}
+      <div>${pv.exercises.map(x => `<div class="histitem"><div><b>${esc(x.name)}</b> <span class="small">${x.kind==='cardio' ? (x.min||20)+' min' : x.sets.length+' × '+esc(x.target)}${x.kind==='reps' && x.sets[0] && x.sets[0].w ? ' · <b>'+x.sets[0].w+' lb</b>' : ''}</span></div>${x.hint?`<div class="muted small">${esc(x.hint)}</div>`:''}</div>`).join('')}</div>
+      <button class="primary" data-act="startSession" data-kind="${co.kind}">Commencer cette séance</button>
+      <div class="row"><span class="small muted">Autre séance :</span>${P.rotation.filter(k => k!==co.kind).map(k => `<button class="seg" data-act="startSession" data-kind="${k}">${k}</button>`).join('')}<button class="seg" data-act="startSession" data-kind="libre">Libre</button></div></section>`;
+  }
+  h += `<section class="card"><div class="row between"><h2>Cardio</h2><button data-act="cardio">Noter un cardio</button></div><div class="small">${esc(co.cardioTip)}</div><div class="muted small">Le cardio s’entre en minutes. Mountain climbers : une fois par semaine au maximum. Corde : surface souple, attention au pied gauche.</div></section>`;
+  h += `<section class="card"><h3>Phase ${ph.idx} : ${esc(ph.name)}</h3><div class="small">${ph.sets} séries · effort ${esc(ph.effort)}. ${esc(ph.note)}</div>${ph.next?`<div class="muted small">Phase suivante (${esc(ph.next.name)}) après ${ph.next.from} séances. Les jours manqués ne font pas avancer la phase.</div>`:''}</section>`;
   const recent = S.workouts.filter(w => w.kind!=='repos').slice(-25).reverse();
-  h += `<section class="card"><h2>Historique</h2>${recent.length ? recent.map(w => `<div class="histitem"><div class="row between"><b>${esc(dshort(w.date))} · ${esc(w.kind==='cardio'?'Cardio':w.kind==='libre'?'Libre':w.kind+' — '+(w.title||''))}</b><button class="ghost" data-act="delWorkout" data-id="${w._id}">Supprimer</button></div><div class="muted small">${esc(summarizeWorkout(w))}</div></div>`).join('') : '<p class="muted">Aucune séance encore.</p>'}</section>`;
+  h += `<section class="card"><h2>Historique</h2>${recent.length ? recent.map(w => { const f = feelOf(w), pn = painsOf(w); return `<div class="histitem"><div class="row between"><b>${esc(dshort(w.date))} · ${esc(w.kind==='cardio'?'Cardio':w.kind==='libre'?(w.title||'Libre'):w.kind+' — '+(w.title||''))}</b><button class="ghost" data-act="delWorkout" data-id="${w._id}">Supprimer</button></div>${f||pn.length?`<div class="row">${f?`<span class="pill ${f==='Dur'?'miss':f==='Facile'?'ok':'na'}">${f}</span>`:''}${pn.map(p => `<span class="pill open">${esc(p)}</span>`).join('')}</div>`:''}<div class="muted small">${esc(summarizeWorkout(w))}</div></div>`; }).join('') : '<p class="muted">Aucune séance encore.</p>'}</section>`;
+  h += `<section class="card"><h2>Programme</h2>${P.rotation.map(k => { const s = P.sessions[k]; return `<details><summary>${k} — ${esc(s.name)}</summary><div class="warmup"><b>Échauffement</b><ul>${s.warmup.map(w=>`<li>${esc(w)}</li>`).join('')}</ul></div><table><tbody>${s.exercises.map(e => `<tr><td>${esc(e.name)}${(e.minPhase||1)>1?` <span class="pill na">dès phase ${e.minPhase}</span>`:''}<div class="muted small">${esc(e.note||'')}</div></td><td class="n">${esc(e.reps)}</td><td class="n">${e.load?e.load+' lb':''}</td></tr>`).join('')}</tbody></table></details>`; }).join('')}<div class="muted small">Pour changer un exercice, une cible ou une charge de départ : onglet Programme de ton Google Sheets.</div></section>`;
   const rec = {}; S.workouts.forEach(w => (w.exercises||[]).forEach(e => { if (e.kind!=='reps') return; (e.sets||[]).forEach(s => { if (s.w==null) return; const r = rec[e.name] || (rec[e.name] = { best:0, bestR:0, last:null }); if (s.w > r.best || (s.w===r.best && s.r > r.bestR)){ r.best = s.w; r.bestR = s.r; } r.last = { w:s.w, r:s.r, date:w.date }; }); }));
   const names = Object.keys(rec).sort((a,b) => rec[b].last.date.localeCompare(rec[a].last.date));
   if (names.length) h += `<section class="card"><h2>Charges</h2><div class="tablewrap"><table><thead><tr><th>Exercice</th><th class="n">Dernière</th><th class="n">Meilleure</th></tr></thead><tbody>${names.map(n => `<tr><td>${esc(n)}</td><td class="n">${rec[n].last.w} × ${rec[n].last.r}<div class="muted small">${dday(rec[n].last.date)}</div></td><td class="n">${rec[n].best} × ${rec[n].bestR}</td></tr>`).join('')}</tbody></table></div></section>`;
@@ -607,13 +663,26 @@ function afterTrain(){}
 
 // ---- Argent ----
 let sim = null;
+const weekOf = b => b.other*5 + b.wed + b.sat;
+const scaleBudget = (b, f) => ({ other: round2(b.other*f), wed: round2(b.wed*f), sat: round2(b.sat*f) });
+function goalStatus(){
+  const c = cfg(), pj = runProjection({ days: 730 }); if (!pj) return null;
+  const target = c.carteZero || null;
+  const st = { pj, zero: pj.zeroDate, target, ok: target ? !!(pj.zeroDate && pj.zeroDate <= target) : null, need: null };
+  if (target && !st.ok){
+    const b = latestBal(); const days = Math.max(1, diffDays(b.date, target) + 1);
+    const test = f => { const r = runProjection({ days, budget: scaleBudget(c.budget, f) }); return !!(r && r.zeroDate && r.zeroDate <= target); };
+    if (!test(0)) st.need = { impossible: true };
+    else { let lo = 0, hi = 1; for (let i = 0; i < 22; i++){ const m = (lo+hi)/2; if (test(m)) lo = m; else hi = m; } st.need = { weekly: weekOf(c.budget)*lo, f: lo }; }
+  }
+  return st;
+}
 function viewMoney(){
   const c = cfg(), b = latestBal();
-  if (!sim) sim = { budget: Object.assign({}, c.budget), strategy: c.capone.strategy, fixed: c.capone.fixed, months: 6 };
-  const pj = runProjection({ days: Math.round(sim.months*30.5), budget: sim.budget, strategy: sim.strategy, fixed: sim.fixed });
-  lastPj = pj;
+  if (!sim) sim = { budget: Object.assign({}, c.budget), strategy: c.capone.strategy, fixed: c.capone.fixed };
   const net = (b.desj||0) + (b.wsc||0) + (b.wsi||0) - (b.capone||0);
-  let h = `<header class="top"><div><div class="muted small">Soldes au ${b.date?dlong(b.date):'—'}</div><h1>Argent</h1></div><button class="primary" data-act="balances">Mettre à jour les soldes</button></header>
+  let h = `<header class="top"><div><div class="muted small">Soldes au ${b.date?dlong(b.date):'—'}</div><h1>Argent</h1></div><button data-act="balances">Entrer mes soldes</button></header>
+  <div class="small muted">Tes <b>objectifs</b> sont ton budget de dépenses et ta façon de payer la carte. La <b>prévision</b> en découle. Chaque fois que tu entres tes soldes, l’app <b>compare</b> le réel à la prévision.</div>
   <section class="card"><div class="tiles">
     <div class="tile"><span class="lab">Desjardins</span><b class="${b.desj<0?'kpi-neg':''}">${money(b.desj)}</b></div>
     <div class="tile"><span class="lab">WS chèque</span><b>${money(b.wsc)}</b></div>
@@ -621,36 +690,56 @@ function viewMoney(){
     <div class="tile"><span class="lab">Capital One</span><b>${money(b.capone)}</b><span class="small muted">${c.capone.limit?Math.round(b.capone/c.capone.limit*100)+' % de la limite':''}</span></div>
   </div><div class="row between small"><span class="muted">Valeur nette (comptes − carte)</span><b class="num ${net<0?'kpi-neg':'kpi-pos'}">${money(net)}</b></div>
   ${b.minDue?`<div class="small muted">Relevé carte : ${money(b.stmtBal)} · minimum ${money(b.minDue)} avant le ${b.dueDate?dlong(b.dueDate):'—'}</div>`:''}</section>`;
-  if (!pj) return h + '<div class="card muted">Entre tes soldes pour voir la projection.</div>';
-  const pays = pj.rows.filter(r => r.payIn);
-  const np = pays[0];
-  h += `<section class="card"><h2>Prochaine paye : ${np?dshort(np.date):'—'}</h2>
-    ${np ? (np.payAmt > 0 ? `<div class="obj"><div class="ic open">$</div><div><b>Payer ${money(np.payAmt)} sur Capital One</b><div class="muted small">Calculé pour garder ${money(c.buffer)} de coussin après le loyer, les prélèvements et ton budget jusqu’à la paye suivante.</div></div><span></span></div>`
-      : (() => { const n2 = pays.find(r => r.payAmt > 0); return `<div class="obj"><div class="ic na">$</div><div><b>Rien sur la carte à cette paye</b><div class="muted small">La paye sert au découvert, au loyer et à ton budget jusqu’à la suivante.${n2 ? ' Prochain paiement de carte : <b>'+money(n2.payAmt)+'</b> le '+dday(n2.date)+'.' : ''}</div></div><span></span></div>`; })()) : ''}
-    ${pj.warns.slice(0,4).map(warnHtml).join('')}</section>`;
-  h += `<section class="card"><div class="row between"><h2>Simulation</h2><button class="ghost" data-act="settings">Réglages</button></div>
+  const gs = goalStatus();
+  // 1. Mes objectifs
+  h += `<section class="card" aria-label="Mes objectifs"><div class="row between"><h2>1 · Mes objectifs</h2><button class="primary" data-act="goals">Modifier</button></div>
+    <div class="obj"><div class="ic na">$</div><div><b>Dépenses : ${money0(weekOf(c.budget))} par semaine</b><div class="muted small">${money0(c.budget.other)} par jour (lun-ven, dim.) · ${money0(c.budget.wed)} le mercredi · ${money0(c.budget.sat)} le samedi</div></div><span></span></div>
+    <div class="obj"><div class="ic na">▭</div><div><b>Carte : ${c.capone.strategy==='fixed' ? money0(c.capone.fixed)+' à chaque paye' : 'tout le surplus à chaque paye'}</b><div class="muted small">en gardant ${money0(c.buffer)} de coussin dans Desjardins jusqu’à la paye suivante</div></div><span></span></div>
+    <div class="obj"><div class="ic ${gs && gs.ok===true ? 'ok' : gs && gs.ok===false ? 'miss' : 'na'}">◎</div><div><b>Carte à zéro : ${c.carteZero ? 'avant le '+dlong(c.carteZero) : 'pas de date visée'}</b>
+      <div class="muted small">${!gs ? 'Entre tes soldes pour voir la prévision.' : (gs.zero ? 'Avec ces objectifs, la carte est à zéro le <b>'+dlong(gs.zero)+'</b>.' : 'Avec ces objectifs, la carte n’est pas remboursée dans les 2 prochaines années.')}
+      ${gs && gs.ok===false && gs.need ? (gs.need.impossible ? ' Même sans aucune dépense, la date visée est hors d’atteinte : choisis une date plus loin.' : ' Pour y arriver : dépenses d’environ <b>'+money0(gs.need.weekly)+' par semaine</b>.') : ''}</div></div>
+      ${gs && gs.ok!=null ? `<span class="pill ${gs.ok?'ok':'miss'}">${gs.ok?'En voie':'En retard'}</span>` : '<span></span>'}</div></section>`;
+  // 2. Où j'en suis
+  h += `<div class="small muted" style="margin-top:4px"><b>2 · Où j’en suis</b> : le réel comparé à la prévision, depuis tes derniers soldes.</div>` + perfCard(lastPerf());
+  // 3. Ce que mes objectifs donnent
+  const pj = gs ? gs.pj : null; lastPj = pj;
+  if (!pj) return h + '<div class="card muted">Entre tes soldes pour voir la prévision.</div>';
+  const pays = pj.rows.filter(r => r.payIn), np = pays[0];
+  h += `<section class="card" aria-label="Prévision"><h2>3 · La prévision</h2><div class="muted small">Ce que tes objectifs donnent si tu les suis, à partir de tes soldes du ${dday(b.date)}</div>
+    ${np ? (np.payAmt > 0 ? `<div class="obj"><div class="ic open">$</div><div><b>Paye du ${dday(np.date)} : payer ${money(np.payAmt)} sur Capital One</b><div class="muted small">Calculé pour garder ${money(c.buffer)} de coussin après le loyer, les prélèvements et ton budget jusqu’à la paye suivante.</div></div><span></span></div>`
+      : (() => { const n2 = pays.find(r => r.payAmt > 0); return `<div class="obj"><div class="ic na">$</div><div><b>Paye du ${dday(np.date)} : rien sur la carte</b><div class="muted small">Elle sert au découvert, au loyer et au budget jusqu’à la paye suivante.${n2 ? ' Prochain paiement de carte : <b>'+money(n2.payAmt)+'</b> le '+dday(n2.date) : ''}</div></div><span></span></div>`; })()) : ''}
+    <div class="tiles">
+      <div class="tile"><span class="lab">Carte à zéro</span><b>${pj.zeroDate?dday(pj.zeroDate):'Plus de 2 ans'}</b><span class="small muted">${pj.zeroDate?parseD(pj.zeroDate).getFullYear():''}</span></div>
+      <div class="tile"><span class="lab">Intérêts d’ici là</span><b>${money0(pj.interest)}</b></div>
+      <div class="tile"><span class="lab">Point bas Desjardins</span><b class="${pj.low.v<0?'kpi-neg':''}">${money0(pj.low.v)}</b><span class="small muted">${dday(pj.low.date)}</span></div>
+    </div>
+    ${pj.warns.slice(0,3).map(warnHtml).join('')}
+    <div class="chart"><canvas id="cMoney" aria-label="Prévision des soldes"></canvas></div>
+    <details><summary>Paye par paye</summary><div class="tablewrap"><table><thead><tr><th>Paye</th><th class="n">Desjardins après</th><th class="n">Vers la carte</th><th class="n">Solde carte</th></tr></thead><tbody>${pays.slice(0,14).map(r => `<tr><td>${dday(r.date)}</td><td class="n">${money0(r.D)}</td><td class="n">${money0(r.payAmt)}</td><td class="n">${money0(r.C)}</td></tr>`).join('')}</tbody></table></div></details></section>`;
+  // 4. Essayer d'autres chiffres
+  const tr = runProjection({ days: 730, budget: sim.budget, strategy: sim.strategy, fixed: sim.fixed });
+  const cmp = (a, b2, better) => a===b2 ? '' : (better ? ' <span class="pill ok">mieux</span>' : ' <span class="pill miss">moins bien</span>');
+  h += `<section class="card" aria-label="Essai"><h2>4 · Essayer d’autres chiffres</h2><div class="muted small">Un bac à sable : rien ne change tant que tu ne cliques pas « Adopter comme objectifs ».</div>
     <div class="grid3">
       <label class="f" for="sOther">Lun-ven, dim.<input id="sOther" inputmode="decimal" value="${sim.budget.other}"></label>
       <label class="f" for="sWed">Mercredi<input id="sWed" inputmode="decimal" value="${sim.budget.wed}"></label>
       <label class="f" for="sSat">Samedi<input id="sSat" inputmode="decimal" value="${sim.budget.sat}"></label>
     </div>
-    <div class="small muted">Budget de la semaine : <b>${money0(sim.budget.other*5 + sim.budget.wed + sim.budget.sat)}</b></div>
     <div class="row"><span class="small muted">Carte :</span><button class="seg" data-act="simStrat" data-v="max" aria-pressed="${sim.strategy==='max'}">Tout le surplus</button><button class="seg" data-act="simStrat" data-v="fixed" aria-pressed="${sim.strategy==='fixed'}">Montant fixe</button>${sim.strategy==='fixed'?`<input id="sFixed" class="sm" inputmode="decimal" value="${sim.fixed}" aria-label="Montant fixe par paye"> $ / paye`:''}</div>
-    <div class="row"><span class="small muted">Horizon :</span>${[3,6,12].map(m => `<button class="seg" data-act="simMonths" data-v="${m}" aria-pressed="${sim.months===m}">${m} mois</button>`).join('')}</div>
-    <div class="tiles">
-      <div class="tile"><span class="lab">Carte à zéro</span><b>${pj.zeroDate?dday(pj.zeroDate):'Pas dans l’horizon'}</b><span class="small muted">${pj.zeroDate?parseD(pj.zeroDate).getFullYear():''}</span></div>
-      <div class="tile"><span class="lab">Intérêts payés</span><b>${money0(pj.interest)}</b><span class="small muted">sur l’horizon</span></div>
-      <div class="tile"><span class="lab">Point bas Desjardins</span><b class="${pj.low.v<0?'kpi-neg':''}">${money0(pj.low.v)}</b><span class="small muted">${dday(pj.low.date)}</span></div>
-    </div>
-    <div class="chart"><canvas id="cMoney" aria-label="Projection des soldes"></canvas></div>
-    ${budgetsDiffer()?`<div class="row"><button class="primary" data-act="simSave">Garder ce budget</button><button data-act="simReset">Revenir au budget actuel</button></div>`:''}
+    ${tr ? `<div class="small muted">Mes objectifs → essai</div>
+      <div class="histitem"><b>Dépenses / semaine</b><div class="small">${money0(weekOf(c.budget))} → <b>${money0(weekOf(sim.budget))}</b></div></div>
+      <div class="histitem"><b>Carte à zéro</b><div class="small">${pj.zeroDate?dlong(pj.zeroDate):'plus de 2 ans'} → <b>${tr.zeroDate?dlong(tr.zeroDate):'plus de 2 ans'}</b>${cmp(pj.zeroDate, tr.zeroDate, tr.zeroDate && (!pj.zeroDate || tr.zeroDate < pj.zeroDate))}</div></div>
+      <div class="histitem"><b>Intérêts payés</b><div class="small">${money0(pj.interest)} → <b>${money0(tr.interest)}</b>${cmp(Math.round(pj.interest), Math.round(tr.interest), tr.interest < pj.interest)}</div></div>
+      <div class="histitem"><b>Point bas Desjardins</b><div class="small">${money0(pj.low.v)} → <b>${money0(tr.low.v)}</b>${cmp(Math.round(pj.low.v), Math.round(tr.low.v), tr.low.v > pj.low.v)}</div></div>` : ''}
+    ${budgetsDiffer()?`<div class="row"><button class="primary" data-act="simSave">Adopter comme objectifs</button><button data-act="simReset">Revenir à mes objectifs</button></div>`:''}
   </section>`;
-  h += `<section class="card"><h2>Paye par paye</h2><div class="tablewrap"><table><thead><tr><th>Paye</th><th class="n">Desjardins après</th><th class="n">Vers la carte</th><th class="n">Solde carte</th><th class="n">WS chèque</th></tr></thead><tbody>${pays.slice(0,14).map(r => `<tr><td>${dday(r.date)}</td><td class="n">${money0(r.D)}</td><td class="n">${money0(r.payAmt)}</td><td class="n">${money0(r.C)}</td><td class="n">${money0(r.W)}</td></tr>`).join('')}</tbody></table></div><div class="muted small">Projection à partir des soldes du ${b.date?dday(b.date):'—'}, des paiements récurrents actifs et du budget quotidien. Chaque fois que tu entres tes montants, la projection repart de tes vrais soldes.</div></section>`;
+  // 5. Paiements récurrents
   const groups = ['desj','wsc','capone'];
   h += `<section class="card"><div class="row between"><h2>Paiements récurrents</h2><button class="ghost" data-act="recEdit" data-id="">+ Ajouter</button></div>
     ${groups.map(g => { const list = S.recurring.filter(r => r.account===g && r.active).sort((a,b)=>a.day-b.day); const tot = list.reduce((a,r)=>a+r.amount,0); return `<div><div class="row between" style="margin-top:6px"><h3>${ACC[g]}</h3><span class="num small"><b>${money(tot)}</b> / mois</span></div>${list.map(recLine).join('') || '<div class="muted small">Aucun.</div>'}</div>`; }).join('')}
     ${(() => { const off = S.recurring.filter(r => !r.active); return off.length ? `<details><summary>Inactifs (${off.length})</summary>${off.map(recLine).join('')}</details>` : ''; })()}
-    <div class="muted small">Virement automatique Desjardins → WS : ${money(c.wsTransfer.amount)} le ${c.wsTransfer.day} du mois.</div></section>`;
+    <div class="muted small">Virement automatique Desjardins → WS : ${money(c.wsTransfer.amount)} le ${c.wsTransfer.day} du mois.</div></section>
+    <button data-act="settings">Paramètres : paye, carte, virement, connexion</button>`;
   return h;
 }
 const recLine = r => `<div class="recline ${r.active?'':'off'}" data-act="recEdit" data-id="${r._id}" role="button" tabindex="0"><div><div>${esc(r.name)}</div>${r.note?`<div class="muted small">${esc(r.note)}</div>`:''}</div><span class="muted small">le ${r.day}</span><span class="num">${money(r.amount)}</span></div>`;
@@ -664,18 +753,18 @@ function afterMoney(){
   const bind = (id, k) => { const el = document.getElementById(id); if (el) el.addEventListener('change', () => { const v = num(el.value); if (v!=null){ sim.budget[k] = v; render(); } }); };
   bind('sOther','other'); bind('sWed','wed'); bind('sSat','sat');
   const fx = document.getElementById('sFixed'); if (fx) fx.addEventListener('change', () => { const v = num(fx.value); if (v!=null){ sim.fixed = v; render(); } });
-  const cv = document.getElementById('cMoney'); if (!cv || typeof Chart==='undefined') return;
-  const pj = runProjection({ days: Math.round(sim.months*30.5), budget: sim.budget, strategy: sim.strategy, fixed: sim.fixed }); if (!pj) return;
+  const cv = document.getElementById('cMoney'); if (!cv || typeof Chart==='undefined' || !lastPj) return;
+  const pj = lastPj, end = pj.zeroDate ? addDays(pj.zeroDate, 30) : pj.rows[Math.min(pj.rows.length-1, 365)].date;
   const histFrom = addDays(pj.rows[0].date, -45);
   const hist = k => S.balances.filter(b => b[k]!=null && b.date >= histFrom).map(b => ({ x: dayNum(b.date), y: b[k] }));
-  const proj = k => pj.rows.map(r => ({ x: dayNum(r.date), y: r[k] }));
+  const proj = k => pj.rows.filter(r => r.date <= end).map(r => ({ x: dayNum(r.date), y: r[k] }));
   const ds = (label, data, color, dash, pts) => ({ label, data, borderColor: color, backgroundColor: color, borderWidth: 2, borderDash: dash?[5,4]:[], pointRadius: pts?3:0, tension: 0, fill:false });
-  charts.push(new Chart(cv, { type:'line', data:{ datasets:[
-    ds('Desjardins (réel)', hist('desj'), css('--c-desj'), false, true), ds('Desjardins (projeté)', proj('D'), css('--c-desj'), true, false),
-    ds('Capital One (réel)', hist('capone'), css('--c-cap'), false, true), ds('Capital One (projeté)', proj('C'), css('--c-cap'), true, false),
-    ds('WS chèque (projeté)', proj('W'), css('--c-ws'), true, false) ]},
+  const sets = [
+    ds('Desjardins (réel)', hist('desj'), css('--c-desj'), false, true), ds('Desjardins (prévu)', proj('D'), css('--c-desj'), true, false),
+    ds('Capital One (réel)', hist('capone'), css('--c-cap'), false, true), ds('Capital One (prévu)', proj('C'), css('--c-cap'), true, false) ];
+  charts.push(new Chart(cv, { type:'line', data:{ datasets:sets },
     options:{ responsive:true, maintainAspectRatio:false, animation:false, interaction:{ mode:'nearest', intersect:false },
-      scales:{ x:{ type:'linear', min: dayNum(histFrom), max: dayNum(pj.rows[pj.rows.length-1].date), ticks:{ color:css('--muted'), maxTicksLimit:6, callback: v => dday(fromDayNum(v)) }, grid:{ color:css('--line') } },
+      scales:{ x:{ type:'linear', min: dayNum(histFrom), max: dayNum(end), ticks:{ color:css('--muted'), maxTicksLimit:6, callback: v => dday(fromDayNum(v)) }, grid:{ color:css('--line') } },
                y:{ ticks:{ color:css('--muted'), callback: v => money0(v) }, grid:{ color:css('--line') } } },
       plugins:{ legend:{ labels:{ color:css('--ink'), boxWidth:12 } }, tooltip:{ callbacks:{ title: it => dshort(fromDayNum(it[0].parsed.x)), label: it => it.dataset.label+' : '+money(it.parsed.y) } } } } }));
 }
@@ -739,39 +828,54 @@ function openChooser(){
 
 // ---- Séance ----
 let sess = null;
-function buildSession(kind){
-  const P = S.program, ph = phaseNow() || { sets:2, idx:1 };
-  const base = kind==='libre' ? { name:'Séance libre', warmup:(P && P.sessions.A.warmup)||[], exercises:[] } : P.sessions[kind];
-  const ex = base.exercises.filter(e => (e.minPhase||1) <= ph.idx).map(e => newEx(e, ph.sets));
-  return { kind, date: TODAY(), title: base.name, warmup: base.warmup, exercises: ex, note:'', phase: ph.idx };
+function buildSession(kind, date){
+  const P = S.program, ph = phaseNow() || { sets:2, idx:1 }, d = date || TODAY();
+  const co = kind==='libre' ? null : coach(d), adj = co ? co.adj : NOADJ();
+  const base = kind==='libre' ? { name:'Séance libre', warmup:(P && P.sessions[P.rotation[0]].warmup)||[], exercises:[] } : P.sessions[kind];
+  const nSets = Math.max(2, ph.sets + adj.setDelta);
+  const ex = base.exercises.filter(e => (e.minPhase||1) <= ph.idx && !adj.skip.some(rx => rx.test(e.name))).map(e => newEx(e, nSets, adj, co));
+  return { kind, date: d, title: base.name, warmup: base.warmup, exercises: ex, note:'', feel:null, pains:[], phase: ph.idx, why: co ? co.why : [] };
 }
-function newEx(e, nSets){
-  const x = { name:e.name, kind:e.kind||'reps', target:e.reps||'', note:e.note||'', unit:e.unit||'lb', sets:[] };
+function newEx(e, nSets, adj, co){
+  adj = adj || NOADJ();
+  const x = { name:e.name, kind:e.kind||'reps', target:e.reps||'', note:e.note||'', unit:e.unit||'lb', sets:[], hint:'' };
   const rn = rangeNums(e.reps); const lo = rn[0]||null, hi = rn[1]||rn[0]||null;
+  if (x.kind==='cardio'){ x.type = /natation|nage/i.test(e.name) || !co || co.footPain || co.mcWeek ? 'Natation' : 'Natation'; if (CARDIO_TYPES.some(t => t.toLowerCase()===String(e.type||e.name).toLowerCase())) x.type = e.type || e.name; x.min = lo || 20; x.done = false; return x; }
   const last = lastExercise(e.name);
-  if (x.kind==='cardio'){ x.type = 'Natation'; x.min = lo || 20; x.done = false; return x; }
-  let w = e.load || null; x.hint = '';
+  let w = e.load || null;
   if (last && last.ex.sets && last.ex.sets.length){
     const ls = last.ex.sets; const lw = ls[ls.length-1].w; if (lw!=null) w = lw;
-    if (x.kind==='reps' && hi && ls.every(s => (s.r||0) >= hi) && lw!=null){ w = lw + 5; x.hint = 'Toutes les séries au haut de la fourchette le '+dday(last.date)+' : +5 lb proposé'; }
+    const allTop = hi && ls.every(s => (s.r||0) >= hi), nearTop = hi && ls.every(s => (s.r||0) >= hi-1);
+    const under = lo && ls.filter(s => s.r!=null).some(s => s.r < lo);
+    if (x.kind==='reps' && lw!=null && !adj.noProgress && (allTop || (adj.easy && nearTop))){ w = lw + 5; x.hint = 'Haut de la fourchette atteint le '+dday(last.date)+' : +5 lb'; }
+    else if (x.kind==='reps' && lw!=null && under){ w = Math.max(5, round5(lw*0.95)); x.hint = 'Reps sous la cible le '+dday(last.date)+' : charge −5 %'; }
     else x.hint = 'Dernière fois ('+dday(last.date)+') : '+ls.map(s => (s.w!=null?s.w+'×':'')+(s.r!=null?s.r:(s.t!=null?s.t+' s':''))).join(', ');
   }
+  const fb = (adj.factorBy.find(([rx]) => rx.test(e.name)) || [null,1])[1];
+  const f = adj.factor * fb;
+  if (w!=null && x.kind==='reps' && f!==1){ const w2 = Math.max(5, round5(w*f)); if (w2!==w){ w = w2; x.hint += (x.hint ? ' · ' : '') + 'ajusté à '+w+' lb'; } }
   for (let i=0;i<(nSets||2);i++) x.sets.push(x.kind==='time' ? { t: lo||30, done:false } : { w, r: lo, done:false });
   return x;
 }
-function openSession(kind){
+function openSession(kind, date){
+  const d = date || dayCursor || TODAY();
   const draft = lsGet('cap3-draft');
-  sess = (draft && draft.kind===kind && draft.date===TODAY()) ? draft : buildSession(kind);
+  sess = (draft && draft.kind===kind && draft.date===d) ? draft : buildSession(kind, d);
   openSheet(kind==='libre' ? 'Séance libre' : 'Séance '+kind+' — '+sess.title, '', el => { renderSession(el); });
 }
 function renderSession(el){
   el = el || document.getElementById('sheetBody'); if (!el) return;
   const datalist = `<datalist id="exlib">${Array.from(new Set([...(S.exlib||[]), ...S.workouts.flatMap(w => (w.exercises||[]).map(e=>e.name))])).map(n => `<option value="${esc(n)}">`).join('')}</datalist>`;
   el.innerHTML = `<label class="f" for="sDate">Date<input id="sDate" type="date" value="${sess.date}"></label>
+   ${sess.why && sess.why.length ? `<details><summary>Pourquoi cette séance</summary>${sess.why.map(x => `<div class="small">• ${esc(x)}</div>`).join('')}</details>` : ''}
    ${sess.warmup && sess.warmup.length ? `<div class="warmup"><b>Échauffement d’abord</b><ul>${sess.warmup.map(w=>`<li>${esc(w)}</li>`).join('')}</ul></div>` : ''}
+   <div class="muted small">Pour chaque exercice : « Fait comme prévu » coche toutes les séries. Change un chiffre seulement si tu as fait autrement.</div>
    ${sess.exercises.map((x,i) => exHtml(x,i)).join('')}
    <div class="row"><input id="newEx" list="exlib" placeholder="Ajouter un exercice" style="flex:1"><button data-s="addEx">Ajouter</button></div>${datalist}
-   <label class="f" for="sNote">Note (douleur, énergie, modifs)<textarea id="sNote" rows="2">${esc(sess.note)}</textarea></label>
+   <div class="ex"><b>Ressenti</b><div class="row">${['Facile','Correct','Dur'].map(f => `<button class="seg" data-s="feel" data-v="${f}" aria-pressed="${sess.feel===f}">${f}</button>`).join('')}</div>
+     <b>Douleur ?</b><div class="row">${['Aucune',...PAIN_OPTS].map(p => `<button class="seg" data-s="pain" data-v="${p}" aria-pressed="${p==='Aucune' ? !(sess.pains||[]).length : (sess.pains||[]).includes(p)}">${p}</button>`).join('')}</div>
+     <div class="muted small">Ces réponses ajustent la prochaine séance suggérée.</div></div>
+   <label class="f" for="sNote">Note<textarea id="sNote" rows="2">${esc(sess.note)}</textarea></label>
    <div class="row"><button data-s="allDone">Tout marquer fait</button><button class="primary" data-s="save" style="flex:1">Enregistrer la séance</button></div>
    <button class="ghost" data-s="discard">Abandonner ce brouillon</button>`;
   el.oninput = e => { const t = e.target; const i = +t.dataset.i, j = +t.dataset.j, f = t.dataset.f;
@@ -781,21 +885,29 @@ function renderSession(el){
   el.onchange = el.oninput;
   el.onclick = e => { const b = e.target.closest('[data-s]'); if (!b) return; const a = b.dataset.s, i = +b.dataset.i, j = +b.dataset.j;
     if (a==='done'){ const s = sess.exercises[i].sets[j]; s.done = !s.done; b.setAttribute('aria-pressed', s.done); lsSet('cap3-draft', sess); return; }
-    if (a==='cdone'){ const x = sess.exercises[i]; x.done = !x.done; b.setAttribute('aria-pressed', x.done); lsSet('cap3-draft', sess); return; }
+    if (a==='exDone'){ const x = sess.exercises[i]; const all = x.sets.length && x.sets.every(s => s.done); x.sets.forEach(s => s.done = !all); }
+    if (a==='cdone'){ const x = sess.exercises[i]; x.done = !x.done; }
+    if (a==='cmin'){ const x = sess.exercises[i]; x.min = +b.dataset.v; x.done = true; }
+    if (a==='feel'){ sess.feel = sess.feel===b.dataset.v ? null : b.dataset.v; }
+    if (a==='pain'){ const p = b.dataset.v; sess.pains = sess.pains || []; if (p==='Aucune') sess.pains = []; else sess.pains = sess.pains.includes(p) ? sess.pains.filter(x => x!==p) : sess.pains.concat([p]); }
     if (a==='addSet'){ const x = sess.exercises[i]; const l = x.sets[x.sets.length-1] || {}; x.sets.push(Object.assign({}, l, { done:false })); }
     if (a==='delSet'){ sess.exercises[i].sets.splice(j,1); }
     if (a==='delEx'){ sess.exercises.splice(i,1); }
-    if (a==='addEx'){ const n = document.getElementById('newEx').value.trim(); if (!n) return; const isC = /natation|nage|corde|mountain|vélo|rameur|marche|course|escalier/i.test(n); sess.exercises.push(newEx({ name:n, kind: isC?'cardio':'reps', reps: isC?'20':'10' }, (phaseNow()||{sets:2}).sets)); if (isC) sess.exercises[sess.exercises.length-1].type = n; }
+    if (a==='addEx'){ const n = document.getElementById('newEx').value.trim(); if (!n) return; const isC = /natation|nage|corde|mountain|vélo|velo|bixi|rameur|marche|course|escalier|cardio/i.test(n);
+      const x = newEx({ name:n, kind: isC?'cardio':'reps', reps: isC?'20':'10' }, (phaseNow()||{sets:2}).sets); if (isC) x.type = CARDIO_TYPES.find(t => t.toLowerCase().startsWith(n.toLowerCase().slice(0,4))) || 'Autre'; sess.exercises.push(x); }
     if (a==='allDone'){ sess.exercises.forEach(x => { if (x.kind==='cardio') x.done = true; else x.sets.forEach(s => s.done = true); }); }
     if (a==='discard'){ lsSet('cap3-draft', null); closeSheet(); return; }
     if (a==='save'){ saveSession(); return; }
-    lsSet('cap3-draft', sess); renderSession(); };
+    lsSet('cap3-draft', sess); const y = el.closest('.sheet') ? el.closest('.sheet').scrollTop : 0; renderSession(); if (el.closest('.sheet')) el.closest('.sheet').scrollTop = y; };
 }
 function exHtml(x,i){
+  const allDone = x.kind!=='cardio' && x.sets.length && x.sets.every(s => s.done);
   const head = `<div class="row between"><div><b>${esc(x.name)}</b> <span class="muted small">${esc(x.target)}${x.kind==='reps'&&x.sets[0]&&x.sets[0].w?' · '+x.sets[0].w+' '+x.unit:''}</span></div><button class="ghost" data-s="delEx" data-i="${i}" aria-label="Retirer ${esc(x.name)}">Retirer</button></div>${x.note?`<div class="muted small">${esc(x.note)}</div>`:''}${x.hint?`<div class="hint">${esc(x.hint)}</div>`:''}`;
   if (x.kind==='cardio'){
-    const mcWarn = S.workouts.some(w => w.date >= addDays(sess.date,-6) && ((w.cardio && /mountain/i.test(w.cardio.type)) || (w.exercises||[]).some(e => e.kind==='cardio' && /mountain/i.test(e.type||''))));
-    return `<div class="ex">${head}<div class="row"><select data-i="${i}" data-f="type" aria-label="Activité" style="flex:1">${['Natation','Corde à sauter','Mountain Climber','Vélo / Bixi (hors trajet)','Rameur','Marche rapide','Autre'].map(o => `<option ${o===x.type?'selected':''}>${o}</option>`).join('')}</select><input class="xs" data-i="${i}" data-f="min" inputmode="numeric" value="${x.min??''}" aria-label="Minutes"> min <button class="chk" data-s="cdone" data-i="${i}" aria-pressed="${!!x.done}" aria-label="Fait">✓</button></div>
+    const mcWarn = S.workouts.some(w => w.date >= addDays(sess.date,-6) && isMC(w));
+    return `<div class="ex">${head}<select data-i="${i}" data-f="type" aria-label="Activité">${CARDIO_TYPES.map(o => `<option ${o===x.type?'selected':''}>${o}</option>`).join('')}</select>
+      <div class="row">${[10,15,20,30,45].map(m => `<button class="seg" data-s="cmin" data-i="${i}" data-v="${m}" aria-pressed="${x.done && x.min===m}">${m} min</button>`).join('')}</div>
+      <div class="row"><span class="small muted">Autre durée :</span><input class="xs" data-i="${i}" data-f="min" inputmode="numeric" value="${x.min??''}" aria-label="Minutes"> min <button class="chk" data-s="cdone" data-i="${i}" aria-pressed="${!!x.done}" aria-label="Fait">✓</button></div>
       ${/corde/i.test(x.type)?'<div class="small" style="color:var(--warn)">Corde : surface souple, 6 × 1 min max, arrêt dès que le pied gauche se plaint.</div>':''}${/mountain/i.test(x.type)&&mcWarn?'<div class="small" style="color:var(--bad)">Déjà fait des mountain climbers dans les 7 derniers jours : choisis la nage.</div>':''}</div>`;
   }
   const rows = x.sets.map((s,j) => x.kind==='time'
@@ -803,7 +915,7 @@ function exHtml(x,i){
     : x.kind==='skill'
     ? `<div class="setrow"><span class="k">${j+1}</span><span class="small muted">ronde</span><button class="chk" data-s="done" data-i="${i}" data-j="${j}" aria-pressed="${!!s.done}" aria-label="Ronde ${j+1} faite">✓</button><button class="ghost" data-s="delSet" data-i="${i}" data-j="${j}" aria-label="Retirer">×</button></div>`
     : `<div class="setrow"><span class="k">${j+1}</span><input class="sm" data-i="${i}" data-j="${j}" data-f="w" inputmode="decimal" value="${s.w??''}" placeholder="poids" aria-label="Charge série ${j+1}"> ${x.unit} × <input class="xs" data-i="${i}" data-j="${j}" data-f="r" inputmode="numeric" value="${s.r??''}" aria-label="Reps série ${j+1}"> <button class="chk" data-s="done" data-i="${i}" data-j="${j}" aria-pressed="${!!s.done}" aria-label="Série ${j+1} faite">✓</button><button class="ghost" data-s="delSet" data-i="${i}" data-j="${j}" aria-label="Retirer la série">×</button></div>`).join('');
-  return `<div class="ex">${head}${rows}<button class="ghost" data-s="addSet" data-i="${i}">+ série</button></div>`;
+  return `<div class="ex">${head}<button class="${allDone?'':'primary'}" data-s="exDone" data-i="${i}" aria-pressed="${allDone}">${allDone ? '✓ Fait comme prévu' : 'Fait comme prévu'}</button>${rows}<button class="ghost" data-s="addSet" data-i="${i}" style="justify-self:start">+ série</button></div>`;
 }
 function saveSession(){
   const exs = [];
@@ -812,27 +924,55 @@ function saveSession(){
     const sets = x.sets.filter(s => s.done).map(s => x.kind==='time' ? { t:s.t } : x.kind==='skill' ? { r:1 } : { w:s.w, r:s.r });
     if (sets.length) exs.push({ name:x.name, kind:x.kind, sets });
   });
-  if (!exs.length){ toast('Coche au moins une série (✓) avant d’enregistrer.'); return; }
+  if (!exs.length){ toast('Coche au moins un exercice (« Fait comme prévu » ou ✓) avant d’enregistrer.'); return; }
   const id = uid('S'); const sets = [], cardio = [];
   exs.forEach(x => { if (x.kind==='cardio') cardio.push({ type:x.type, min:x.min }); else x.sets.forEach((s,k) => sets.push([x.name, k+1, x.kind==='time'?null:s.w, x.kind==='time'?null:s.r, x.kind==='time'?s.t:null])); });
-  enqueue({ t:'session', id, date:sess.date, kind:sess.kind, title:sess.title, phase:sess.phase, note:sess.note, sets, cardio });
+  const note = [sess.feel ? 'Ressenti: '+sess.feel : '', (sess.pains||[]).length ? 'Douleur: '+sess.pains.join(', ') : (sess.feel ? 'Douleur: aucune' : ''), (sess.note||'').trim()].filter(Boolean).join(' · ');
+  const quick = 'G'+sess.date; if (S.workouts.some(w => w._id===quick)) enqueue({ t:'delWorkout', id:quick });
+  enqueue({ t:'session', id, date:sess.date, kind:sess.kind, title:sess.title, phase:sess.phase, note, sets, cardio });
   lsSet('cap3-draft', null); closeSheet(); toast('Séance enregistrée.');
 }
-function openCardio(){
-  openSheet('Cardio', `<label class="f" for="cDate">Date<input id="cDate" type="date" value="${TODAY()}"></label>
-    <label class="f" for="cType">Activité<select id="cType">${['Natation','Corde à sauter','Mountain Climber','Vélo / Bixi (hors trajet)','Rameur','Marche rapide','Autre'].map(o=>`<option>${o}</option>`).join('')}</select></label>
-    <label class="f" for="cMin">Minutes<input id="cMin" inputmode="numeric" value="20"></label>
-    <div id="cWarn" class="small"></div>
-    <label class="f" for="cNote">Note<input id="cNote" placeholder="ex. 20 longueurs, pied OK"></label>
-    <button class="primary" id="cSave">Enregistrer</button>`, el => {
-      const warn = () => { const t = el.querySelector('#cType').value, d = el.querySelector('#cDate').value; let m = '';
-        if (/corde/i.test(t)) m = '<span style="color:var(--warn)">Surface souple, 6 × 1 min max, arrêt dès que le pied gauche se plaint.</span>';
-        if (/mountain/i.test(t) && S.workouts.some(w => w.date >= addDays(d,-6) && w.date <= d && ((w.cardio && /mountain/i.test(w.cardio.type)) || (w.exercises||[]).some(e => /mountain/i.test(e.type||''))))) m = '<span style="color:var(--bad)">Mountain climbers déjà faits cette semaine. Une fois par semaine max : choisis la nage.</span>';
-        el.querySelector('#cWarn').innerHTML = m; };
-      el.querySelector('#cType').onchange = warn; el.querySelector('#cDate').onchange = warn;
-      el.querySelector('#cSave').onclick = () => { const min = num(el.querySelector('#cMin').value); if (!min){ toast('Indique les minutes.'); return; }
-        enqueue({ t:'cardio', id:uid('C'), date: el.querySelector('#cDate').value, type: el.querySelector('#cType').value, min, note: el.querySelector('#cNote').value });
-        closeSheet(); toast('Cardio enregistré.'); };
+function openCardio(date){
+  const d = date || dayCursor || TODAY(), co = coach(d);
+  const st = { type: 'Natation', min: 20 };
+  const draw = el => {
+    const todays = S.workouts.filter(w => w.date===d && w.kind==='cardio');
+    const mc = /mountain/i.test(st.type) && co.mcWeek, rope = /corde/i.test(st.type);
+    el.innerHTML = `<div class="muted small">${esc(dshort(d))} · ${esc(co.cardioTip)}</div>
+      <div class="small muted">Activité</div><div class="row">${CARDIO_TYPES.map(t => `<button class="seg" data-c="type" data-v="${t}" aria-pressed="${st.type===t}">${t}</button>`).join('')}</div>
+      <div class="small muted">Durée</div><div class="row">${[10,15,20,30,45,60].map(m => `<button class="seg" data-c="min" data-v="${m}" aria-pressed="${st.min===m}">${m} min</button>`).join('')}<input id="cMin" class="xs" inputmode="numeric" value="${st.min}" aria-label="Minutes"> min</div>
+      ${rope ? '<div class="small" style="color:var(--warn)">Corde : surface souple, 6 × 1 min max, arrêt dès que le pied gauche se plaint.</div>' : ''}
+      ${mc ? '<div class="small" style="color:var(--bad)">Mountain climbers déjà faits cette semaine : une fois par semaine maximum, choisis la nage.</div>' : ''}
+      ${co.footPain && !/natation/i.test(st.type) ? '<div class="small" style="color:var(--bad)">Pied gauche signalé : la nage est plus sûre.</div>' : ''}
+      <label class="f" for="cNote">Note<input id="cNote" placeholder="ex. 20 longueurs, pied OK"></label>
+      <button class="primary" data-c="save">Enregistrer ${st.min} min de ${esc(st.type.toLowerCase())}</button>
+      ${todays.length ? `<h3>Déjà noté ce jour-là</h3>${todays.map(w => `<div class="obj"><div class="ic ok">✓</div><div>${esc(summarizeWorkout(w))}</div><button class="ghost" data-c="del" data-id="${w._id}">Retirer</button></div>`).join('')}` : ''}`;
+  };
+  openSheet('Cardio', '', el => {
+    draw(el);
+    el.oninput = e => { if (e.target.id==='cMin'){ const v = num(e.target.value); if (v) st.min = v; } };
+    el.onclick = e => { const b = e.target.closest('[data-c]'); if (!b) return; const a = b.dataset.c;
+      if (a==='type') st.type = b.dataset.v;
+      if (a==='min') st.min = +b.dataset.v;
+      if (a==='del'){ enqueue({ t:'delWorkout', id:b.dataset.id }); closeSheet(); toast('Cardio retiré.'); return; }
+      if (a==='save'){ const note = el.querySelector('#cNote').value;
+        if (S.workouts.some(w => w._id==='R'+d)) enqueue({ t:'delWorkout', id:'R'+d });
+        enqueue({ t:'cardio', id:uid('C'), date:d, type:st.type, min:st.min, note }); closeSheet(); toast('Cardio enregistré.'); return; }
+      const note = el.querySelector('#cNote') ? el.querySelector('#cNote').value : '';
+      draw(el); el.querySelector('#cNote').value = note; };
+  });
+}
+function openGym(d){
+  const co = coach(d), P = S.program;
+  openSheet('Gym', `<div class="muted small">${esc(dshort(d))}</div>
+    ${P ? `<h3>Séance suggérée : ${co.kind} — ${esc(P.sessions[co.kind].name)}</h3>${(co.why.length ? co.why : ['Progression normale.']).map(x => `<div class="small">• ${esc(x)}</div>`).join('')}` : ''}
+    <button class="primary" data-g="detail">Noter ma séance (charges et reps)</button>
+    <button data-g="quick">Juste cocher « Gym »</button>
+    <div class="muted small">Noter la séance permet d’ajuster les charges de la prochaine. « Juste cocher » compte quand même pour tes objectifs.</div>`, el => {
+      el.onclick = e => { const b = e.target.closest('[data-g]'); if (!b) return;
+        if (b.dataset.g==='detail'){ closeSheet(); openSession(co.kind, d); }
+        else { const ph = phaseNow(); if (S.workouts.some(w => w._id==='R'+d)) enqueue({ t:'delWorkout', id:'R'+d });
+          enqueue({ t:'session', id:'G'+d, date:d, kind:'libre', title:'Gym', phase: ph ? ph.idx : 1, note:'Entrée rapide', sets:[], cardio:[] }); closeSheet(); toast('Gym coché.'); } };
     });
 }
 function openDay(d){
@@ -887,27 +1027,42 @@ function openRec(id){
       const del = el.querySelector('#rDel'); if (del) del.onclick = () => confirmIn(del, 'Confirmer', () => { enqueue({ t:'delRec', id }); closeSheet(); });
     });
 }
+function openGoals(){
+  const c = cfg(); const st = { strategy: c.capone.strategy };
+  openSheet('Mes objectifs', `<h3>Dépenses</h3><div class="grid3"><label class="f" for="oO">Lun-ven, dim. ($/jour)<input id="oO" inputmode="decimal" value="${c.budget.other}"></label><label class="f" for="oW">Mercredi<input id="oW" inputmode="decimal" value="${c.budget.wed}"></label><label class="f" for="oS">Samedi<input id="oS" inputmode="decimal" value="${c.budget.sat}"></label></div>
+    <div class="small muted" id="oWeek"></div>
+    <h3>Carte Capital One</h3><div class="row"><button class="seg" data-o="max" aria-pressed="${st.strategy!=='fixed'}">Tout le surplus à chaque paye</button><button class="seg" data-o="fixed" aria-pressed="${st.strategy==='fixed'}">Montant fixe</button></div>
+    <label class="f" for="oF">Montant fixe par paye (si choisi)<input id="oF" inputmode="decimal" value="${c.capone.fixed}"></label>
+    <label class="f" for="oB">Coussin gardé dans Desjardins ($)<input id="oB" inputmode="decimal" value="${c.buffer}"></label>
+    <h3>Date visée</h3><label class="f" for="oZ">Carte à zéro avant le (facultatif)<input id="oZ" type="date" value="${c.carteZero||''}"></label>
+    <div class="muted small">Avec une date visée, l’app te dit si tu es en voie et quel budget par semaine il faudrait pour y arriver.</div>
+    <button class="primary" id="oSave">Enregistrer mes objectifs</button>`, el => {
+      const wk = () => { const g = id => num(el.querySelector(id).value) || 0; el.querySelector('#oWeek').textContent = 'Total : '+money0(g('#oO')*5 + g('#oW') + g('#oS'))+' par semaine'; };
+      wk(); el.oninput = wk;
+      el.querySelectorAll('[data-o]').forEach(b => b.onclick = () => { st.strategy = b.dataset.o; el.querySelectorAll('[data-o]').forEach(x => x.setAttribute('aria-pressed', x.dataset.o===st.strategy)); });
+      el.querySelector('#oSave').onclick = () => { const g = id => num(el.querySelector(id).value);
+        const values = { BudgetAutre: g('#oO') ?? c.budget.other, BudgetMer: g('#oW') ?? c.budget.wed, BudgetSam: g('#oS') ?? c.budget.sat,
+          Strategie: st.strategy==='fixed' ? 'Montant fixe' : 'Tout le surplus', MontantFixe: g('#oF') ?? c.capone.fixed, Coussin: g('#oB') ?? c.buffer, CarteZeroVisee: el.querySelector('#oZ').value || '' };
+        sim = null; enqueue({ t:'settings', values }); closeSheet(); toast('Objectifs enregistrés.'); };
+    });
+}
 function openSettings(){
   const c = cfg(), np = nextPayAfter(c, addDays(TODAY(),-1));
-  openSheet('Réglages', `<h3>Paye</h3><div class="grid2"><label class="f" for="gPay">Paye nette ($)<input id="gPay" inputmode="decimal" value="${c.payAmount}"></label><label class="f" for="gNext">Prochaine paye<input id="gNext" type="date" value="${np}"></label></div>
-    <h3>Budget quotidien</h3><div class="grid3"><label class="f" for="gO">Lun-ven, dim.<input id="gO" inputmode="decimal" value="${c.budget.other}"></label><label class="f" for="gW">Mercredi<input id="gW" inputmode="decimal" value="${c.budget.wed}"></label><label class="f" for="gS">Samedi<input id="gS" inputmode="decimal" value="${c.budget.sat}"></label></div>
-    <label class="f" for="gBuf">Coussin gardé dans Desjardins à chaque paye ($)<input id="gBuf" inputmode="decimal" value="${c.buffer}"></label>
+  openSheet('Paramètres', `<div class="muted small">Les objectifs (budget, carte, date visée) se règlent dans Argent → Mes objectifs.</div>
+    <h3>Paye</h3><div class="grid2"><label class="f" for="gPay">Paye nette prévue ($)<input id="gPay" inputmode="decimal" value="${c.payAmount}"></label><label class="f" for="gNext">Prochaine paye<input id="gNext" type="date" value="${np}"></label></div>
     <h3>Virement Desjardins → WS</h3><div class="grid2"><label class="f" for="gTa">Montant / mois<input id="gTa" inputmode="decimal" value="${c.wsTransfer.amount}"></label><label class="f" for="gTd">Jour du mois<input id="gTd" inputmode="numeric" value="${c.wsTransfer.day}"></label></div>
     <h3>Capital One</h3><div class="grid2"><label class="f" for="gApr">Taux annuel (%)<input id="gApr" inputmode="decimal" value="${String(round2(c.capone.apr*100)).replace('.',',')}"></label><label class="f" for="gLim">Limite<input id="gLim" inputmode="decimal" value="${c.capone.limit}"></label><label class="f" for="gSd">Jour du relevé<input id="gSd" inputmode="numeric" value="${c.capone.stmtDay}"></label><label class="f" for="gDd">Jour d’échéance<input id="gDd" inputmode="numeric" value="${c.capone.dueDay}"></label></div>
-    <h3>Objectifs</h3><div class="grid2"><label class="f" for="gGoal">Poids visé (lb)<input id="gGoal" inputmode="decimal" value="${c.goalWeight??''}"></label><label class="f" for="gSm">Fumée : maximum par jour pour commencer<input id="gSm" inputmode="numeric" value="${c.smoke&&c.smoke.startTarget!=null?c.smoke.startTarget:''}" placeholder="vide = on observe d’abord"></label></div>
-    <div class="muted small">Ensuite, la cible de fumée baisse de 1 par bloc à partir de ta moyenne du bloc précédent.</div>
-    <button class="primary" id="gSave">Enregistrer les réglages</button>
+    <h3>Corps</h3><label class="f" for="gGoal">Poids visé (lb)<input id="gGoal" inputmode="decimal" value="${c.goalWeight??''}"></label>
+    <button class="primary" id="gSave">Enregistrer</button>
     <h3>Connexion</h3><div class="muted small">Script : ${esc((conn.url||'').replace(/^https:\/\/script.google.com\/macros\/s\//,'').slice(0,18))}…</div>
     <button id="gDisc">Changer l’URL ou le code secret</button>`, el => {
       el.querySelector('#gDisc').onclick = () => { conn.url = null; conn.token = null; lsSet(LS.url, null); lsSet(LS.token, null); closeSheet(); };
       el.querySelector('#gSave').onclick = () => { const g = id => num(el.querySelector(id).value);
-        const nd = el.querySelector('#gNext').value;
-        const apr = g('#gApr');
-        const values = { Paye: g('#gPay') ?? c.payAmount, BudgetAutre: g('#gO') ?? c.budget.other, BudgetMer: g('#gW') ?? c.budget.wed, BudgetSam: g('#gS') ?? c.budget.sat,
-          Coussin: g('#gBuf') ?? c.buffer, VirMontant: g('#gTa') ?? 0, VirJour: g('#gTd') || 1, Taux: apr==null ? c.capone.apr : apr/100, Limite: g('#gLim') ?? c.capone.limit,
-          JourReleve: g('#gSd') || c.capone.stmtDay, JourEcheance: g('#gDd') || c.capone.dueDay, PoidsVise: g('#gGoal'), FumeeDepart: g('#gSm') };
+        const nd = el.querySelector('#gNext').value, apr = g('#gApr');
+        const values = { Paye: g('#gPay') ?? c.payAmount, VirMontant: g('#gTa') ?? 0, VirJour: g('#gTd') || 1, Taux: apr==null ? c.capone.apr : apr/100, Limite: g('#gLim') ?? c.capone.limit,
+          JourReleve: g('#gSd') || c.capone.stmtDay, JourEcheance: g('#gDd') || c.capone.dueDay, PoidsVise: g('#gGoal') };
         if (nd) values.PayeRef = nd;
-        sim = null; enqueue({ t:'settings', values }); closeSheet(); toast('Réglages enregistrés.'); };
+        sim = null; enqueue({ t:'settings', values }); closeSheet(); toast('Paramètres enregistrés.'); };
     });
 }
 
@@ -916,7 +1071,7 @@ document.getElementById('plusBtn').onclick = openChooser;
 window.addEventListener('hashchange', render);
 document.getElementById('view').addEventListener('click', e => {
   const b = e.target.closest('[data-act]'); if (!b) return; const a = b.dataset.act;
-  if (a==='startSession') openSession(b.dataset.kind);
+  if (a==='startSession') openSession(b.dataset.kind, currentTab()==='jour' ? (dayCursor||TODAY()) : TODAY());
   else if (a==='cardio') openCardio();
   else if (a==='balances') openBalances();
   else if (a==='body') openBody();
@@ -925,14 +1080,10 @@ document.getElementById('view').addEventListener('click', e => {
   else if (a==='dayPrev'){ dayCursor = addDays(dayCursor||TODAY(), -1); render(); }
   else if (a==='dayNext'){ const n = addDays(dayCursor||TODAY(), 1); dayCursor = n >= TODAY() ? null : n; render(); }
   else if (a==='train'){ const d = dayCursor||TODAY(), v = b.dataset.v, todays = S.workouts.filter(w => w.date===d);
-    const has = id => todays.some(w => w._id===id), ph = phaseNow();
-    const addGym = () => enqueue({ t:'session', id:'G'+d, date:d, kind:'libre', title:'Gym', phase: ph ? ph.idx : 1, note:'Entrée rapide', sets:[], cardio:[] });
-    const addCar = () => enqueue({ t:'cardio', id:'K'+d, date:d, type:'Cardio', min:null, note:'Entrée rapide' });
-    const addRest = () => enqueue({ t:'session', id:'R'+d, date:d, kind:'repos', title:'Repos', phase:'', note:'', sets:[], cardio:[] });
-    const del = id => enqueue({ t:'delWorkout', id });
-    if (v==='gym'){ if (has('G'+d)) del('G'+d); else if (todays.some(isStrength)) toast('Une séance détaillée est déjà notée pour ce jour.'); else { if (has('R'+d)) del('R'+d); addGym(); } }
-    else if (v==='cardio'){ if (has('K'+d)) del('K'+d); else if (todays.some(isCardio)) toast('Un cardio détaillé est déjà noté pour ce jour.'); else { if (has('R'+d)) del('R'+d); addCar(); } }
-    else { if (has('R'+d)) del('R'+d); else { if (has('G'+d)) del('G'+d); if (has('K'+d)) del('K'+d); addRest(); } } }
+    const has = id => todays.some(w => w._id===id), del = id => enqueue({ t:'delWorkout', id });
+    if (v==='gym'){ if (has('G'+d)) del('G'+d); else if (todays.some(isStrength)) toast('Séance déjà notée pour ce jour : voir Muscu → Historique.'); else openGym(d); }
+    else if (v==='cardio') openCardio(d);
+    else { if (has('R'+d)) del('R'+d); else { if (has('G'+d)) del('G'+d); if (has('K'+d)) del('K'+d); enqueue({ t:'session', id:'R'+d, date:d, kind:'repos', title:'Repos', phase:'', note:'', sets:[], cardio:[] }); } } }
   else if (a==='addPay'){ const v = num((document.getElementById('iPay')||{}).value); if (!v){ toast('Indique le montant reçu.'); return; }
     if (document.activeElement) document.activeElement.blur(); enqueue({ t:'income', id:uid('I'), date: dayCursor||TODAY(), type:'Paye', amount:v, account:'Desjardins', note:'' }); toast('Paye enregistrée.'); }
   else if (a==='addIncome'){ const v = num(document.getElementById('iAmt').value); if (!v){ toast('Indique le montant.'); return; }
@@ -949,9 +1100,9 @@ document.getElementById('view').addEventListener('click', e => {
     requestAnimationFrame(() => { const c = document.querySelector('[aria-label="Résultat vs prévision"]'); if (c) c.scrollIntoView({ behavior:'smooth', block:'start' }); }); }
   else if (a==='commute'){ const d = dayCursor||TODAY(); const cur = S.days[d] && S.days[d].commute; saveDay(d, { commute: cur===b.dataset.v ? null : b.dataset.v }); }
   else if (a==='simStrat'){ sim.strategy = b.dataset.v; render(); }
-  else if (a==='simMonths'){ sim.months = +b.dataset.v; render(); }
+  else if (a==='goals') openGoals();
   else if (a==='simReset'){ sim = null; render(); }
-  else if (a==='simSave'){ const v = { BudgetAutre:sim.budget.other, BudgetMer:sim.budget.wed, BudgetSam:sim.budget.sat, Strategie: sim.strategy==='fixed' ? 'Montant fixe' : 'Tout le surplus', MontantFixe:sim.fixed }; sim = null; enqueue({ t:'settings', values:v }); toast('Budget enregistré.'); }
+  else if (a==='simSave'){ const v = { BudgetAutre:sim.budget.other, BudgetMer:sim.budget.wed, BudgetSam:sim.budget.sat, Strategie: sim.strategy==='fixed' ? 'Montant fixe' : 'Tout le surplus', MontantFixe:sim.fixed }; sim = null; enqueue({ t:'settings', values:v }); toast('Nouveaux objectifs adoptés.'); }
   else if (a==='retry') flush();
   else if (a==='connect'){ const u = document.getElementById('cuUrl').value.trim(), k = document.getElementById('cuTok').value.trim(); if (!/^https:\/\/script\.google(usercontent)?\.com\//.test(u)){ toast('L’URL doit commencer par https://script.google.com/'); return; } if (!k){ toast('Entre le code secret.'); return; } conn.url = u; conn.token = k; lsSet(LS.url, u); lsSet(LS.token, k); sync.state = 'sync'; render(); flush(); }
   else if (a==='delWorkout') confirmIn(b, 'Confirmer', () => enqueue({ t:'delWorkout', id:b.dataset.id }));
