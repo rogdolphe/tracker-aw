@@ -74,7 +74,7 @@ label.f{display:grid;gap:4px;font-size:13px;color:var(--muted)}
 .stepper{display:flex;align-items:center;gap:6px}
 .stepper button{width:44px;padding:0;font-size:20px}
 .stepper b{min-width:34px;text-align:center;font-family:var(--display);font-size:24px}
-nav.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);padding:6px 6px calc(6px + env(safe-area-inset-bottom));z-index:5}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(6,1fr);padding:6px 6px calc(6px + env(safe-area-inset-bottom));z-index:5}
 nav.tabs a{display:grid;place-items:center;gap:2px;text-decoration:none;color:var(--muted);font-size:12px;font-weight:600;padding:4px 0;border-radius:10px}
 nav.tabs a svg{width:22px;height:22px}
 nav.tabs a[aria-current="page"]{color:var(--accent)}
@@ -110,6 +110,7 @@ details summary{cursor:pointer;font-weight:600}
 <body>
 <div class="wrap" id="view"></div>
 <nav class="tabs" aria-label="Sections">
+  <a href="#jour" data-tab="jour"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/></svg>Jour</a>
   <a href="#bloc" data-tab="bloc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M9 4v17M15 4v17"/></svg>Bloc</a>
   <a href="#entrainement" data-tab="entrainement"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 7v10M18 7v10M3 10v4M21 10v4M6 12h12"/></svg>Muscu</a>
   <button class="plus" id="plusBtn" aria-label="Ajouter une entrée">+</button>
@@ -324,7 +325,9 @@ function parseRaw(R){
   const accKey = Object.fromEntries(Object.entries(ACCLABEL).map(([k,v]) => [v,k]));
   S.recurring = R.recurrents.map(r => ({ _id:String(r[0]), name:String(r[1]), amount:+r[2]||0, day:+r[3]||1, account:accKey[r[4]]||'desj', active:String(r[5]).toLowerCase()!=='non', note:String(r[6]||'') }));
   const comKey = Object.fromEntries(Object.entries(COMMUTE).map(([k,v]) => [v,k]));
-  S.days = {}; R.journal.forEach(r => { const d = String(r[0]); S.days[d] = { _id:d, date:d, spent:nv(r[1]), smoke:nv(r[2]), commute: comKey[r[3]] || null, note:String(r[4]||'') }; });
+  S.days = {}; R.journal.forEach(r => { const d = String(r[0]); const sm = r[2]; const logged = sm!=='' && sm!=null; let cig = false, weed = false;
+    if (typeof sm==='number') cig = sm > 0; else if (logged){ const t = String(sm).toLowerCase(); cig = /cig/.test(t); weed = /weed|pot|cannabis/.test(t); }
+    S.days[d] = { _id:d, date:d, spent:nv(r[1]), smokeLogged:logged, cig, weed, commute: comKey[r[3]] || null, note:String(r[4]||'') }; });
   S.exlib = Array.from(new Set([...EXLIB, ...R.series.map(r => String(r[2]))]));
 }
 function enqueue(op){ op.qid = uid('q'); outbox.push(op); lsSet(LS.outbox, outbox); rebuild(); scheduleRender(); flush(); }
@@ -376,42 +379,73 @@ function phaseNow(){ const P = S.program; if (!P) return null; const n = session
 function nextSessionKind(){ const P = S.program; if (!P) return 'A'; const rot = P.rotation; const last = S.workouts.filter(w => rot.includes(w.kind)).pop(); return last ? rot[(rot.indexOf(last.kind)+1) % rot.length] : rot[0]; }
 function lastExercise(name){ for (let i=S.workouts.length-1;i>=0;i--){ const e = (S.workouts[i].exercises||[]).find(x => x.name===name); if (e) return { ex:e, date:S.workouts[i].date }; } return null; }
 const rangeNums = s => (String(s||'').match(/\d+/g)||[]).map(Number);
-function smokeTarget(block){
-  const prev = blockOf(cfg().blockAnchor, addDays(block.start,-1));
-  const vals = prev.days.map(d => S.days[d] && S.days[d].smoke).filter(v => v!=null);
-  if (vals.length >= 2){ const avg = vals.reduce((a,b)=>a+b,0)/vals.length; return Math.max(0, Math.ceil(avg) - 1); }
-  const st = cfg().smoke && cfg().smoke.startTarget; return st==null ? null : st;
+function smokeStreak(kind){ let n = 0, d = TODAY(); if (!(S.days[d] && S.days[d].smokeLogged)) d = addDays(d,-1);
+  while (S.days[d] && S.days[d].smokeLogged && !S.days[d][kind]){ n++; d = addDays(d,-1); } return n; }
+const smokeMark = r => !r || !r.smokeLogged ? '·' : r.cig && r.weed ? 'C+W' : r.cig ? 'C' : r.weed ? 'W' : '✓';
+// Compare un relevé de soldes à ce que la projection prévoyait à partir du relevé précédent.
+const TOL = 5;
+function snapsFull(){ return S.balances.filter(b => b.desj!=null && b.capone!=null); }
+function lastKnown(k, upto){ let v = null; S.balances.forEach(b => { if (b.ts <= upto.ts && b[k]!=null) v = b[k]; }); return v; }
+function comparePerf(cur){
+  const snaps = snapsFull(); const prev = snaps.filter(b => b.date < cur.date).pop(); if (!prev) return null;
+  const days = diffDays(prev.date, cur.date);
+  let stmt = null; S.balances.forEach(b => { if (b.ts <= prev.ts && b.minDue!=null) stmt = b; });
+  const wsPrev = lastKnown('wsc', prev) || 0;
+  const pj = project(cfg(), activeRec(), { date:prev.date, desj:prev.desj, wsc:wsPrev, capone:prev.capone, minDue: stmt && stmt.dueDate >= prev.date ? stmt.minDue : 0, dueDate: stmt && stmt.dueDate >= prev.date ? stmt.dueDate : null }, { days });
+  const P = pj.rows[pj.rows.length-1];
+  const wsAct = cur.wsc!=null ? cur.wsc : P.W;
+  const predNet = P.D + P.W - P.C, actNet = cur.desj + wsAct - cur.capone;
+  let budget = 0; for (let x = addDays(prev.date,1); x <= cur.date; x = addDays(x,1)) budget += budgetFor(cfg(), x);
+  const mk = (key, label, pred, act, gap, note) => ({ key, label, pred, act, gap, state: gap >= -TOL ? 'ok' : 'miss', note });
+  const cats = [
+    mk('desj','Desjardins', P.D, cur.desj, cur.desj - P.D),
+    mk('capone','Capital One', P.C, cur.capone, P.C - cur.capone, 'plus bas que prévu = mieux'),
+  ];
+  if (cur.wsc!=null) cats.push(mk('ws','Wealthsimple (chèque)', P.W, cur.wsc, cur.wsc - P.W));
+  cats.push(mk('net','Général', predNet, actNet, actNet - predNet, 'Desjardins + WS chèque − carte'));
+  const wsiPrev = lastKnown('wsi', prev);
+  return { prev, cur, days, cats, net: cats[cats.length-1], budget, spentEst: budget - (actNet - predNet), paidMore: (cur.desj - P.D) < -TOL && (P.C - cur.capone) > TOL,
+    wsi: (cur.wsi!=null && wsiPrev!=null) ? { prev:wsiPrev, cur:cur.wsi, delta:cur.wsi - wsiPrev } : null };
 }
-function smokeFreeStreak(){ let n = 0, d = TODAY(); if (!(S.days[d] && S.days[d].smoke!=null)) d = addDays(d,-1); while (S.days[d] && S.days[d].smoke===0){ n++; d = addDays(d,-1); } return n; }
+function lastPerf(){ const s = snapsFull(); return s.length ? comparePerf(s[s.length-1]) : null; }
+function perfCard(p){
+  if (!p) return `<section class="card"><h2>Résultat vs prévision</h2><p class="muted">Entre tes montants : je les compare à ce que la prévision attendait depuis tes derniers soldes.</p></section>`;
+  const sign = v => (v>=0?'+':'−') + money(Math.abs(v)).replace('-','');
+  const ok = p.cats.filter(c => c.state==='ok').length;
+  return `<section class="card" aria-label="Résultat vs prévision"><div class="row between"><h2>Résultat vs prévision</h2><span class="pill ${ok===p.cats.length?'ok':p.net.state==='ok'?'open':'miss'}">${ok} / ${p.cats.length}</span></div>
+    <div class="muted small">Soldes du ${dshort(p.cur.date)} comparés à la prévision faite depuis ceux du ${dshort(p.prev.date)} (${p.days} jour${p.days>1?'s':''}).</div>
+    ${p.cats.map(c => `<div class="obj"><div class="ic ${c.state}">${c.state==='ok'?'✓':'!'}</div><div><b>${esc(c.label)}</b>${c.note?` <span class="muted small">${esc(c.note)}</span>`:''}<div class="small num">Prévu ${money0(c.pred)} · réel ${money0(c.act)} · <b style="color:var(--${c.state==='ok'?'good':'bad'})">${Math.abs(c.gap)<TOL?'≈ 0 $':sign(c.gap)}</b></div></div><span class="pill ${c.state}">${c.state==='ok'?'Atteint':'Manqué'}</span></div>`).join('')}
+    <div class="obj"><div class="ic ${p.spentEst <= p.budget + TOL ? 'ok' : 'miss'}">$</div><div><b>Dépenses estimées : ${money0(Math.max(0,p.spentEst))}</b> <span class="muted">sur ${money0(p.budget)} prévus</span><div class="muted small">Calculé à partir de l’écart général : ce que tes soldes disent de tes dépenses depuis le ${dday(p.prev.date)}</div></div><span></span></div>
+    ${p.paidMore ? '<div class="banner ok small">Desjardins plus bas que prévu, mais la carte a baissé d’autant : tu as payé la carte plus que prévu.</div>' : ''}
+    ${p.wsi ? `<div class="small">Placements WS : ${money(p.wsi.cur)} <span style="color:var(--${p.wsi.delta>=0?'good':'bad'})">(${sign(p.wsi.delta)} depuis le ${dday(p.prev.date)})</span></div>` : ''}
+  </section>`;
+}
 function evalBlock(block){
   const t = TODAY(), ended = t > block.end, inB = d => block.days.includes(d);
   const st = (ok, miss) => ok ? 'ok' : (miss ? 'miss' : 'open');
   const nStr = S.workouts.filter(w => inB(w.date) && isStrength(w)).length;
   const nCar = S.workouts.filter(w => inB(w.date) && isCardio(w)).length;
   const env = block.days.reduce((a,d) => a + budgetFor(cfg(), d), 0);
-  const spentVals = block.days.map(d => S.days[d] && S.days[d].spent);
-  const spent = spentVals.reduce((a,v) => a + (v||0), 0), nSpent = spentVals.filter(v => v!=null).length;
-  const tgt = smokeTarget(block);
-  const smokeVals = block.days.map(d => S.days[d] && S.days[d].smoke);
-  const nSmoke = smokeVals.filter(v => v!=null).length;
-  const smokeOver = tgt!=null && smokeVals.some(v => v!=null && v > tgt);
-  const weighed = S.body.some(b => inB(b.date)), balUp = S.balances.some(b => inB(b.date));
+  const snapIn = snapsFull().filter(b => inB(b.date)).pop(); const perf = snapIn ? comparePerf(snapIn) : null;
+  const marks = block.days.map(d => S.days[d]); const nLog = marks.filter(r => r && r.smokeLogged).length;
+  const smoked = marks.some(r => r && r.smokeLogged && (r.cig || r.weed));
+  const weighed = S.body.some(b => inB(b.date));
   const bixi = block.days.filter(d => S.days[d] && S.days[d].commute==='bixi').length;
   const o = [
     { key:'force', ic:'F', label:'2 séances de force', detail: nStr+' / 2 faites', state: st(nStr>=2, ended), pct: Math.min(1,nStr/2) },
     { key:'cardio', ic:'C', label:'1 cardio (nage, corde ou mountain climber)', detail: nCar+' / 1' + (bixi ? ' · Bixi '+bixi+' j en bonus' : ''), state: st(nCar>=1, ended), pct: Math.min(1,nCar) },
-    { key:'budget', ic:'$', label:'Dépenses ≤ '+money0(env)+' pour les 3 jours', detail: money(spent)+' notés sur '+nSpent+' jour'+(nSpent>1?'s':'')+' · reste '+money(env-spent), state: spent > env ? 'miss' : st(ended && nSpent===3, ended && nSpent<3), pct: Math.min(1, env? spent/env : 0) },
-    { key:'smoke', ic:'~', label: tgt==null ? 'Fumée : noter chaque jour combien' : (tgt===0 ? 'Fumée : 0 par jour' : 'Fumée : '+tgt+' max par jour'), detail: nSmoke ? smokeVals.map((v,i)=> DOW[parseD(block.days[i]).getDay()]+' '+(v==null?'·':v)).join('  ') : 'Rien de noté encore', state: tgt==null ? st(nSmoke===3, ended && nSmoke<3) : (smokeOver ? 'miss' : st(ended && nSmoke===3, ended && nSmoke<3)), pct: nSmoke/3 },
-    { key:'checkin', ic:'✓', label:'Pesée + soldes à jour', detail: (weighed?'pesée ✓':'pesée à faire')+' · '+(balUp?'soldes ✓':'soldes à mettre à jour'), state: st(weighed && balUp, ended), pct: (weighed+balUp)/2 },
+    { key:'money', ic:'$', label:'Argent : soldes à la prévision ou mieux', detail: perf ? 'Écart général '+(perf.net.gap>=0?'+':'')+money0(perf.net.gap)+' au '+dday(perf.cur.date)+' · dépenses estimées '+money0(Math.max(0,perf.spentEst))+' / '+money0(perf.budget) : 'Entre tes montants dans l’onglet Jour', state: perf ? (perf.net.state==='ok' ? 'ok' : 'miss') : (ended ? 'miss' : 'open'), pct: perf ? 1 : 0 },
+    { key:'smoke', ic:'~', label:'Sans cigarette ni weed', detail: block.days.map((d,i) => DOW[parseD(d).getDay()]+' '+smokeMark(marks[i])).join('   ')+'  · ✓ rien, C cigarette, W weed', state: smoked ? 'miss' : (nLog===3 ? 'ok' : (ended ? 'miss' : 'open')), pct: nLog/3 },
+    { key:'checkin', ic:'⚖', label:'Pesée dans le bloc', detail: weighed ? 'faite ✓' : 'à faire', state: st(weighed, ended), pct: weighed ? 1 : 0 },
   ];
-  return { o, score: o.filter(x => x.state==='ok').length, env, spent, tgt, ended };
+  return { o, score: o.filter(x => x.state==='ok').length, env, ended };
 }
 const stateLabel = { ok:'Atteint', open:'En cours', miss:'Manqué', na:'—' };
 
 // ===== Rendu =====
 let renderPending = false;
 function scheduleRender(){ if (renderPending) return; renderPending = true; requestAnimationFrame(() => { renderPending = false; render(); }); }
-function currentTab(){ const h = location.hash.replace('#',''); return ['bloc','entrainement','argent','corps'].includes(h) ? h : 'bloc'; }
+function currentTab(){ const h = location.hash.replace('#',''); return ['jour','bloc','entrainement','argent','corps'].includes(h) ? h : 'jour'; }
 let charts = [];
 function render(){
   const view = document.getElementById('view');
@@ -423,9 +457,9 @@ function render(){
   let html = statusBanner();
   if (!conn.url || !conn.token || (!S.cfg && sync.state==='err' && !raw)) html = setupView();
   else if (!S.cfg) html += '<div class="card muted">'+(sync.state==='sync'?'Chargement de ton Google Sheets…':'Aucune donnée reçue. Vérifie que le fichier a bien les onglets Réglages, Programme, etc.')+'</div>';
-  else html += ({ bloc:viewBloc, entrainement:viewTrain, argent:viewMoney, corps:viewBody }[tab])();
+  else html += ({ jour:viewJour, bloc:viewBloc, entrainement:viewTrain, argent:viewMoney, corps:viewBody }[tab])();
   view.innerHTML = html;
-  if (S.cfg) ({ bloc:afterBloc, entrainement:afterTrain, argent:afterMoney, corps:afterBody }[tab] || (()=>{}))();
+  if (S.cfg) ({ jour:afterJour, bloc:afterBloc, entrainement:afterTrain, argent:afterMoney, corps:afterBody }[tab] || (()=>{}))();
 }
 function statusBanner(){
   if (!conn.url || !conn.token) return '';
@@ -454,14 +488,13 @@ function viewBloc(){
       <span class="pill ${o.state}">${stateLabel[o.state]}</span></div>`).join('')}</section>`;
   if (sess) h += `<section class="card"><div class="row between"><div><div class="muted small">Prochaine séance · phase ${ph?ph.idx:1} ${ph?esc(ph.name):''}</div><h3>${next} — ${esc(sess.name)}</h3></div><button class="primary" data-act="startSession" data-kind="${next}">Commencer</button></div>
     <div class="muted small">${ph?ph.sets+' séries · effort '+esc(ph.effort):''} · ${sess.exercises.filter(e => (e.minPhase||1) <= (ph?ph.idx:1)).map(e=>esc(e.name)).join(' · ')}</div></section>`;
-  h += todayCard();
   const pj = runProjection({ days: 60 });
   if (pj){
     const np = nextPayAfter(c, addDays(t,-1)) ; const row = pj.rows.find(r => r.date===np);
     const b = latestBal(); const w0 = pj.warns[0];
     h += `<section class="card"><div class="row between"><h2>Argent en bref</h2><a class="btn ghost" href="#argent">Détails</a></div>
       <div class="tiles"><div class="tile"><span class="lab">Desjardins</span><b class="${b.desj<0?'kpi-neg':''}">${money(b.desj)}</b></div><div class="tile"><span class="lab">Capital One</span><b>${money(b.capone)}</b></div><div class="tile"><span class="lab">Prochaine paye</span><b>${np?dday(np):'—'}</b></div></div>
-      ${(() => { const n2 = pj.rows.find(r => r.payAmt > 0); return n2 ? `<div class="small">Prochain paiement de carte prévu : <b>${money(n2.payAmt)}</b> le ${dday(n2.date)}.</div>` : ''; })()}
+      ${(() => { const n2 = pj.rows.find(r => r.payAmt > 0); return n2 ? `<div class="small">Prochain paiement de carte prévu : <b>${money(n2.payAmt)}</b> le ${dday(n2.date)}</div>` : ''; })()}
       ${false ? `<div class="small">À la paye du ${dday(np)} : payer <b>${money(row.payAmt)}</b> sur la carte.</div>` : ''}
       ${w0 ? warnHtml(w0, pj) : ''}</section>`;
   }
@@ -469,23 +502,39 @@ function viewBloc(){
   if (hist.length) h += `<section class="card"><h2>Blocs précédents</h2><div class="dots">${hist.map(x => `<div class="dot ${x.ev.score>=4?'ok':x.ev.score>=2?'open':'miss'}" title="Bloc ${x.k+1}">${x.ev.score}/5</div>`).join('')}</div></section>`;
   return h;
 }
-function todayCard(){
-  const t = TODAY(); const d = dayCursor || t; const rec = S.days[d] || {};
-  const bud = budgetFor(cfg(), d); const smk = rec.smoke;
-  return `<section class="card" aria-label="Journée"><div class="row between"><button class="ghost" data-act="dayPrev" aria-label="Jour précédent">‹</button><h2>${d===t?'Aujourd’hui':esc(dshort(d))}</h2><button class="ghost" data-act="dayNext" aria-label="Jour suivant" ${d>=t?'disabled':''}>›</button></div>
-    <div class="grid2">
-      <label class="f" for="dSpent">Dépensé (${money0(bud)} prévu)<input id="dSpent" inputmode="decimal" placeholder="0,00" value="${rec.spent!=null?esc(String(rec.spent).replace('.',',')):''}"></label>
-      <div class="f" style="display:grid;gap:4px"><span class="small muted">Fumée (nombre)</span><div class="stepper"><button data-act="smoke" data-d="-1" aria-label="Moins">−</button><b>${smk==null?'·':smk}</b><button data-act="smoke" data-d="1" aria-label="Plus">+</button></div></div>
-    </div>
-    <div class="row"><span class="small muted">Trajet :</span>${[['bixi','Bixi'],['metro','Métro'],['none','Aucun']].map(([k,l]) => `<button class="seg" data-act="commute" data-v="${k}" aria-pressed="${rec.commute===k}">${l}</button>`).join('')}</div>
-  </section>`;
+function afterBloc(){}
+
+// ---- Jour (s'ouvre en premier) ----
+function viewJour(){
+  const t = TODAY(), d = dayCursor || t, c = cfg(), bl = blockOf(c.blockAnchor, d), rec = S.days[d] || {};
+  const b = latestBal(), f = v => v==null ? '' : String(v).replace('.',',');
+  const todays = S.workouts.filter(w => w.date===d);
+  const next = nextSessionKind(), P = S.program;
+  const snapToday = snapsFull().filter(x => x.date===d).pop();
+  let h = `<header class="top"><div><div class="muted small">Bloc ${bl.k+1} · jour ${diffDays(bl.start,d)+1} sur 3</div><div class="row" style="gap:4px"><button class="ghost" data-act="dayPrev" aria-label="Jour précédent">‹</button><h1>${d===t?'Aujourd’hui':esc(dshort(d))}</h1><button class="ghost" data-act="dayNext" aria-label="Jour suivant" ${d>=t?'disabled':''}>›</button></div></div></header>`;
+  // Entraînement
+  h += `<section class="card" aria-label="Entraînement du jour"><h2>Entraînement</h2>
+    ${todays.length ? todays.map(w => `<div class="obj"><div class="ic ok">✓</div><div><b>${esc(w.kind==='cardio'?'Cardio — '+w.title:w.kind==='libre'?'Séance libre':w.kind+' — '+w.title)}</b><div class="muted small">${esc(summarizeWorkout(w))}</div></div><span></span></div>`).join('') : '<div class="muted small">Rien d’entré pour cette journée.</div>'}
+    <div class="row">${P ? `<button class="${todays.some(isStrength)?'':'primary'}" data-act="startSession" data-kind="${next}">Séance ${next} — ${esc(P.sessions[next].name)}</button>` : ''}<button data-act="cardio">Cardio</button><button data-act="startSession" data-kind="libre">Libre</button></div></section>`;
+  // Fumée
+  const sel = rec.smokeLogged;
+  h += `<section class="card" aria-label="Fumée du jour"><div class="row between"><h2>Fumée</h2><span class="small muted">${smokeStreak('cig')} j sans cigarette · ${smokeStreak('weed')} j sans weed</span></div>
+    <div class="row"><button class="seg" data-act="smokeNone" aria-pressed="${!!(sel && !rec.cig && !rec.weed)}">Rien fumé</button><button class="seg" data-act="smokeToggle" data-v="cig" aria-pressed="${!!rec.cig}">Cigarette</button><button class="seg" data-act="smokeToggle" data-v="weed" aria-pressed="${!!rec.weed}">Weed</button></div>
+    ${sel ? '' : '<div class="muted small">Pas encore indiqué pour cette journée.</div>'}</section>`;
+  // Montants
+  h += `<section class="card" aria-label="Montants du jour"><div class="row between"><h2>Montants du jour</h2><span class="small muted">${snapToday ? 'entrés ✓' : 'derniers : '+(b.date?dday(b.date):'—')}</span></div>
+    <div class="grid2"><label class="f" for="jD">Desjardins<input id="jD" inputmode="decimal" value="${f(b.desj)}"></label><label class="f" for="jC">Capital One (solde + en attente)<input id="jC" inputmode="decimal" value="${f(b.capone)}"></label>
+    <label class="f" for="jW">WS chèque<input id="jW" inputmode="decimal" value="${f(b.wsc)}"></label><label class="f" for="jI">WS placements<input id="jI" inputmode="decimal" value="${f(b.wsi)}"></label></div>
+    <details><summary>Nouveau relevé Capital One</summary><div class="grid3" style="margin-top:8px"><label class="f" for="jS">Nouveau solde<input id="jS" inputmode="decimal"></label><label class="f" for="jM">Paiement minimum<input id="jM" inputmode="decimal"></label><label class="f" for="jDue">Échéance<input id="jDue" type="date"></label></div></details>
+    <button class="primary" data-act="saveAmounts">${snapToday ? 'Mettre à jour les montants' : 'Enregistrer les montants'}</button>
+    <div class="muted small">Découvert Desjardins : signe moins (ex. −11,70). Rien d’autre à entrer : tes dépenses sont déduites de l’écart avec la prévision.</div></section>`;
+  h += perfCard(snapToday ? comparePerf(snapToday) : lastPerf());
+  return h;
 }
-function afterBloc(){
-  const inp = document.getElementById('dSpent');
-  if (inp) inp.addEventListener('change', () => saveDay(dayCursor||TODAY(), { spent: num(inp.value) }));
-}
-function saveDay(d, patch){ const cur = Object.assign({ spent:null, smoke:null, commute:null, note:'' }, S.days[d] || {}, patch);
-  enqueue({ t:'day', date:d, spent:cur.spent, smoke:cur.smoke, commute: cur.commute ? COMMUTE[cur.commute] : null, note:cur.note||'' }); }
+function afterJour(){}
+function saveDay(d, patch){ const cur = Object.assign({ spent:null, smokeLogged:false, cig:false, weed:false, commute:null, note:'' }, S.days[d] || {}, patch);
+  const smoke = !cur.smokeLogged ? null : cur.cig && cur.weed ? 'Cigarette + weed' : cur.cig ? 'Cigarette' : cur.weed ? 'Weed' : 'Non';
+  enqueue({ t:'day', date:d, spent:cur.spent, smoke, commute: cur.commute ? COMMUTE[cur.commute] : null, note:cur.note||'' }); }
 
 // ---- Entraînement ----
 function viewTrain(){
@@ -555,7 +604,7 @@ function viewMoney(){
     <div class="chart"><canvas id="cMoney" aria-label="Projection des soldes"></canvas></div>
     ${budgetsDiffer()?`<div class="row"><button class="primary" data-act="simSave">Garder ce budget</button><button data-act="simReset">Revenir au budget actuel</button></div>`:''}
   </section>`;
-  h += `<section class="card"><h2>Paye par paye</h2><div class="tablewrap"><table><thead><tr><th>Paye</th><th class="n">Desjardins après</th><th class="n">Vers la carte</th><th class="n">Solde carte</th><th class="n">WS chèque</th></tr></thead><tbody>${pays.slice(0,14).map(r => `<tr><td>${dday(r.date)}</td><td class="n">${money0(r.D)}</td><td class="n">${money0(r.payAmt)}</td><td class="n">${money0(r.C)}</td><td class="n">${money0(r.W)}</td></tr>`).join('')}</tbody></table></div><div class="muted small">Projection à partir des soldes du ${b.date?dday(b.date):'—'}, des paiements récurrents actifs et du budget quotidien. Les dépenses notées au jour le jour remplacent le budget pour ces jours-là.</div></section>`;
+  h += `<section class="card"><h2>Paye par paye</h2><div class="tablewrap"><table><thead><tr><th>Paye</th><th class="n">Desjardins après</th><th class="n">Vers la carte</th><th class="n">Solde carte</th><th class="n">WS chèque</th></tr></thead><tbody>${pays.slice(0,14).map(r => `<tr><td>${dday(r.date)}</td><td class="n">${money0(r.D)}</td><td class="n">${money0(r.payAmt)}</td><td class="n">${money0(r.C)}</td><td class="n">${money0(r.W)}</td></tr>`).join('')}</tbody></table></div><div class="muted small">Projection à partir des soldes du ${b.date?dday(b.date):'—'}, des paiements récurrents actifs et du budget quotidien. Chaque fois que tu entres tes montants, la projection repart de tes vrais soldes.</div></section>`;
   const groups = ['desj','wsc','capone'];
   h += `<section class="card"><div class="row between"><h2>Paiements récurrents</h2><button class="ghost" data-act="recEdit" data-id="">+ Ajouter</button></div>
     ${groups.map(g => { const list = S.recurring.filter(r => r.account===g && r.active).sort((a,b)=>a.day-b.day); const tot = list.reduce((a,r)=>a+r.amount,0); return `<div><div class="row between" style="margin-top:6px"><h3>${ACC[g]}</h3><span class="num small"><b>${money(tot)}</b> / mois</span></div>${list.map(recLine).join('') || '<div class="muted small">Aucun.</div>'}</div>`; }).join('')}
@@ -638,7 +687,7 @@ function openChooser(){
   openSheet('Ajouter', `<div class="grid2">
     <button class="primary" data-pick="session">Séance ${next}${P?' — '+esc(P.sessions[next].name):''}</button>
     <button data-pick="cardio">Cardio</button>
-    <button data-pick="day">Journée (dépenses, fumée, trajet)</button>
+    <button data-pick="day">Journée (fumée, trajet)</button>
     <button data-pick="body">Pesée</button>
     <button data-pick="balances">Soldes des comptes</button>
     <button data-pick="rec">Paiement récurrent</button>
@@ -748,13 +797,13 @@ function openCardio(){
 function openDay(d){
   const r = S.days[d] || {};
   openSheet('Journée', `<label class="f" for="yDate">Date<input id="yDate" type="date" value="${d}" max="${TODAY()}"></label>
-    <label class="f" for="ySpent">Dépensé ce jour-là ($)<input id="ySpent" inputmode="decimal" value="${r.spent!=null?String(r.spent).replace('.',','):''}"></label>
-    <label class="f" for="ySmoke">Fumée (nombre)<input id="ySmoke" inputmode="numeric" value="${r.smoke??''}"></label>
+    <div class="row"><span class="small muted">Fumée :</span><label class="row" for="yCig"><input id="yCig" type="checkbox" style="width:auto;min-height:0" ${r.cig?'checked':''}> Cigarette</label><label class="row" for="yWeed"><input id="yWeed" type="checkbox" style="width:auto;min-height:0" ${r.weed?'checked':''}> Weed</label></div>
+    <div class="muted small">Aucune case cochée = rien fumé ce jour-là.</div>
     <label class="f" for="yCom">Trajet<select id="yCom"><option value="">—</option>${[['bixi','Bixi'],['metro','Métro'],['none','Aucun']].map(([k,l])=>`<option value="${k}" ${r.commute===k?'selected':''}>${l}</option>`).join('')}</select></label>
     <label class="f" for="yNote">Note<input id="yNote" value="${esc(r.note||'')}"></label>
     <button class="primary" id="ySave">Enregistrer</button>`, el => {
       el.querySelector('#yDate').onchange = e => { closeSheet(); openDay(e.target.value); };
-      el.querySelector('#ySave').onclick = () => { saveDay(el.querySelector('#yDate').value, { spent:num(el.querySelector('#ySpent').value), smoke:num(el.querySelector('#ySmoke').value), commute:el.querySelector('#yCom').value||null, note:el.querySelector('#yNote').value }); closeSheet(); toast('Journée enregistrée.'); };
+      el.querySelector('#ySave').onclick = () => { saveDay(el.querySelector('#yDate').value, { smokeLogged:true, cig:el.querySelector('#yCig').checked, weed:el.querySelector('#yWeed').checked, commute:el.querySelector('#yCom').value||null, note:el.querySelector('#yNote').value }); closeSheet(); toast('Journée enregistrée.'); };
     });
 }
 function openBody(){
@@ -780,7 +829,7 @@ function openBalances(){
       el.querySelector('#kSave').onclick = () => { const g = id => num(el.querySelector(id).value.replace('−','-'));
         const doc = { t:'balances', id:uid('B'), date: el.querySelector('#kDate').value, desj:g('#kD'), capone:g('#kC'), wsc:g('#kW'), wsi:g('#kI'), stmtBal:g('#kS'), minDue:g('#kM'), dueDate: el.querySelector('#kDue').value || null };
         if (doc.desj==null || doc.capone==null){ toast('Desjardins et Capital One sont nécessaires.'); return; }
-        sim = null; enqueue(doc); closeSheet(); toast('Soldes enregistrés.'); };
+        sim = null; enqueue(doc); closeSheet(); toast('Soldes enregistrés.'); location.hash = 'jour'; };
     });
 }
 function openRec(id){
@@ -834,7 +883,13 @@ document.getElementById('view').addEventListener('click', e => {
   else if (a==='recEdit') openRec(b.dataset.id || null);
   else if (a==='dayPrev'){ dayCursor = addDays(dayCursor||TODAY(), -1); render(); }
   else if (a==='dayNext'){ const n = addDays(dayCursor||TODAY(), 1); dayCursor = n >= TODAY() ? null : n; render(); }
-  else if (a==='smoke'){ const d = dayCursor||TODAY(); const cur = S.days[d] && S.days[d].smoke; const step = +b.dataset.d; saveDay(d, { smoke: cur==null ? (step>0 ? 1 : 0) : Math.max(0, cur + step) }); }
+  else if (a==='smokeNone') saveDay(dayCursor||TODAY(), { smokeLogged:true, cig:false, weed:false });
+  else if (a==='smokeToggle'){ const d = dayCursor||TODAY(), r = S.days[d] || {}, k = b.dataset.v; saveDay(d, { smokeLogged:true, [k]: !r[k] }); }
+  else if (a==='saveAmounts'){ const g = id => { const el = document.getElementById(id); return el ? num(el.value.replace('−','-')) : null; };
+    const op = { t:'balances', id:uid('B'), date: dayCursor||TODAY(), desj:g('jD'), capone:g('jC'), wsc:g('jW'), wsi:g('jI'), stmtBal:g('jS'), minDue:g('jM'), dueDate:(document.getElementById('jDue')||{}).value || null };
+    if (op.desj==null || op.capone==null){ toast('Desjardins et Capital One sont nécessaires.'); return; }
+    if (document.activeElement) document.activeElement.blur(); sim = null; enqueue(op); toast('Montants enregistrés.');
+    requestAnimationFrame(() => { const c = document.querySelector('[aria-label="Résultat vs prévision"]'); if (c) c.scrollIntoView({ behavior:'smooth', block:'start' }); }); }
   else if (a==='commute'){ const d = dayCursor||TODAY(); const cur = S.days[d] && S.days[d].commute; saveDay(d, { commute: cur===b.dataset.v ? null : b.dataset.v }); }
   else if (a==='simStrat'){ sim.strategy = b.dataset.v; render(); }
   else if (a==='simMonths'){ sim.months = +b.dataset.v; render(); }
