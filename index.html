@@ -419,6 +419,18 @@ function comparePerf(cur){
   return { prev, cur, days, cats, net: cats[cats.length-1], budget, income:{ payPlanned, payReal, contracts, any: inc.length>0 }, spentEst: budget - (actNet - predNet), paidMore: (cur.desj - P.D) < -TOL && (P.C - cur.capone) > TOL, paidLess: (P.C - cur.capone) < -TOL && (cur.desj - P.D) > TOL,
     wsi: (cur.wsi!=null && wsiPrev!=null) ? { prev:wsiPrev, cur:cur.wsi, delta:cur.wsi - wsiPrev } : null };
 }
+// Décompose l'écart Desjardins : carte payée en plus, argent passé à WS, et le reste = dépenses vs budget.
+function explainGap(p){
+  const g = k => (p.cats.find(c => c.key===k) || { gap:0 }).gap;
+  const dj = g('desj'), card = g('capone'), ws = g('ws'), net = p.net.gap;
+  if (Math.abs(dj) < TOL || (Math.abs(card) < TOL && Math.abs(ws) < TOL)) return '';
+  const line = (label, v, tone) => Math.abs(v) < TOL ? '' : `<div class="row between small"><span>${label}</span><b class="num" style="color:var(--${tone})">${(v>=0?'+':'−')+money0(Math.abs(v)).replace('-','')}</b></div>`;
+  return `<div class="ex"><b class="small">D’où vient l’écart Desjardins (${(dj>=0?'+':'−')+money0(Math.abs(dj)).replace('-','')}) ?</b>
+    ${line(card > 0 ? 'Payé de plus sur la carte' : 'Paiement de carte prévu pas fait', -card, 'ink')}
+    ${line(ws > 0 ? 'Mis de plus dans WS chèque' : 'Moins dans WS chèque que prévu (virement pas fait ?)', -ws, 'ink')}
+    ${line(net < 0 ? 'Dépenses au-dessus du budget' : 'Dépenses sous le budget', net, net >= 0 ? 'good' : 'bad')}
+    <div class="muted small">Les lignes en noir déplacent ton argent sans le perdre. Seule la ligne en couleur compte pour l’objectif « Général ».</div></div>`;
+}
 function lastPerf(){ const s = snapsFull(); return s.length ? comparePerf(s[s.length-1]) : null; }
 function perfCard(p){
   if (!p) return `<section class="card"><h2>Résultat vs prévision</h2><p class="muted">Entre tes montants : je les compare à ce que la prévision attendait depuis tes derniers soldes.</p></section>`;
@@ -428,8 +440,7 @@ function perfCard(p){
     <div class="muted small">Soldes du ${dshort(p.cur.date)} comparés à la prévision faite depuis ceux du ${dshort(p.prev.date)} (${p.days} jour${p.days>1?'s':''}).</div>
     ${p.cats.map(c => `<div class="obj"><div class="ic ${c.state}">${c.state==='ok'?'✓':'!'}</div><div><b>${esc(c.label)}</b>${c.note?` <span class="muted small">${esc(c.note)}</span>`:''}<div class="small num">Prévu ${money0(c.pred)} · réel ${money0(c.act)} · <b style="color:var(--${c.state==='ok'?'good':'bad'})">${Math.abs(c.gap)<TOL?'≈ 0 $':sign(c.gap)}</b></div></div><span class="pill ${c.state}">${c.state==='ok'?'Atteint':'Manqué'}</span></div>`).join('')}
     <div class="obj"><div class="ic ${p.spentEst <= p.budget + TOL ? 'ok' : 'miss'}">$</div><div><b>Dépenses estimées : ${money0(Math.max(0,p.spentEst))}</b> <span class="muted">sur ${money0(p.budget)} prévus</span><div class="muted small">Calculé à partir de l’écart général : ce que tes soldes disent de tes dépenses depuis le ${dday(p.prev.date)}</div></div><span></span></div>
-    ${p.paidLess ? '<div class="banner open small">Capital One plus haut que prévu, mais l’argent est encore dans Desjardins : le paiement de carte prévu n’est pas fait (ou pas encore passé). Regarde « Général ».</div>' : ''}
-    ${p.paidMore ? '<div class="banner ok small">Desjardins plus bas que prévu, mais la carte a baissé d’autant : tu as payé la carte plus que prévu.</div>' : ''}
+    ${explainGap(p)}
     ${p.income.any ? `<div class="small">Revenus pris en compte : ${p.income.payPlanned ? 'paye '+money0(p.income.payReal)+(Math.abs(p.income.payReal-p.income.payPlanned)>=1?' (prévue '+money0(p.income.payPlanned)+')':'') : ''}${p.income.payPlanned && p.income.contracts ? ' · ' : ''}${p.income.contracts ? 'autres revenus '+money0(p.income.contracts) : ''}. Une paye plus basse ne compte pas comme une dépense.</div>` : ''}
     ${p.wsi ? `<div class="small">Placements WS : ${money(p.wsi.cur)} <span style="color:var(--${p.wsi.delta>=0?'good':'bad'})">(${sign(p.wsi.delta)} depuis le ${dday(p.prev.date)})</span></div>` : ''}
   </section>`;
