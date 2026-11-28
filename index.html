@@ -74,7 +74,7 @@ label.f{display:grid;gap:4px;font-size:13px;color:var(--muted)}
 .stepper{display:flex;align-items:center;gap:6px}
 .stepper button{width:44px;padding:0;font-size:20px}
 .stepper b{min-width:34px;text-align:center;font-family:var(--display);font-size:24px}
-nav.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(6,1fr);padding:6px 6px calc(6px + env(safe-area-inset-bottom));z-index:5}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);padding:6px 6px calc(6px + env(safe-area-inset-bottom));z-index:5}
 nav.tabs a{display:grid;place-items:center;gap:2px;text-decoration:none;color:var(--muted);font-size:12px;font-weight:600;padding:4px 0;border-radius:10px}
 nav.tabs a svg{width:22px;height:22px}
 nav.tabs a[aria-current="page"]{color:var(--accent)}
@@ -113,7 +113,6 @@ details summary{cursor:pointer;font-weight:600}
   <a href="#jour" data-tab="jour"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/></svg>Jour</a>
   <a href="#bloc" data-tab="bloc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M9 4v17M15 4v17"/></svg>Bloc</a>
   <a href="#entrainement" data-tab="entrainement"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 7v10M18 7v10M3 10v4M21 10v4M6 12h12"/></svg>Muscu</a>
-  <button class="plus" id="plusBtn" aria-label="Ajouter une entrée">+</button>
   <a href="#argent" data-tab="argent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="13" rx="2"/><path d="M2 10h20M6 15h4"/></svg>Argent</a>
   <a href="#corps" data-tab="corps"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19l5-7 4 4 7-10"/><circle cx="20" cy="6" r="1.5"/></svg>Corps</a>
 </nav>
@@ -460,7 +459,6 @@ function evalBlock(block){
     { key:'force', ic:'F', label:'2 séances de force', detail: nStr+' / 2 faites', state: st(nStr>=2, ended), pct: Math.min(1,nStr/2) },
     { key:'cardio', ic:'C', label:'1 cardio (nage, corde ou mountain climber)', detail: nCar+' / 1' + (bixi ? ' · Bixi '+bixi+' j en bonus' : ''), state: st(nCar>=1, ended), pct: Math.min(1,nCar) },
     { key:'money', ic:'$', label:'Argent : soldes à la prévision ou mieux', detail: perf ? 'Écart général '+(perf.net.gap>=0?'+':'')+money0(perf.net.gap)+' au '+dday(perf.cur.date)+' · dépenses estimées '+money0(Math.max(0,perf.spentEst))+' / '+money0(perf.budget) : 'Entre tes montants dans l’onglet Jour', state: perf ? (perf.net.state==='ok' ? 'ok' : 'miss') : (ended ? 'miss' : 'open'), pct: perf ? 1 : 0 },
-    { key:'smoke', ic:'~', label:'Sans cigarette ni weed', detail: block.days.map((d,i) => DOW[parseD(d).getDay()]+' '+smokeMark(marks[i])).join('   ')+'  · ✓ rien, C cigarette, W weed', state: smoked ? 'miss' : (nLog===3 ? 'ok' : (ended ? 'miss' : 'open')), pct: nLog/3 },
     { key:'checkin', ic:'⚖', label:'Pesée dans le bloc', detail: weighed ? 'faite ✓' : 'à faire', state: st(weighed, ended), pct: weighed ? 1 : 0 },
   ];
   return { o, score: o.filter(x => x.state==='ok').length, env, ended };
@@ -506,12 +504,12 @@ function viewBloc(){
   const left = diffDays(t, bl.end);
   const next = nextSessionKind(), P = S.program, ph = phaseNow();
   const sess = P && P.sessions[next];
-  let h = `<header class="top"><div><div class="muted small">Bloc ${bl.k+1} · ${dshort(bl.start)} → ${dshort(bl.end)}</div><h1>${left===0?'Dernier jour du bloc':left+1+' jours restants'}</h1></div><span class="pill ${ev.score>=4?'ok':ev.score>=2?'open':'na'}">${ev.score} / 5</span></header>`;
+  let h = `<header class="top"><div><div class="muted small">Bloc ${bl.k+1} · ${dshort(bl.start)} → ${dshort(bl.end)}</div><h1>${left===0?'Dernier jour du bloc':left+1+' jours restants'}</h1></div><span class="pill ${ev.score>=3?'ok':ev.score>=2?'open':'na'}">${ev.score} / 4</span></header>`;
   h += `<section class="card" aria-label="Objectifs du bloc">${ev.o.map(o => `
     <div class="obj"><div class="ic ${o.state}">${o.ic}</div>
       <div><div style="font-weight:600">${esc(o.label)}</div><div class="muted small">${esc(o.detail)}</div><div class="bar" style="margin-top:6px"><i style="width:${Math.round(o.pct*100)}%"></i></div></div>
       <span class="pill ${o.state}">${stateLabel[o.state]}</span></div>`).join('')}</section>`;
-  if (sess) h += `<section class="card"><div class="row between"><div><div class="muted small">Prochaine séance · phase ${ph?ph.idx:1} ${ph?esc(ph.name):''}</div><h3>${next} — ${esc(sess.name)}</h3></div><button class="primary" data-act="startSession" data-kind="${next}">Commencer</button></div>
+  if (sess) h += `<section class="card"><div class="row between"><div><div class="muted small">Prochaine séance · phase ${ph?ph.idx:1} ${ph?esc(ph.name):''}</div><h3>${next} — ${esc(sess.name)}</h3></div><a class="btn ghost" href="#entrainement">Voir</a></div>
     <div class="muted small">${ph?ph.sets+' séries · effort '+esc(ph.effort):''} · ${sess.exercises.filter(e => (e.minPhase||1) <= (ph?ph.idx:1)).map(e=>esc(e.name)).join(' · ')}</div></section>`;
   const pj = runProjection({ days: 60 });
   if (pj){
@@ -524,7 +522,7 @@ function viewBloc(){
       ${w0 ? warnHtml(w0, pj) : ''}</section>`;
   }
   const hist = []; for (let k = Math.max(0, bl.k-9); k < bl.k; k++){ const b = blockOf(c.blockAnchor, addDays(c.blockAnchor, 3*k)); hist.push({ k, ev: evalBlock(b) }); }
-  if (hist.length) h += `<section class="card"><h2>Blocs précédents</h2><div class="dots">${hist.map(x => `<div class="dot ${x.ev.score>=4?'ok':x.ev.score>=2?'open':'miss'}" title="Bloc ${x.k+1}">${x.ev.score}/5</div>`).join('')}</div></section>`;
+  if (hist.length) h += `<section class="card"><h2>Blocs précédents</h2><div class="dots">${hist.map(x => `<div class="dot ${x.ev.score>=3?'ok':x.ev.score>=2?'open':'miss'}" title="Bloc ${x.k+1}">${x.ev.score}/4</div>`).join('')}</div></section>`;
   return h;
 }
 function afterBloc(){}
@@ -546,11 +544,6 @@ function viewJour(){
     ${detailed.length ? `<div class="muted small">${detailed.map(w => esc(summarizeWorkout(w))).join(' · ')}</div>` : ''}
     ${!gym && !rest && P ? `<div class="small">Suggestion : ${co.mode==='recup' ? 'récupération (nage douce ou repos)' : 'séance '+co.kind+' — '+esc(P.sessions[co.kind].name)}${co.why[0] ? '. '+esc(co.why[0]) : ''} <a href="#entrainement">Voir dans Muscu</a></div>` : ''}
     ${!car && !rest && !co.cardioRecent ? `<div class="muted small">${esc(co.cardioTip)}</div>` : ''}</section>`;
-  // Fumée
-  const sel = rec.smokeLogged;
-  h += `<section class="card" aria-label="Fumée du jour"><div class="row between"><h2>Fumée</h2><span class="small muted">${smokeStreak('cig')} j sans cigarette · ${smokeStreak('weed')} j sans weed</span></div>
-    <div class="row"><button class="seg" data-act="smokeNone" aria-pressed="${!!(sel && !rec.cig && !rec.weed)}">Rien fumé</button><button class="seg" data-act="smokeToggle" data-v="cig" aria-pressed="${!!rec.cig}">Cigarette</button><button class="seg" data-act="smokeToggle" data-v="weed" aria-pressed="${!!rec.weed}">Weed</button></div>
-    ${sel ? '' : '<div class="muted small">Pas encore indiqué pour cette journée.</div>'}</section>`;
   // Revenus
   const incToday = (S.incomes||[]).filter(i => i.date===d);
   const payNear = (S.incomes||[]).some(i => i.type==='Paye' && Math.abs(diffDays(i.date, d)) <= 3);
@@ -566,6 +559,11 @@ function viewJour(){
       <label class="f" for="iAcc">Reçu dans<select id="iAcc"><option value="desj">Desjardins</option><option value="wsc">WS chèque</option></select></label></div>
       <label class="f" for="iNote" style="margin-top:8px">Note<input id="iNote" placeholder="ex. contrat sonorisation"></label>
       <button data-act="addIncome" style="margin-top:8px">Ajouter</button></details></section>`;
+  // Pesée
+  const bw = S.body.find(x => x.date===d), lastW = S.body[S.body.length-1] || {};
+  h += `<section class="card" aria-label="Pesée"><div class="row between"><h2>Pesée</h2><span class="small muted">${bw ? 'faite ✓' : 'facultatif · 1 fois par bloc'}</span></div>
+    <div class="row"><input id="jPw" class="sm" style="width:110px" inputmode="decimal" placeholder="${lastW.weight ? String(lastW.weight).replace('.',',') : 'poids'}" value="${bw ? String(bw.weight).replace('.',',') : ''}" aria-label="Poids en lb"> lb <button data-act="savePesee">${bw ? 'Corriger' : 'Enregistrer'}</button></div>
+    <details><summary class="small">% gras, masse musculaire (Renpho)</summary><div class="grid3" style="margin-top:8px"><label class="f" for="jBf">% gras<input id="jBf" inputmode="decimal" value="${bw && bw.bf!=null ? String(bw.bf).replace('.',',') : ''}"></label><label class="f" for="jMu">Muscle (lb)<input id="jMu" inputmode="decimal" value="${bw && bw.muscle!=null ? String(bw.muscle).replace('.',',') : ''}"></label><label class="f" for="jVi">Viscéral<input id="jVi" inputmode="decimal" value="${bw && bw.visceral!=null ? bw.visceral : ''}"></label></div></details></section>`;
   // Montants
   h += `<section class="card" aria-label="Montants du jour"><div class="row between"><h2>Montants du jour</h2><span class="small muted">${snapToday ? 'entrés ✓' : 'derniers : '+(b.date?dday(b.date):'—')}</span></div>
     <div class="grid2"><label class="f" for="jD">Desjardins<input id="jD" inputmode="decimal" value="${f(b.desj)}"></label><label class="f" for="jC">Capital One (solde + en attente)<input id="jC" inputmode="decimal" value="${f(b.capone)}"></label>
@@ -636,19 +634,18 @@ function viewTrain(){
   if (co.mode==='done'){
     const w = S.workouts.filter(x => x.date===t && isStrength(x));
     h += `<section class="card"><h2>Aujourd’hui</h2><div class="obj"><div class="ic ok">✓</div><div><b>Séance faite</b><div class="muted small">${w.map(x => esc(summarizeWorkout(x))).join(' · ')}</div></div><span></span></div>
-      ${!co.cardioRecent ? `<div class="small">${esc(co.cardioTip)}</div><button data-act="cardio">Noter un cardio</button>` : ''}</section>`;
+      ${!co.cardioRecent ? `<div class="small">${esc(co.cardioTip)}</div>` : ''}</section>`;
   } else if (co.mode==='recup'){
     h += `<section class="card"><h2>Aujourd’hui : récupération</h2>${co.why.map(x => `<div class="small">• ${esc(x)}</div>`).join('')}
-      <div class="row"><button class="primary" data-act="cardio">Noter un cardio</button><button data-act="startSession" data-kind="${co.kind}">Faire quand même la séance ${co.kind}</button></div></section>`;
+      <div class="muted small">Pour noter : onglet Jour → Cardio (ou Gym si tu fais quand même la séance ${co.kind}).</div></section>`;
   } else {
     const pv = buildSession(co.kind);
     h += `<section class="card" aria-label="Séance suggérée"><div class="muted small">Suggestion pour aujourd’hui</div><h2>Séance ${co.kind} — ${esc(P.sessions[co.kind].name)}</h2>
       ${(co.why.length ? co.why : ['Rien de spécial : on suit la progression normale.']).map(x => `<div class="small">• ${esc(x)}</div>`).join('')}
       <div>${pv.exercises.map(x => `<div class="histitem"><div><b>${esc(x.name)}</b> <span class="small">${x.kind==='cardio' ? (x.min||20)+' min' : x.sets.length+' × '+esc(x.target)}${x.kind==='reps' && x.sets[0] && x.sets[0].w ? ' · <b>'+x.sets[0].w+' lb</b>' : ''}</span></div>${x.hint?`<div class="muted small">${esc(x.hint)}</div>`:''}</div>`).join('')}</div>
-      <button class="primary" data-act="startSession" data-kind="${co.kind}">Commencer cette séance</button>
-      <div class="row"><span class="small muted">Autre séance :</span>${P.rotation.filter(k => k!==co.kind).map(k => `<button class="seg" data-act="startSession" data-kind="${k}">${k}</button>`).join('')}<button class="seg" data-act="startSession" data-kind="libre">Libre</button></div></section>`;
+      <div class="muted small">Pour la noter : onglet <a href="#jour">Jour</a> → Gym.</div></section>`;
   }
-  h += `<section class="card"><div class="row between"><h2>Cardio</h2><button data-act="cardio">Noter un cardio</button></div><div class="small">${esc(co.cardioTip)}</div><div class="muted small">Le cardio s’entre en minutes. Mountain climbers : une fois par semaine au maximum. Corde : surface souple, attention au pied gauche.</div></section>`;
+  h += `<section class="card"><div class="row between"><h2>Cardio</h2></div><div class="small">${esc(co.cardioTip)}</div><div class="muted small">Se note dans Jour → Cardio, en minutes. Mountain climbers : une fois par semaine au maximum. Corde : surface souple, attention au pied gauche.</div></section>`;
   h += `<section class="card"><h3>Phase ${ph.idx} : ${esc(ph.name)}</h3><div class="small">${ph.sets} séries · effort ${esc(ph.effort)}. ${esc(ph.note)}</div>${ph.next?`<div class="muted small">Phase suivante (${esc(ph.next.name)}) après ${ph.next.from} séances. Les jours manqués ne font pas avancer la phase.</div>`:''}</section>`;
   const recent = S.workouts.filter(w => w.kind!=='repos').slice(-25).reverse();
   h += `<section class="card"><h2>Historique</h2>${recent.length ? recent.map(w => { const f = feelOf(w), pn = painsOf(w); return `<div class="histitem"><div class="row between"><b>${esc(dshort(w.date))} · ${esc(w.kind==='cardio'?'Cardio':w.kind==='libre'?(w.title||'Libre'):w.kind+' — '+(w.title||''))}</b><button class="ghost" data-act="delWorkout" data-id="${w._id}">Supprimer</button></div>${f||pn.length?`<div class="row">${f?`<span class="pill ${f==='Dur'?'miss':f==='Facile'?'ok':'na'}">${f}</span>`:''}${pn.map(p => `<span class="pill open">${esc(p)}</span>`).join('')}</div>`:''}<div class="muted small">${esc(summarizeWorkout(w))}</div></div>`; }).join('') : '<p class="muted">Aucune séance encore.</p>'}</section>`;
@@ -692,7 +689,7 @@ function viewMoney(){
   const c = cfg(), b = latestBal();
   if (!sim) sim = { budget: Object.assign({}, c.budget), strategy: c.capone.strategy, fixed: c.capone.fixed };
   const net = (b.desj||0) + (b.wsc||0) + (b.wsi||0) - (b.capone||0);
-  let h = `<header class="top"><div><div class="muted small">Soldes au ${b.date?dlong(b.date):'—'}</div><h1>Argent</h1></div><button data-act="balances">Entrer mes soldes</button></header>
+  let h = `<header class="top"><div><div class="muted small">Soldes au ${b.date?dlong(b.date):'—'} · <a href="#jour">les mettre à jour dans Jour</a></div><h1>Argent</h1></div></header>
   <div class="small muted">Tes <b>objectifs</b> sont ton budget de dépenses et ta façon de payer la carte. La <b>prévision</b> en découle. Chaque fois que tu entres tes soldes, l’app <b>compare</b> le réel à la prévision.</div>
   <section class="card"><div class="tiles">
     <div class="tile"><span class="lab">Desjardins</span><b class="${b.desj<0?'kpi-neg':''}">${money(b.desj)}</b></div>
@@ -783,7 +780,7 @@ function afterMoney(){
 // ---- Corps ----
 function viewBody(){
   const B = S.body, g = cfg().goalWeight, last = B[B.length-1], first = B[0];
-  let h = `<header class="top"><div><div class="muted small">${last?'Dernière pesée : '+dlong(last.date):'Aucune pesée'}</div><h1>Corps</h1></div><button class="primary" data-act="body">Nouvelle pesée</button></header>`;
+  let h = `<header class="top"><div><div class="muted small">${last?'Dernière pesée : '+dlong(last.date):'Aucune pesée'} · la pesée se note dans <a href="#jour">Jour</a></div><h1>Corps</h1></div></header>`;
   if (!last) return h;
   const wk = B.filter(b => b.date >= addDays(last.date, -28));
   let rate = null; if (wk.length >= 2){ const a = wk[0], z = wk[wk.length-1]; const dd = diffDays(a.date, z.date); if (dd >= 7) rate = (z.weight - a.weight) / dd * 7; }
@@ -822,20 +819,6 @@ function openSheet(title, bodyHtml, onMount){
 function closeSheet(){ document.getElementById('sheetRoot').innerHTML = ''; scheduleRender(); }
 let toastT; function toast(msg){ let el = document.getElementById('toast'); if (!el){ el = document.createElement('div'); el.id='toast'; el.className='banner'; el.setAttribute('role','status'); el.style.cssText='position:fixed;left:16px;right:16px;bottom:96px;z-index:20;max-width:680px;margin:0 auto;background:var(--ink);color:var(--surface)'; document.body.appendChild(el); } el.textContent = msg; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => el.hidden = true, 3500); }
 function confirmIn(btn, label, fn){ if (btn.dataset.armed){ fn(); return; } btn.dataset.armed = '1'; const old = btn.textContent; btn.textContent = label; btn.classList.add('danger'); setTimeout(() => { if (btn.isConnected){ delete btn.dataset.armed; btn.textContent = old; btn.classList.remove('danger'); } }, 3000); }
-
-function openChooser(){
-  const next = nextSessionKind(), P = S.program;
-  openSheet('Ajouter', `<div class="grid2">
-    <button class="primary" data-pick="session">Séance ${next}${P?' — '+esc(P.sessions[next].name):''}</button>
-    <button data-pick="cardio">Cardio</button>
-    <button data-pick="day">Journée (fumée, trajet)</button>
-    <button data-pick="body">Pesée</button>
-    <button data-pick="balances">Soldes des comptes</button>
-    <button data-pick="rec">Paiement récurrent</button>
-    <button data-pick="libre">Séance libre</button>
-  </div>`, el => el.addEventListener('click', e => { const b = e.target.closest('[data-pick]'); if (!b) return; const p = b.dataset.pick;
-    if (p==='session') openSession(next); else if (p==='libre') openSession('libre'); else if (p==='cardio') openCardio(); else if (p==='day') openDay(TODAY()); else if (p==='body') openBody(); else if (p==='balances') openBalances(); else if (p==='rec') openRec(null); }));
-}
 
 // ---- Séance ----
 let sess = null;
@@ -978,24 +961,14 @@ function openGym(d){
   openSheet('Gym', `<div class="muted small">${esc(dshort(d))}</div>
     ${P ? `<h3>Séance suggérée : ${co.kind} — ${esc(P.sessions[co.kind].name)}</h3>${(co.why.length ? co.why : ['Progression normale.']).map(x => `<div class="small">• ${esc(x)}</div>`).join('')}` : ''}
     <button class="primary" data-g="detail">Noter ma séance (charges et reps)</button>
+    ${P ? `<div class="row"><span class="small muted">Autre séance :</span>${P.rotation.filter(k => k!==co.kind).map(k => `<button class="seg" data-g="other" data-v="${k}">${k}</button>`).join('')}<button class="seg" data-g="other" data-v="libre">Libre</button></div>` : ''}
     <button data-g="quick">Juste cocher « Gym »</button>
     <div class="muted small">Noter la séance permet d’ajuster les charges de la prochaine. « Juste cocher » compte quand même pour tes objectifs.</div>`, el => {
       el.onclick = e => { const b = e.target.closest('[data-g]'); if (!b) return;
         if (b.dataset.g==='detail'){ closeSheet(); openSession(co.kind, d); }
+        else if (b.dataset.g==='other'){ closeSheet(); openSession(b.dataset.v, d); }
         else { const ph = phaseNow(); if (S.workouts.some(w => w._id==='R'+d)) enqueue({ t:'delWorkout', id:'R'+d });
           enqueue({ t:'session', id:'G'+d, date:d, kind:'libre', title:'Gym', phase: ph ? ph.idx : 1, note:'Entrée rapide', sets:[], cardio:[] }); closeSheet(); toast('Gym coché.'); } };
-    });
-}
-function openDay(d){
-  const r = S.days[d] || {};
-  openSheet('Journée', `<label class="f" for="yDate">Date<input id="yDate" type="date" value="${d}" max="${TODAY()}"></label>
-    <div class="row"><span class="small muted">Fumée :</span><label class="row" for="yCig"><input id="yCig" type="checkbox" style="width:auto;min-height:0" ${r.cig?'checked':''}> Cigarette</label><label class="row" for="yWeed"><input id="yWeed" type="checkbox" style="width:auto;min-height:0" ${r.weed?'checked':''}> Weed</label></div>
-    <div class="muted small">Aucune case cochée = rien fumé ce jour-là.</div>
-    <label class="f" for="yCom">Trajet<select id="yCom"><option value="">—</option>${[['bixi','Bixi'],['metro','Métro'],['none','Aucun']].map(([k,l])=>`<option value="${k}" ${r.commute===k?'selected':''}>${l}</option>`).join('')}</select></label>
-    <label class="f" for="yNote">Note<input id="yNote" value="${esc(r.note||'')}"></label>
-    <button class="primary" id="ySave">Enregistrer</button>`, el => {
-      el.querySelector('#yDate').onchange = e => { closeSheet(); openDay(e.target.value); };
-      el.querySelector('#ySave').onclick = () => { saveDay(el.querySelector('#yDate').value, { smokeLogged:true, cig:el.querySelector('#yCig').checked, weed:el.querySelector('#yWeed').checked, commute:el.querySelector('#yCom').value||null, note:el.querySelector('#yNote').value }); closeSheet(); toast('Journée enregistrée.'); };
     });
 }
 function openBody(){
@@ -1078,7 +1051,6 @@ function openSettings(){
 }
 
 // ===== Événements =====
-document.getElementById('plusBtn').onclick = openChooser;
 window.addEventListener('hashchange', render);
 document.getElementById('view').addEventListener('click', e => {
   const b = e.target.closest('[data-act]'); if (!b) return; const a = b.dataset.act;
@@ -1102,6 +1074,8 @@ document.getElementById('view').addEventListener('click', e => {
     enqueue({ t:'income', id:uid('I'), date: dayCursor||TODAY(), type: document.getElementById('iType').value, amount:v, account: ACCLABEL[acc], note: document.getElementById('iNote').value }); toast('Revenu enregistré.'); }
   else if (a==='delIncome') confirmIn(b, 'Sûr ?', () => enqueue({ t:'delIncome', id:b.dataset.id }));
   else if (a==='setPay'){ enqueue({ t:'settings', values:{ Paye: +b.dataset.v } }); sim = null; toast('Paye prévue mise à jour.'); }
+  else if (a==='savePesee'){ const g = id => { const el = document.getElementById(id); return el ? num(el.value) : null; }; const w = g('jPw'); if (!w){ toast('Indique ton poids.'); return; }
+    if (document.activeElement) document.activeElement.blur(); enqueue({ t:'body', date: dayCursor||TODAY(), weight:w, bf:g('jBf'), muscle:g('jMu'), visceral:g('jVi') }); toast('Pesée enregistrée.'); }
   else if (a==='smokeNone') saveDay(dayCursor||TODAY(), { smokeLogged:true, cig:false, weed:false });
   else if (a==='smokeToggle'){ const d = dayCursor||TODAY(), r = S.days[d] || {}, k = b.dataset.v; saveDay(d, { smokeLogged:true, [k]: !r[k] }); }
   else if (a==='saveAmounts'){ const g = id => { const el = document.getElementById(id); return el ? num(el.value.replace('−','-')) : null; };
