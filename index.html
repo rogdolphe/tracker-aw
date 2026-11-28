@@ -167,7 +167,7 @@ function desjOut(cfg, rec, s) {
 // start: {date, desj, wsc, capone, minDue, dueDate}
 // opt: {days, budget, strategy, fixed}
 function project(cfgIn, rec, start, opt) {
-  const cfg = Object.assign({}, cfgIn, opt.budget ? { budget: opt.budget } : {});
+  const cfg = Object.assign({}, cfgIn, opt.budget ? { budget: opt.budget } : {}, opt.buffer != null ? { buffer: opt.buffer } : {});
   const cap = Object.assign({}, cfgIn.capone);
   if (opt.strategy) cap.strategy = opt.strategy;
   if (opt.fixed != null) cap.fixed = opt.fixed;
@@ -575,7 +575,7 @@ function viewJour(){
     <label class="f" for="jW">WS chèque${inp('jW', f(b.wsc))}</label><label class="f" for="jI">WS placements${inp('jI', f(b.wsi))}</label></div>
     <h3>Revenus</h3>
     ${payDay && !payNear ? `<label class="f" for="jPay">C’est jour de paye : montant reçu ($)${inp('jPay','', `placeholder="${f(c.payAmount)} prévus"`)}</label>` : ''}
-    <details ${jd.d===d && (jd.v.jAmt||'') ? 'open' : ''}><summary class="small">Revenu de contrat ou autre</summary><div class="grid3" style="margin-top:8px">
+    <details ${jd.d===d && (jd.v.jAmt||'') ? 'open' : ''}><summary class="small">Argent reçu aujourd’hui (contrat ou autre)</summary><div class="grid3" style="margin-top:8px">
       <label class="f" for="jAmt">Montant${inp('jAmt','')}</label>
       <label class="f" for="jAcc">Reçu dans<select id="jAcc" data-j="1" data-orig="desj"><option value="desj" ${accSel==='desj'?'selected':''}>Desjardins</option><option value="wsc" ${accSel==='wsc'?'selected':''}>WS chèque</option></select></label>
       <label class="f" for="jNote">Note<input id="jNote" data-j="1" data-orig="" value="${esc(val('jNote',''))}" placeholder="ex. contrat son"></label></div></details>
@@ -590,6 +590,8 @@ function viewJour(){
   if (incToday.length) h += `<section class="card" aria-label="Revenus du jour"><h3>Revenus notés ce jour-là</h3>
     ${incToday.map(i => `<div class="obj"><div class="ic ok">$</div><div><b>${esc(i.type)} : ${money(i.amount)}</b><div class="muted small">${ACC[i.account]}${i.note?' · '+esc(i.note):''}</div></div><button class="ghost" data-act="delIncome" data-id="${esc(i._id)}" aria-label="Supprimer ce revenu">×</button></div>`).join('')}
     ${lastPay && Math.abs(lastPay.amount - c.payAmount) >= 1 ? `<div class="small">Ta paye prévue est de ${money(c.payAmount)}. <button class="ghost" data-act="setPay" data-v="${lastPay.amount}">Prévoir ${money(lastPay.amount)} pour les prochaines payes</button></div>` : ''}
+    ${(() => { const got = incToday.filter(i => i.type!=='Paye'); if (!got.length) return ''; const cand = (S.planned||[]).filter(p => p.kind==='rev' && p.date >= addDays(d,-15) && p.date <= addDays(d,60));
+      return cand.map(p => `<div class="small">C’était le revenu prévu « ${esc(p.desc||'revenu')} » (${money0(p.amount)}, ${dday(p.date)}) ? <button class="ghost" data-act="delPlanned" data-id="${esc(p._id)}">Oui, le retirer du plan</button></div>`).join(''); })()}
     ${incomeAdvice(incToday.filter(i => i.type!=='Paye'))}</section>`;
   h += perfCard(snapToday ? comparePerf(snapToday) : lastPerf());
   return h;
@@ -755,7 +757,7 @@ function viewMoney(){
   const gs = goalStatus();
   // 1. Mes objectifs
   h += `<h2 style="margin-top:8px">Le plan</h2>`;
-  h += `<section class="card" aria-label="Mes objectifs"><div class="row between"><h2>1 · Mes objectifs</h2><button class="primary" data-act="goals">Modifier</button></div>
+  h += `<section class="card" aria-label="Mes objectifs"><div class="row between"><h2>1 · Mes objectifs</h2><button class="primary" data-act="goals">Modifier ou essayer</button></div>
     <div class="obj"><div class="ic na">$</div><div><b>Dépenses : ${money0(weekOf(c.budget))} par semaine</b><div class="muted small">${money0(c.budget.other)} par jour (lun-ven, dim.) · ${money0(c.budget.wed)} le mercredi · ${money0(c.budget.sat)} le samedi</div></div><span></span></div>
     <div class="obj"><div class="ic na">▭</div><div><b>Carte : ${c.capone.strategy==='fixed' ? money0(c.capone.fixed)+' à chaque paye' : 'tout le surplus à chaque paye'}</b><div class="muted small">en gardant ${money0(c.buffer)} de coussin dans Desjardins jusqu’à la paye suivante</div></div><span></span></div>
     <div class="obj"><div class="ic ${gs && gs.ok===true ? 'ok' : gs && gs.ok===false ? 'miss' : 'na'}">◎</div><div><b>Carte à zéro : ${c.carteZero ? 'avant le '+dlong(c.carteZero) : 'pas de date visée'}</b>
@@ -793,23 +795,6 @@ function viewMoney(){
     ${pj.warns.slice(0,3).map(warnHtml).join('')}
     <div class="chart"><canvas id="cMoney" aria-label="Prévision des soldes"></canvas></div>
     <details><summary>Paye par paye</summary><div class="tablewrap"><table><thead><tr><th>Paye</th><th class="n">Desjardins après</th><th class="n">Vers la carte</th><th class="n">Solde carte</th></tr></thead><tbody>${pays.slice(0,14).map(r => `<tr><td>${dday(r.date)}</td><td class="n">${money0(r.D)}</td><td class="n">${money0(r.payAmt)}</td><td class="n">${money0(r.C)}</td></tr>`).join('')}</tbody></table></div></details></section>`;
-  // 4. Essayer d'autres chiffres
-  const tr = runProjection({ days: 730, budget: sim.budget, strategy: sim.strategy, fixed: sim.fixed });
-  const cmp = (a, b2, better) => a===b2 ? '' : (better ? ' <span class="pill ok">mieux</span>' : ' <span class="pill miss">moins bien</span>');
-  h += `<section class="card" aria-label="Essai"><h2>6 · Essayer d’autres chiffres</h2><div class="muted small">Un bac à sable : rien ne change tant que tu ne cliques pas « Adopter comme objectifs ».</div>
-    <div class="grid3">
-      <label class="f" for="sOther">Lun-ven, dim.<input id="sOther" inputmode="decimal" value="${sim.budget.other}"></label>
-      <label class="f" for="sWed">Mercredi<input id="sWed" inputmode="decimal" value="${sim.budget.wed}"></label>
-      <label class="f" for="sSat">Samedi<input id="sSat" inputmode="decimal" value="${sim.budget.sat}"></label>
-    </div>
-    <div class="row"><span class="small muted">Carte :</span><button class="seg" data-act="simStrat" data-v="max" aria-pressed="${sim.strategy==='max'}">Tout le surplus</button><button class="seg" data-act="simStrat" data-v="fixed" aria-pressed="${sim.strategy==='fixed'}">Montant fixe</button>${sim.strategy==='fixed'?`<input id="sFixed" class="sm" inputmode="decimal" value="${sim.fixed}" aria-label="Montant fixe par paye"> $ / paye`:''}</div>
-    ${tr ? `<div class="small muted">Mes objectifs → essai</div>
-      <div class="histitem"><b>Dépenses / semaine</b><div class="small">${money0(weekOf(c.budget))} → <b>${money0(weekOf(sim.budget))}</b></div></div>
-      <div class="histitem"><b>Carte à zéro</b><div class="small">${pj.zeroDate?dlong(pj.zeroDate):'plus de 2 ans'} → <b>${tr.zeroDate?dlong(tr.zeroDate):'plus de 2 ans'}</b>${cmp(pj.zeroDate, tr.zeroDate, tr.zeroDate && (!pj.zeroDate || tr.zeroDate < pj.zeroDate))}</div></div>
-      <div class="histitem"><b>Intérêts payés</b><div class="small">${money0(pj.interest)} → <b>${money0(tr.interest)}</b>${cmp(Math.round(pj.interest), Math.round(tr.interest), tr.interest < pj.interest)}</div></div>
-      <div class="histitem"><b>Point bas Desjardins</b><div class="small">${money0(pj.low.v)} → <b>${money0(tr.low.v)}</b>${cmp(Math.round(pj.low.v), Math.round(tr.low.v), tr.low.v > pj.low.v)}</div></div>` : ''}
-    ${budgetsDiffer()?`<div class="row"><button class="primary" data-act="simSave">Adopter comme objectifs</button><button data-act="simReset">Revenir à mes objectifs</button></div>`:''}
-  </section>`;
   h += `<button data-act="settings">Paramètres : paye, carte, virement, connexion</button>`;
   return h;
 }
@@ -1122,15 +1107,30 @@ function openGoals(){
   const c = cfg(); const st = { strategy: c.capone.strategy };
   openSheet('Mes objectifs', `<h3>Dépenses</h3><div class="grid3"><label class="f" for="oO">Lun-ven, dim. ($/jour)<input id="oO" inputmode="decimal" value="${c.budget.other}"></label><label class="f" for="oW">Mercredi<input id="oW" inputmode="decimal" value="${c.budget.wed}"></label><label class="f" for="oS">Samedi<input id="oS" inputmode="decimal" value="${c.budget.sat}"></label></div>
     <div class="small muted" id="oWeek"></div>
+    <div class="ex" id="oPrev" aria-live="polite"></div>
     <h3>Carte Capital One</h3><div class="row"><button class="seg" data-o="max" aria-pressed="${st.strategy!=='fixed'}">Tout le surplus à chaque paye</button><button class="seg" data-o="fixed" aria-pressed="${st.strategy==='fixed'}">Montant fixe</button></div>
     <label class="f" for="oF">Montant fixe par paye (si choisi)<input id="oF" inputmode="decimal" value="${c.capone.fixed}"></label>
     <label class="f" for="oB">Coussin gardé dans Desjardins ($)<input id="oB" inputmode="decimal" value="${c.buffer}"></label>
     <h3>Date visée</h3><label class="f" for="oZ">Carte à zéro avant le (facultatif)<input id="oZ" type="date" value="${c.carteZero||''}"></label>
     <div class="muted small">Avec une date visée, l’app te dit si tu es en voie et quel budget par semaine il faudrait pour y arriver.</div>
-    <button class="primary" id="oSave">Enregistrer mes objectifs</button>`, el => {
-      const wk = () => { const g = id => num(el.querySelector(id).value) || 0; el.querySelector('#oWeek').textContent = 'Total : '+money0(g('#oO')*5 + g('#oW') + g('#oS'))+' par semaine'; };
-      wk(); el.oninput = wk;
-      el.querySelectorAll('[data-o]').forEach(b => b.onclick = () => { st.strategy = b.dataset.o; el.querySelectorAll('[data-o]').forEach(x => x.setAttribute('aria-pressed', x.dataset.o===st.strategy)); });
+    <div class="row"><button class="primary" id="oSave" style="flex:1">Enregistrer mes objectifs</button><button id="oCancel">Annuler</button></div>`, el => {
+      const now = runProjection({ days: 730 });
+      const wk = () => { const g = id => num(el.querySelector(id).value);
+        const bud = { other: g('#oO') ?? 0, wed: g('#oW') ?? 0, sat: g('#oS') ?? 0 };
+        el.querySelector('#oWeek').textContent = 'Total : '+money0(bud.other*5 + bud.wed + bud.sat)+' par semaine';
+        const tr = runProjection({ days: 730, budget: bud, strategy: st.strategy, fixed: g('#oF') ?? c.capone.fixed, buffer: g('#oB') ?? c.buffer });
+        const target = el.querySelector('#oZ').value;
+        const dz = r => r && r.zeroDate ? dlong(r.zeroDate) : 'plus de 2 ans';
+        const diff = (a, b, lowerIsBetter) => Math.round(a)===Math.round(b) ? '' : ((lowerIsBetter ? b < a : b > a) ? ' <span class="pill ok">mieux</span>' : ' <span class="pill miss">moins bien</span>');
+        el.querySelector('#oPrev').innerHTML = !tr || !now ? '<span class="muted small">Entre tes soldes dans Jour pour voir l’effet.</span>' : `<b class="small">Effet de ces chiffres (avant d’enregistrer)</b>
+          <div class="small">Carte à zéro : ${dz(now)} → <b>${dz(tr)}</b>${now.zeroDate && tr.zeroDate && now.zeroDate!==tr.zeroDate ? (tr.zeroDate < now.zeroDate ? ' <span class="pill ok">plus tôt</span>' : ' <span class="pill miss">plus tard</span>') : ''}</div>
+          <div class="small">Intérêts payés : ${money0(now.interest)} → <b>${money0(tr.interest)}</b>${diff(now.interest, tr.interest, true)}</div>
+          <div class="small">Point bas Desjardins : ${money0(now.low.v)} → <b>${money0(tr.low.v)}</b>${diff(now.low.v, tr.low.v, false)}</div>
+          ${target ? `<div class="small">Date visée ${dlong(target)} : ${tr.zeroDate && tr.zeroDate <= target ? '<span class="pill ok">en voie</span>' : '<span class="pill miss">en retard</span>'}</div>` : ''}`;
+      };
+      wk(); el.oninput = wk; el.onchange = wk;
+      el.querySelector('#oCancel').onclick = closeSheet;
+      el.querySelectorAll('[data-o]').forEach(b => b.onclick = () => { st.strategy = b.dataset.o; el.querySelectorAll('[data-o]').forEach(x => x.setAttribute('aria-pressed', x.dataset.o===st.strategy)); wk(); });
       el.querySelector('#oSave').onclick = () => { const g = id => num(el.querySelector(id).value);
         const values = { BudgetAutre: g('#oO') ?? c.budget.other, BudgetMer: g('#oW') ?? c.budget.wed, BudgetSam: g('#oS') ?? c.budget.sat,
           Strategie: st.strategy==='fixed' ? 'Montant fixe' : 'Tout le surplus', MontantFixe: g('#oF') ?? c.capone.fixed, Coussin: g('#oB') ?? c.buffer, CarteZeroVisee: el.querySelector('#oZ').value || '' };
