@@ -185,7 +185,7 @@ function project(cfgIn, rec, start, opt) {
     const ov = opt.payOverride ? opt.payOverride[s] : null;
     if (pay) { const amt = ov != null ? ov : cfg.payAmount; D += amt; payIn = amt; ev.push('Paye'); }
     const ex = opt.extra ? opt.extra[s] : null;
-    if (ex) { D += ex.desj || 0; W += ex.wsc || 0; ev.push('Revenu'); }
+    if (ex) { D += ex.desj || 0; W += ex.wsc || 0; C += ex.capone || 0; ev.push('Prévu'); }
     rec.forEach(r => {
       if (!recurOn(r, s)) return;
       if (r.account === 'desj') D -= r.amount;
@@ -206,7 +206,7 @@ function project(cfgIn, rec, start, opt) {
     if (pay && C > 0.005) {
       const np = nextPayAfter(cfg, s);
       let needs = 0;
-      for (let x = addDays(s, 1); x < np; x = addDays(x, 1)) needs += desjOut(cfg, rec, x);
+      for (let x = addDays(s, 1); x < np; x = addDays(x, 1)){ needs += desjOut(cfg, rec, x); const e2 = opt.extra ? opt.extra[x] : null; if (e2 && (e2.desj||0) < 0) needs -= e2.desj; }
       const avail = Math.max(0, D - needs - (cfg.buffer || 0));
       let amt = cap.strategy === 'fixed' ? Math.min(cap.fixed, avail) : avail;
       if (dueDate && dueDate >= s && dueDate < np && paid < minDue) amt = Math.max(amt, minDue - paid);
@@ -339,7 +339,9 @@ function parseRaw(R){
     if (typeof sm==='number') cig = sm > 0; else if (logged){ const t = String(sm).toLowerCase(); cig = /cig/.test(t); weed = /weed|pot|cannabis/.test(t); }
     S.days[d] = { _id:d, date:d, spent:nv(r[1]), smokeLogged:logged, cig, weed, commute: comKey[r[3]] || null, note:String(r[4]||'') }; });
   S.exlib = Array.from(new Set([...EXLIB, ...R.series.map(r => String(r[2]))]));
-  S.incomes = (R.revenus || []).map(r => ({ _id:String(r[0]), date:String(r[1]), type:String(r[2]||'Contrat'), amount:+r[3]||0, account: accKey[r[4]] || 'desj', note:String(r[5]||'') })).filter(i => i.amount).sort((a,b) => a.date<b.date?-1:1);
+  const allInc = (R.revenus || []);
+  S.planned = allInc.filter(r => /^prévu/i.test(String(r[2]))).map(r => ({ _id:String(r[0]), date:String(r[1]), kind: /revenu/i.test(String(r[2])) ? 'rev' : 'dep', amount:+r[3]||0, account: accKey[r[4]] || 'desj', desc:String(r[5]||'') })).filter(x => x.amount).sort((a,b) => a.date<b.date?-1:1);
+  S.incomes = allInc.filter(r => !/^prévu/i.test(String(r[2]))).map(r => ({ _id:String(r[0]), date:String(r[1]), type:String(r[2]||'Contrat'), amount:+r[3]||0, account: accKey[r[4]] || 'desj', note:String(r[5]||'') })).filter(i => i.amount).sort((a,b) => a.date<b.date?-1:1);
 }
 function enqueue(op){ op.qid = uid('q'); outbox.push(op); lsSet(LS.outbox, outbox); rebuild(); scheduleRender(); flush(); }
 async function flush(){
@@ -379,8 +381,17 @@ function latestBal(){
   return out;
 }
 function actualSpend(){ const m = {}; Object.values(S.days).forEach(d => { if (d.spent!=null) m[d._id] = d.spent; }); return m; }
+function plannedExtra(after, upto, withRev){
+  const ex = {};
+  (S.planned||[]).forEach(p => { if (p.date <= after || (upto && p.date > upto)) return; if (p.kind==='rev' && !withRev) return;
+    const e = ex[p.date] || (ex[p.date] = { desj:0, wsc:0, capone:0 });
+    if (p.account==='capone') e.capone += p.kind==='rev' ? -p.amount : p.amount; else e[p.account] += p.kind==='rev' ? p.amount : -p.amount; });
+  return ex;
+}
+function mergeExtra(a, b){ const o = JSON.parse(JSON.stringify(a||{})); Object.keys(b||{}).forEach(d => { const e = o[d] || (o[d] = { desj:0, wsc:0, capone:0 }); ['desj','wsc','capone'].forEach(k => e[k] = (e[k]||0) + (b[d][k]||0)); }); return o; }
 function runProjection(opt){
   const b = latestBal(); if (!b.date || b.desj==null || b.capone==null) return null;
+  opt = Object.assign({}, opt, { extra: mergeExtra(opt && opt.extra, plannedExtra(b.date, null, true)) });
   return project(cfg(), activeRec(), { date:b.date, desj:b.desj, wsc:b.wsc||0, capone:b.capone, minDue:b.minDue, dueDate:(b.dueDate && b.dueDate>=b.date)?b.dueDate:null }, Object.assign({ actual:actualSpend() }, opt));
 }
 const isStrength = w => ['A','B','C','libre'].includes(w.kind);
@@ -408,6 +419,7 @@ function comparePerf(cur){
     const m = inc.find(i => i.type==='Paye' && !used.has(i) && Math.abs(diffDays(i.date, x)) <= 3);
     payPlanned += cfg().payAmount; if (m){ used.add(m); payOverride[x] = m.amount; payReal += m.amount; } else payReal += cfg().payAmount; }
   inc.forEach(i => { if (used.has(i)) return; const e = extra[i.date] || (extra[i.date] = { desj:0, wsc:0 }); e[i.account==='wsc'?'wsc':'desj'] += i.amount; contracts += i.amount; });
+  Object.assign(extra, mergeExtra(extra, plannedExtra(prev.date, cur.date, false)));
   const pj = project(cfg(), activeRec(), { date:prev.date, desj:prev.desj, wsc:wsPrev, capone:prev.capone, minDue: stmt && stmt.dueDate >= prev.date ? stmt.minDue : 0, dueDate: stmt && stmt.dueDate >= prev.date ? stmt.dueDate : null }, { days, payOverride, extra });
   const P = pj.rows[pj.rows.length-1];
   const wsAct = cur.wsc!=null ? cur.wsc : P.W;
@@ -732,7 +744,7 @@ function viewMoney(){
   if (!sim) sim = { budget: Object.assign({}, c.budget), strategy: c.capone.strategy, fixed: c.capone.fixed };
   const net = (b.desj||0) + (b.wsc||0) + (b.wsi||0) - (b.capone||0);
   let h = `<header class="top"><div><div class="muted small">Soldes au ${b.date?dlong(b.date):'—'} · <a href="#jour">les mettre à jour dans Jour</a></div><h1>Argent</h1></div></header>
-  <div class="small muted">Tes <b>objectifs</b> sont ton budget de dépenses et ta façon de payer la carte. La <b>prévision</b> en découle. Chaque fois que tu entres tes soldes, l’app <b>compare</b> le réel à la prévision.</div>
+  <div class="small muted"><b>Le réel</b> s’entre dans Jour (soldes, revenus reçus). <b>Le plan</b> se règle ici : objectifs, dépenses et revenus prévus, paiements récurrents. Le plan ne touche jamais tes soldes : il sert seulement à la prévision.</div>
   <section class="card"><div class="tiles">
     <div class="tile"><span class="lab">Desjardins</span><b class="${b.desj<0?'kpi-neg':''}">${money(b.desj)}</b></div>
     <div class="tile"><span class="lab">WS chèque</span><b>${money(b.wsc)}</b></div>
@@ -742,6 +754,7 @@ function viewMoney(){
   ${b.minDue?`<div class="small muted">Relevé carte : ${money(b.stmtBal)} · minimum ${money(b.minDue)} avant le ${b.dueDate?dlong(b.dueDate):'—'}</div>`:''}</section>`;
   const gs = goalStatus();
   // 1. Mes objectifs
+  h += `<h2 style="margin-top:8px">Le plan</h2>`;
   h += `<section class="card" aria-label="Mes objectifs"><div class="row between"><h2>1 · Mes objectifs</h2><button class="primary" data-act="goals">Modifier</button></div>
     <div class="obj"><div class="ic na">$</div><div><b>Dépenses : ${money0(weekOf(c.budget))} par semaine</b><div class="muted small">${money0(c.budget.other)} par jour (lun-ven, dim.) · ${money0(c.budget.wed)} le mercredi · ${money0(c.budget.sat)} le samedi</div></div><span></span></div>
     <div class="obj"><div class="ic na">▭</div><div><b>Carte : ${c.capone.strategy==='fixed' ? money0(c.capone.fixed)+' à chaque paye' : 'tout le surplus à chaque paye'}</b><div class="muted small">en gardant ${money0(c.buffer)} de coussin dans Desjardins jusqu’à la paye suivante</div></div><span></span></div>
@@ -749,13 +762,27 @@ function viewMoney(){
       <div class="muted small">${!gs ? 'Entre tes soldes pour voir la prévision.' : (gs.zero ? 'Avec ces objectifs, la carte est à zéro le <b>'+dlong(gs.zero)+'</b>.' : 'Avec ces objectifs, la carte n’est pas remboursée dans les 2 prochaines années.')}
       ${gs && gs.ok===false && gs.need ? (gs.need.impossible ? ' Même sans aucune dépense, la date visée est hors d’atteinte : choisis une date plus loin.' : ' Pour y arriver : dépenses d’environ <b>'+money0(gs.need.weekly)+' par semaine</b>.') : ''}</div></div>
       ${gs && gs.ok!=null ? `<span class="pill ${gs.ok?'ok':'miss'}">${gs.ok?'En voie':'En retard'}</span>` : '<span></span>'}</div></section>`;
+  // 2. Dépenses et revenus prévus (ponctuels)
+  const upcoming = (S.planned||[]).filter(p => p.date >= TODAY()), past = (S.planned||[]).filter(p => p.date < TODAY());
+  const pLine = p => `<div class="obj"><div class="ic ${p.kind==='rev'?'ok':'open'}">${p.kind==='rev'?'+':'−'}</div><div><b>${esc(p.desc || (p.kind==='rev'?'Revenu prévu':'Dépense prévue'))}</b><div class="muted small">${dlong(p.date)} · ${ACC[p.account]}</div></div><div class="row" style="gap:4px"><span class="num"><b>${p.kind==='rev'?'+':'−'}${money0(p.amount)}</b></span><button class="ghost" data-act="delPlanned" data-id="${esc(p._id)}" aria-label="Retirer">×</button></div></div>`;
+  h += `<section class="card" aria-label="Prévus"><div class="row between"><h2>2 · Dépenses et revenus prévus</h2><button class="ghost" data-act="addPlanned">+ Ajouter</button></div>
+    <div class="muted small">Ce qui arrivera une seule fois : un contrat attendu, un achat prévu, un billet d’avion. Compté dans la prévision à la date indiquée. Une dépense prévue qui arrive ne compte pas comme un dépassement de budget.</div>
+    ${upcoming.length ? upcoming.map(pLine).join('') : '<div class="muted small">Rien de prévu pour l’instant.</div>'}
+    ${past.length ? `<details><summary class="small">Passés (${past.length})</summary>${past.map(pLine).join('')}</details>` : ''}</section>`;
+  // 5. Paiements récurrents
+  const groups = ['desj','wsc','capone'];
+  h += `<section class="card"><div class="row between"><h2>3 · Paiements récurrents</h2><button class="ghost" data-act="recEdit" data-id="">+ Ajouter</button></div>
+    ${groups.map(g => { const list = S.recurring.filter(r => r.account===g && r.active).sort((a,b)=>a.day-b.day); const tot = list.reduce((a,r)=>a+r.amount,0); return `<div><div class="row between" style="margin-top:6px"><h3>${ACC[g]}</h3><span class="num small"><b>${money(tot)}</b> / mois</span></div>${list.map(recLine).join('') || '<div class="muted small">Aucun.</div>'}</div>`; }).join('')}
+    ${(() => { const off = S.recurring.filter(r => !r.active); return off.length ? `<details><summary>Inactifs (${off.length})</summary>${off.map(recLine).join('')}</details>` : ''; })()}
+    <div class="muted small">Virement automatique Desjardins → WS : ${money(c.wsTransfer.amount)} le ${c.wsTransfer.day} du mois.</div></section>`;
+  h += `<h2 style="margin-top:8px">Le réel comparé au plan</h2>`;
   // 2. Où j'en suis
-  h += `<div class="small muted" style="margin-top:4px"><b>2 · Où j’en suis</b> : le réel comparé à la prévision, depuis tes derniers soldes.</div>` + perfCard(lastPerf());
+  h += `<div class="small muted" style="margin-top:4px"><b>4 · Où j’en suis</b> : tes soldes réels comparés à la prévision, depuis tes derniers soldes.</div>` + perfCard(lastPerf());
   // 3. Ce que mes objectifs donnent
   const pj = gs ? gs.pj : null; lastPj = pj;
   if (!pj) return h + '<div class="card muted">Entre tes soldes pour voir la prévision.</div>';
   const pays = pj.rows.filter(r => r.payIn), np = pays[0];
-  h += `<section class="card" aria-label="Prévision"><h2>3 · La prévision</h2><div class="muted small">Ce que tes objectifs donnent si tu les suis, à partir de tes soldes du ${dday(b.date)}</div>
+  h += `<section class="card" aria-label="Prévision"><h2>5 · La prévision</h2><div class="muted small">Ce que tes objectifs donnent si tu les suis, à partir de tes soldes du ${dday(b.date)}</div>
     ${np ? (np.payAmt > 0 ? `<div class="obj"><div class="ic open">$</div><div><b>Paye du ${dday(np.date)} : payer ${money(np.payAmt)} sur Capital One</b><div class="muted small">Calculé pour garder ${money(c.buffer)} de coussin après le loyer, les prélèvements et ton budget jusqu’à la paye suivante.</div></div><span></span></div>`
       : (() => { const n2 = pays.find(r => r.payAmt > 0); return `<div class="obj"><div class="ic na">$</div><div><b>Paye du ${dday(np.date)} : rien sur la carte</b><div class="muted small">Elle sert au découvert, au loyer et au budget jusqu’à la paye suivante.${n2 ? ' Prochain paiement de carte : <b>'+money(n2.payAmt)+'</b> le '+dday(n2.date) : ''}</div></div><span></span></div>`; })()) : ''}
     <div class="tiles">
@@ -769,7 +796,7 @@ function viewMoney(){
   // 4. Essayer d'autres chiffres
   const tr = runProjection({ days: 730, budget: sim.budget, strategy: sim.strategy, fixed: sim.fixed });
   const cmp = (a, b2, better) => a===b2 ? '' : (better ? ' <span class="pill ok">mieux</span>' : ' <span class="pill miss">moins bien</span>');
-  h += `<section class="card" aria-label="Essai"><h2>4 · Essayer d’autres chiffres</h2><div class="muted small">Un bac à sable : rien ne change tant que tu ne cliques pas « Adopter comme objectifs ».</div>
+  h += `<section class="card" aria-label="Essai"><h2>6 · Essayer d’autres chiffres</h2><div class="muted small">Un bac à sable : rien ne change tant que tu ne cliques pas « Adopter comme objectifs ».</div>
     <div class="grid3">
       <label class="f" for="sOther">Lun-ven, dim.<input id="sOther" inputmode="decimal" value="${sim.budget.other}"></label>
       <label class="f" for="sWed">Mercredi<input id="sWed" inputmode="decimal" value="${sim.budget.wed}"></label>
@@ -783,13 +810,7 @@ function viewMoney(){
       <div class="histitem"><b>Point bas Desjardins</b><div class="small">${money0(pj.low.v)} → <b>${money0(tr.low.v)}</b>${cmp(Math.round(pj.low.v), Math.round(tr.low.v), tr.low.v > pj.low.v)}</div></div>` : ''}
     ${budgetsDiffer()?`<div class="row"><button class="primary" data-act="simSave">Adopter comme objectifs</button><button data-act="simReset">Revenir à mes objectifs</button></div>`:''}
   </section>`;
-  // 5. Paiements récurrents
-  const groups = ['desj','wsc','capone'];
-  h += `<section class="card"><div class="row between"><h2>Paiements récurrents</h2><button class="ghost" data-act="recEdit" data-id="">+ Ajouter</button></div>
-    ${groups.map(g => { const list = S.recurring.filter(r => r.account===g && r.active).sort((a,b)=>a.day-b.day); const tot = list.reduce((a,r)=>a+r.amount,0); return `<div><div class="row between" style="margin-top:6px"><h3>${ACC[g]}</h3><span class="num small"><b>${money(tot)}</b> / mois</span></div>${list.map(recLine).join('') || '<div class="muted small">Aucun.</div>'}</div>`; }).join('')}
-    ${(() => { const off = S.recurring.filter(r => !r.active); return off.length ? `<details><summary>Inactifs (${off.length})</summary>${off.map(recLine).join('')}</details>` : ''; })()}
-    <div class="muted small">Virement automatique Desjardins → WS : ${money(c.wsTransfer.amount)} le ${c.wsTransfer.day} du mois.</div></section>
-    <button data-act="settings">Paramètres : paye, carte, virement, connexion</button>`;
+  h += `<button data-act="settings">Paramètres : paye, carte, virement, connexion</button>`;
   return h;
 }
 const recLine = r => `<div class="recline ${r.active?'':'off'}" data-act="recEdit" data-id="${r._id}" role="button" tabindex="0"><div><div>${esc(r.name)}</div>${r.note?`<div class="muted small">${esc(r.note)}</div>`:''}</div><span class="muted small">le ${r.day}</span><span class="num">${money(r.amount)}</span></div>`;
@@ -1084,6 +1105,19 @@ function openRec(id){
       const del = el.querySelector('#rDel'); if (del) del.onclick = () => confirmIn(del, 'Confirmer', () => { enqueue({ t:'delRec', id }); closeSheet(); });
     });
 }
+function openPlanned(){
+  const st = { kind:'dep', account:'desj' };
+  openSheet('Prévoir une dépense ou un revenu', `<div class="row"><button class="seg" data-p="kind" data-v="dep" aria-pressed="true">Dépense</button><button class="seg" data-p="kind" data-v="rev" aria-pressed="false">Revenu</button></div>
+    <label class="f" for="pDesc">Description<input id="pDesc" placeholder="ex. billet d’avion, contrat sonorisation"></label>
+    <div class="grid2"><label class="f" for="pAmt">Montant ($)<input id="pAmt" inputmode="decimal"></label><label class="f" for="pDate">Date prévue<input id="pDate" type="date" value="${addDays(TODAY(),7)}"></label></div>
+    <div class="small muted">Compte</div><div class="row">${Object.entries(ACC).map(([k,l]) => `<button class="seg" data-p="acc" data-v="${k}" aria-pressed="${k==='desj'}">${l}</button>`).join('')}</div>
+    <div class="muted small">Ça change seulement la prévision. Tes soldes réels ne bougent pas.</div>
+    <button class="primary" id="pSave">Ajouter au plan</button>`, el => {
+      el.onclick = e => { const b = e.target.closest('[data-p]'); if (b){ const k = b.dataset.p; if (k==='kind') st.kind = b.dataset.v; else st.account = b.dataset.v; el.querySelectorAll(`[data-p="${k}"]`).forEach(x => x.setAttribute('aria-pressed', x===b)); return; }
+        if (e.target.id==='pSave'){ const amt = num(el.querySelector('#pAmt').value), d = el.querySelector('#pDate').value; if (!amt || !d){ toast('Indique le montant et la date.'); return; }
+          sim = null; enqueue({ t:'income', id:uid('P'), date:d, type: st.kind==='rev' ? 'Prévu : revenu' : 'Prévu : dépense', amount:amt, account: ACCLABEL[st.account], note: el.querySelector('#pDesc').value.trim() }); closeSheet(); toast('Ajouté au plan.'); } };
+    });
+}
 function openGoals(){
   const c = cfg(); const st = { strategy: c.capone.strategy };
   openSheet('Mes objectifs', `<h3>Dépenses</h3><div class="grid3"><label class="f" for="oO">Lun-ven, dim. ($/jour)<input id="oO" inputmode="decimal" value="${c.budget.other}"></label><label class="f" for="oW">Mercredi<input id="oW" inputmode="decimal" value="${c.budget.wed}"></label><label class="f" for="oS">Samedi<input id="oS" inputmode="decimal" value="${c.budget.sat}"></label></div>
@@ -1160,6 +1194,8 @@ document.getElementById('view').addEventListener('click', e => {
   else if (a==='commute'){ const d = dayCursor||TODAY(); const cur = S.days[d] && S.days[d].commute; saveDay(d, { commute: cur===b.dataset.v ? null : b.dataset.v }); }
   else if (a==='simStrat'){ sim.strategy = b.dataset.v; render(); }
   else if (a==='goals') openGoals();
+  else if (a==='addPlanned') openPlanned();
+  else if (a==='delPlanned') confirmIn(b, 'Retirer ?', () => { sim = null; enqueue({ t:'delIncome', id:b.dataset.id }); });
   else if (a==='simReset'){ sim = null; render(); }
   else if (a==='simSave'){ const v = { BudgetAutre:sim.budget.other, BudgetMer:sim.budget.wed, BudgetSam:sim.budget.sat, Strategie: sim.strategy==='fixed' ? 'Montant fixe' : 'Tout le surplus', MontantFixe:sim.fixed }; sim = null; enqueue({ t:'settings', values:v }); toast('Nouveaux objectifs adoptés.'); }
   else if (a==='retry') flush();
