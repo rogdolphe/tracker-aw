@@ -561,7 +561,6 @@ function viewJour(){
     <h3>Soldes</h3>
     <div class="grid2"><label class="f" for="jD">Desjardins${inp('jD', f(b.desj))}</label><label class="f" for="jC">Capital One (solde + en attente)${inp('jC', f(b.capone))}</label>
     <label class="f" for="jW">WS chèque${inp('jW', f(b.wsc))}</label><label class="f" for="jI">WS placements${inp('jI', f(b.wsi))}</label></div>
-    <details><summary class="small">Nouveau relevé Capital One</summary><div class="grid3" style="margin-top:8px"><label class="f" for="jS">Nouveau solde${inp('jS','')}</label><label class="f" for="jM">Paiement minimum${inp('jM','')}</label><label class="f" for="jDue">Échéance<input id="jDue" data-j="1" data-orig="" type="date" value="${esc(val('jDue',''))}"></label></div></details>
     <h3>Revenus</h3>
     ${payDay && !payNear ? `<label class="f" for="jPay">C’est jour de paye : montant reçu ($)${inp('jPay','', `placeholder="${f(c.payAmount)} prévus"`)}</label>` : ''}
     <details ${jd.d===d && (jd.v.jAmt||'') ? 'open' : ''}><summary class="small">Revenu de contrat ou autre</summary><div class="grid3" style="margin-top:8px">
